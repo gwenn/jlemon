@@ -2567,7 +2567,7 @@ to follow the previous rule.");
           for(z=psp->filename, nBack=0; *z; z++){
             if( *z=='\\' ) nBack++;
           }
-          lemon_sprintf(zLine, "#line %d ", psp->tokenlineno);
+          lemon_sprintf(zLine, "//line %d ", psp->tokenlineno);
           nLine = lemonStrlen(zLine);
           n += nLine + lemonStrlen(psp->filename) + nBack;
         }
@@ -3398,7 +3398,7 @@ PRIVATE FILE *tplt_open(struct lemon *lemp)
 /* Print a #line directive line to the output file. */
 PRIVATE void tplt_linedir(FILE *out, int lineno, char *filename)
 {
-  fprintf(out,"#line %d \"",lineno);
+  fprintf(out,"//line %d \"",lineno);
   while( *filename ){
     if( *filename == '\\' ) putc('\\',out);
     putc(*filename,out);
@@ -3458,7 +3458,7 @@ void emit_destructor_code(
  }
  for(; *cp; cp++){
    if( *cp=='$' && cp[1]=='$' ){
-     fprintf(out,"(yypminor->yy%d)",sp->dtnum);
+     fprintf(out,"(yypminor.yy%d())",sp->dtnum);
      cp++;
      continue;
    }
@@ -3581,7 +3581,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
     lhsdirect = 1;
     if( has_destructor(rp->rhs[0],lemp) ){
       append_str(0,0,0,0);
-      append_str("  yy_destructor(yypParser,%d,&yymsp[%d].minor);\n", 0,
+      append_str("  yy_destructor(%d,yystack.peek(%d).minor);\n", 0,
                  rp->rhs[0]->index,1-rp->nrhs);
       rp->codePrefix = Strsafe(append_str(0,0,0,0));
       rp->noCode = 0;
@@ -3615,7 +3615,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
     }
   }
   if( lhsdirect ){
-    sprintf(zLhs, "yymsp[%d].minor.yy%d",1-rp->nrhs,rp->lhs->dtnum);
+    sprintf(zLhs, "yystack.peek(%d).minor.yy%d",1-rp->nrhs,rp->lhs->dtnum);
   }else{
     rc = 1;
     sprintf(zLhs, "yylhsminor.yy%d",rp->lhs->dtnum);
@@ -3637,7 +3637,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
       saved = *xp;
       *xp = 0;
       if( rp->lhsalias && strcmp(cp,rp->lhsalias)==0 ){
-        append_str(zLhs,0,0,0);
+        append_str(zLhs,0,0,0); // FIXME getter zLhs => zLhs() vs setter zLhs = ... => zLhs(...)
         cp = xp;
         lhsused = 1;
       }else{
@@ -3651,7 +3651,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
             }else if( cp!=rp->code && cp[-1]=='@' ){
               /* If the argument is of the form @X then substituted
               ** the token number of X, not the value of X */
-              append_str("yymsp[%d].major",-1,i-rp->nrhs+1,0);
+              append_str("yystack.peek(%d).major",-1,i-rp->nrhs+1,0);
             }else{
               struct symbol *sp = rp->rhs[i];
               int dtnum;
@@ -3660,7 +3660,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
               }else{
                 dtnum = sp->dtnum;
               }
-              append_str("yymsp[%d].minor.yy%d",0,i-rp->nrhs+1, dtnum);
+              append_str("yystack.peek(%d).minor.yy%d()",0,i-rp->nrhs+1, dtnum);
             }
             cp = xp;
             used[i] = 1;
@@ -3717,7 +3717,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
         lemp->errorcnt++;
       }
     }else if( i>0 && has_destructor(rp->rhs[i],lemp) ){
-      append_str("  yy_destructor(yypParser,%d,&yymsp[%d].minor);\n", 0,
+      append_str("  yy_destructor(%d,yystack.peek(%d).minor);\n", 0,
          rp->rhs[i]->index,i-rp->nrhs+1);
     }
   }
@@ -3725,9 +3725,9 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
   /* If unable to write LHS values directly into the stack, write the
   ** saved LHS value now. */
   if( lhsdirect==0 ){
-    append_str("  yymsp[%d].minor.yy%d = ", 0, 1-rp->nrhs, rp->lhs->dtnum);
+    append_str("  yystack.peek(%d).minor.yy%d(", 0, 1-rp->nrhs, rp->lhs->dtnum);
     append_str(zLhs, 0, 0, 0);
-    append_str(";\n", 0, 0, 0);
+    append_str(");\n", 0, 0, 0);
   }
 
   /* Suffix code generation complete */
@@ -3890,22 +3890,54 @@ void print_stack_union(
   lineno = *plineno;
   if( mhflag ){ fprintf(out,"#if INTERFACE\n"); lineno++; }
   fprintf(out,"#define %sTOKENTYPE %s\n",name,
-    lemp->tokentype?lemp->tokentype:"void*");  lineno++;
+    lemp->tokentype?lemp->tokentype:"Object");  lineno++;
   if( mhflag ){ fprintf(out,"#endif\n"); lineno++; }
-  fprintf(out,"typedef union {\n"); lineno++;
-  fprintf(out,"  int yyinit;\n"); lineno++;
-  fprintf(out,"  %sTOKENTYPE yy0;\n",name); lineno++;
+  fprintf(out,"private static class YYMINORTYPE {\n"); lineno++;
+  fprintf(out,"  Tag tag;\n"); lineno++;
+  fprintf(out,"  Object value;\n"); lineno++;
+  fprintf(out,"  %sTOKENTYPE yy0() {\n",name); lineno++;
+  fprintf(out,"    assert tag == Tag.yy0;\n"); lineno++;
+  fprintf(out,"    return (%sTOKENTYPE) value;\n",name); lineno++;
+  fprintf(out,"  }\n"); lineno++;
+  fprintf(out,"  yy0(%sTOKENTYPE value) {\n",name); lineno++;
+  fprintf(out,"    tag = Tag.yy0;\n"); lineno++;
+  fprintf(out,"    this.value = value;\n"); lineno++;
+  fprintf(out,"  }\n"); lineno++;
   for(i=0; i<arraysize; i++){
     if( types[i]==0 ) continue;
-    fprintf(out,"  %s yy%d;\n",types[i],i+1); lineno++;
+    fprintf(out,"  %s yy%d() {\n",types[i],i+1); lineno++;
+    fprintf(out,"    assert tag == Tag.yy%d;\n",i+1); lineno++;
+    fprintf(out,"    return (%s) value;\n",name); lineno++;
+    fprintf(out,"  }\n"); lineno++;
+    fprintf(out,"  yy%d(%s value) {\n",i+1,types[i]); lineno++;
+    fprintf(out,"    tag = Tag.yy%d;\n",i+1); lineno++;
+    fprintf(out,"    this.value = value;\n"); lineno++;
+    fprintf(out,"  }\n"); lineno++;
+  }
+  if( lemp->errsym->useCnt ){
+    fprintf(out,"  int yy%d() {\n",lemp->errsym->dtnum); lineno++;
+    fprintf(out,"    assert tag == Tag.yy%d;\n",lemp->errsym->dtnum); lineno++;
+    fprintf(out,"    return (int) value;\n"); lineno++;
+    fprintf(out,"  }\n"); lineno++;
+    fprintf(out,"  yy%d(int value) {\n",lemp->errsym->dtnum); lineno++;
+    fprintf(out,"    tag = Tag.yy%d;\n",lemp->errsym->dtnum); lineno++;
+    fprintf(out,"    this.value = value;\n"); lineno++;
+    fprintf(out,"  }\n"); lineno++;
+  }
+  fprintf(out,"  private enum Tag {\n"); lineno++;
+  fprintf(out,"    yy0,\n"); lineno++;
+  for(i=0; i<arraysize; i++){
+    if( types[i]==0 ) continue;
+    fprintf(out,"  yy%d,\n",i+1); lineno++;
     free(types[i]);
   }
   if( lemp->errsym->useCnt ){
-    fprintf(out,"  int yy%d;\n",lemp->errsym->dtnum); lineno++;
+    fprintf(out,"  yy%d,\n",lemp->errsym->dtnum); lineno++;
   }
+  fprintf(out,"  }\n"); lineno++;
   free(stddt);
   free(types);
-  fprintf(out,"} YYMINORTYPE;\n"); lineno++;
+  fprintf(out,"}\n"); lineno++;
   *plineno = lineno;
 }
 
@@ -3919,17 +3951,17 @@ static const char *minimum_size_type(int lwr, int upr, int *pnByte){
   int nByte = 4;
   if( lwr>=0 ){
     if( upr<=255 ){
-      zType = "unsigned char";
-      nByte = 1;
-    }else if( upr<65535 ){
-      zType = "unsigned short int";
+      zType = "short";
       nByte = 2;
+    }else if( upr<65535 ){
+      zType = "int";
+      nByte = 4;
     }else{
-      zType = "unsigned int";
+      zType = "int";
       nByte = 4;
     }
   }else if( lwr>=-127 && upr<=127 ){
-    zType = "signed char";
+    zType = "byte";
     nByte = 1;
   }else if( lwr>=-32767 && upr<32767 ){
     zType = "short";
@@ -3988,7 +4020,7 @@ static void writeRuleText(FILE *out, struct rule *rp){
 }
 
 
-/* Generate C source code for the parser */
+/* Generate Java source code for the parser */
 void ReportTable(
   struct lemon *lemp,
   int mhflag     /* Output in makeheaders format if true */
@@ -4010,7 +4042,7 @@ void ReportTable(
 
   in = tplt_open(lemp);
   if( in==0 ) return;
-  out = file_open(lemp,".c","wb");
+  out = file_open(lemp,".java","wb");
   if( out==0 ){
     fclose(in);
     return;
@@ -4044,7 +4076,7 @@ void ReportTable(
   /* Generate the defines */
   fprintf(out,"#define YYCODETYPE %s\n",
     minimum_size_type(0, lemp->nsymbol+1, &szCodeType)); lineno++;
-  fprintf(out,"#define YYNOCODE %d\n",lemp->nsymbol+1);  lineno++;
+  fprintf(out,"private static final int YYNOCODE = %d;\n",lemp->nsymbol+1);  lineno++;
   fprintf(out,"#define YYACTIONTYPE %s\n",
     minimum_size_type(0,lemp->nstate+lemp->nrule*2+5,&szActionType)); lineno++;
   if( lemp->wildcard ){
@@ -4168,17 +4200,17 @@ void ReportTable(
 
   /* Finish rendering the constants now that the action table has
   ** been computed */
-  fprintf(out,"#define YYNSTATE             %d\n",lemp->nxstate);  lineno++;
+  fprintf(out,"private static final int YYNSTATE =           %d;\n",lemp->nxstate);  lineno++;
   fprintf(out,"#define YYNRULE              %d\n",lemp->nrule);  lineno++;
-  fprintf(out,"#define YY_MAX_SHIFT         %d\n",lemp->nxstate-1); lineno++;
-  fprintf(out,"#define YY_MIN_SHIFTREDUCE   %d\n",lemp->nstate); lineno++;
+  fprintf(out,"private static final int YY_MAX_SHIFT =       %d;\n",lemp->nxstate-1); lineno++;
+  fprintf(out,"private static final int YY_MIN_SHIFTREDUCE = %d;\n",lemp->nstate); lineno++;
   i = lemp->nstate + lemp->nrule;
-  fprintf(out,"#define YY_MAX_SHIFTREDUCE   %d\n", i-1); lineno++;
-  fprintf(out,"#define YY_MIN_REDUCE        %d\n", i); lineno++;
+  fprintf(out,"private static final int YY_MAX_SHIFTREDUCE = %d;\n", i-1); lineno++;
+  fprintf(out,"private static final int YY_MIN_REDUCE =      %d;\n", i); lineno++;
   i = lemp->nstate + lemp->nrule*2;
-  fprintf(out,"#define YY_MAX_REDUCE        %d\n", i-1); lineno++;
-  fprintf(out,"#define YY_ERROR_ACTION      %d\n", i); lineno++;
-  fprintf(out,"#define YY_ACCEPT_ACTION     %d\n", i+1); lineno++;
+  fprintf(out,"private static final int YY_MAX_REDUCE =      %d;\n", i-1); lineno++;
+  fprintf(out,"private static final int YY_ERROR_ACTION =    %d;\n", i); lineno++;
+  fprintf(out,"private static final int YY_ACCEPT_ACTION =   %d;\n", i+1); lineno++;
   fprintf(out,"#define YY_NO_ACTION         %d\n", i+2); lineno++;
   tplt_xfer(lemp->name,in,out,&lineno);
 
@@ -4198,7 +4230,7 @@ void ReportTable(
   lemp->nactiontab = n = acttab_size(pActtab);
   lemp->tablesize += n*szActionType;
   fprintf(out,"#define YY_ACTTAB_COUNT (%d)\n", n); lineno++;
-  fprintf(out,"static const YYACTIONTYPE yy_action[] = {\n"); lineno++;
+  fprintf(out,"private static final YYACTIONTYPE yy_action[] = {\n"); lineno++;
   for(i=j=0; i<n; i++){
     int action = acttab_yyaction(pActtab, i);
     if( action<0 ) action = lemp->nstate + lemp->nrule + 2;
@@ -4215,7 +4247,7 @@ void ReportTable(
 
   /* Output the yy_lookahead table */
   lemp->tablesize += n*szCodeType;
-  fprintf(out,"static const YYCODETYPE yy_lookahead[] = {\n"); lineno++;
+  fprintf(out,"private static final YYCODETYPE yy_lookahead[] = {\n"); lineno++;
   for(i=j=0; i<n; i++){
     int la = acttab_yylookahead(pActtab, i);
     if( la<0 ) la = lemp->nsymbol;
@@ -4234,10 +4266,10 @@ void ReportTable(
   n = lemp->nxstate;
   while( n>0 && lemp->sorted[n-1]->iTknOfst==NO_OFFSET ) n--;
   fprintf(out, "#define YY_SHIFT_USE_DFLT (%d)\n", lemp->nactiontab); lineno++;
-  fprintf(out, "#define YY_SHIFT_COUNT    (%d)\n", n-1); lineno++;
+  fprintf(out, "private static final int YY_SHIFT_COUNT =    (%d);\n", n-1); lineno++;
   fprintf(out, "#define YY_SHIFT_MIN      (%d)\n", mnTknOfst); lineno++;
   fprintf(out, "#define YY_SHIFT_MAX      (%d)\n", mxTknOfst); lineno++;
-  fprintf(out, "static const %s yy_shift_ofst[] = {\n", 
+  fprintf(out, "private static final %s yy_shift_ofst[] = {\n",
        minimum_size_type(mnTknOfst, lemp->nterminal+lemp->nactiontab, &sz));
        lineno++;
   lemp->tablesize += n*sz;
@@ -4258,13 +4290,13 @@ void ReportTable(
   fprintf(out, "};\n"); lineno++;
 
   /* Output the yy_reduce_ofst[] table */
-  fprintf(out, "#define YY_REDUCE_USE_DFLT (%d)\n", mnNtOfst-1); lineno++;
+  fprintf(out, "private static final YY_REDUCE_USE_DFLT = (%d)\n", mnNtOfst-1); lineno++;
   n = lemp->nxstate;
   while( n>0 && lemp->sorted[n-1]->iNtOfst==NO_OFFSET ) n--;
-  fprintf(out, "#define YY_REDUCE_COUNT (%d)\n", n-1); lineno++;
+  fprintf(out, "private static final int YY_REDUCE_COUNT = (%d);\n", n-1); lineno++;
   fprintf(out, "#define YY_REDUCE_MIN   (%d)\n", mnNtOfst); lineno++;
   fprintf(out, "#define YY_REDUCE_MAX   (%d)\n", mxNtOfst); lineno++;
-  fprintf(out, "static const %s yy_reduce_ofst[] = {\n", 
+  fprintf(out, "private static final %s yy_reduce_ofst[] = {\n",
           minimum_size_type(mnNtOfst-1, mxNtOfst, &sz)); lineno++;
   lemp->tablesize += n*sz;
   for(i=j=0; i<n; i++){
@@ -4284,7 +4316,7 @@ void ReportTable(
   fprintf(out, "};\n"); lineno++;
 
   /* Output the default action table */
-  fprintf(out, "static const YYACTIONTYPE yy_default[] = {\n"); lineno++;
+  fprintf(out, "private static final YYACTIONTYPE yy_default[] = {\n"); lineno++;
   n = lemp->nxstate;
   lemp->tablesize += n*szActionType;
   for(i=j=0; i<n; i++){
@@ -4415,7 +4447,7 @@ void ReportTable(
   ** sequentually beginning with 0.
   */
   for(rp=lemp->rule; rp; rp=rp->next){
-    fprintf(out,"  { %d, %d },\n",rp->lhs->index,rp->nrhs); lineno++;
+    fprintf(out,"  new ruleInfoEntry(%d, %d),\n",rp->lhs->index,rp->nrhs); lineno++;
   }
   tplt_xfer(lemp->name,in,out,&lineno);
 
