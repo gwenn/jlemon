@@ -1,2 +1,5 @@
-lemon
-lemon.dSYM/
+jlemon
+jlemon.dSYM/
+*.h
+*.y
+*.out
