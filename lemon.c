@@ -3727,7 +3727,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
   if( lhsdirect==0 ){
     append_str("  yystack.peek(%d).minor.yy%d(", 0, 1-rp->nrhs, rp->lhs->dtnum);
     append_str(zLhs, 0, 0, 0);
-    append_str(");\n", 0, 0, 0);
+    append_str("());\n", 0, 0, 0);
   }
 
   /* Suffix code generation complete */
@@ -3899,7 +3899,7 @@ void print_stack_union(
   fprintf(out,"    assert tag == Tag.yy0;\n"); lineno++;
   fprintf(out,"    return (%sTOKENTYPE) value;\n",name); lineno++;
   fprintf(out,"  }\n"); lineno++;
-  fprintf(out,"  yy0(%sTOKENTYPE value) {\n",name); lineno++;
+  fprintf(out,"  void yy0(%sTOKENTYPE value) {\n",name); lineno++;
   fprintf(out,"    tag = Tag.yy0;\n"); lineno++;
   fprintf(out,"    this.value = value;\n"); lineno++;
   fprintf(out,"  }\n"); lineno++;
@@ -3907,9 +3907,9 @@ void print_stack_union(
     if( types[i]==0 ) continue;
     fprintf(out,"  %s yy%d() {\n",types[i],i+1); lineno++;
     fprintf(out,"    assert tag == Tag.yy%d;\n",i+1); lineno++;
-    fprintf(out,"    return (%s) value;\n",name); lineno++;
+    fprintf(out,"    return (%s) value;\n",types[i]); lineno++;
     fprintf(out,"  }\n"); lineno++;
-    fprintf(out,"  yy%d(%s value) {\n",i+1,types[i]); lineno++;
+    fprintf(out,"  void yy%d(%s value) {\n",i+1,types[i]); lineno++;
     fprintf(out,"    tag = Tag.yy%d;\n",i+1); lineno++;
     fprintf(out,"    this.value = value;\n"); lineno++;
     fprintf(out,"  }\n"); lineno++;
@@ -3919,7 +3919,7 @@ void print_stack_union(
     fprintf(out,"    assert tag == Tag.yy%d;\n",lemp->errsym->dtnum); lineno++;
     fprintf(out,"    return (int) value;\n"); lineno++;
     fprintf(out,"  }\n"); lineno++;
-    fprintf(out,"  yy%d(int value) {\n",lemp->errsym->dtnum); lineno++;
+    fprintf(out,"  void yy%d(int value) {\n",lemp->errsym->dtnum); lineno++;
     fprintf(out,"    tag = Tag.yy%d;\n",lemp->errsym->dtnum); lineno++;
     fprintf(out,"    this.value = value;\n"); lineno++;
     fprintf(out,"  }\n"); lineno++;
@@ -4101,9 +4101,9 @@ void ReportTable(
     while( i>=1 && (ISALNUM(lemp->arg[i-1]) || lemp->arg[i-1]=='_') ) i--;
     fprintf(out,"#define %sARG_SDECL %s;\n",name,lemp->arg);  lineno++;
     fprintf(out,"#define %sARG_PDECL ,%s\n",name,lemp->arg);  lineno++;
-    fprintf(out,"#define %sARG_FETCH %s = yypParser->%s\n",
+    fprintf(out,"#define %sARG_FETCH %s = this.%s\n",
                  name,lemp->arg,&lemp->arg[i]);  lineno++;
-    fprintf(out,"#define %sARG_STORE yypParser->%s = %s\n",
+    fprintf(out,"#define %sARG_STORE this.%s = %s\n",
                  name,&lemp->arg[i],&lemp->arg[i]);  lineno++;
   }else{
     fprintf(out,"#define %sARG_SDECL\n",name);  lineno++;
@@ -4290,7 +4290,7 @@ void ReportTable(
   fprintf(out, "};\n"); lineno++;
 
   /* Output the yy_reduce_ofst[] table */
-  fprintf(out, "private static final YY_REDUCE_USE_DFLT = (%d)\n", mnNtOfst-1); lineno++;
+  fprintf(out, "private static final int YY_REDUCE_USE_DFLT = (%d);\n", mnNtOfst-1); lineno++;
   n = lemp->nxstate;
   while( n>0 && lemp->sorted[n-1]->iNtOfst==NO_OFFSET ) n--;
   fprintf(out, "private static final int YY_REDUCE_COUNT = (%d);\n", n-1); lineno++;
@@ -4457,7 +4457,7 @@ void ReportTable(
     i += translate_code(lemp, rp);
   }
   if( i ){
-    fprintf(out,"        YYMINORTYPE yylhsminor;\n"); lineno++;
+    fprintf(out,"        //YYMINORTYPE yylhsminor;\n"); lineno++;
   }
   /* First output rules other than the default: rule */
   for(rp=lemp->rule; rp; rp=rp->next){
@@ -4524,34 +4524,28 @@ void ReportTable(
 /* Generate a header file for the parser */
 void ReportHeader(struct lemon *lemp)
 {
-  FILE *out, *in;
+  FILE *out;
   const char *prefix;
-  char line[LINESIZE];
-  char pattern[LINESIZE];
   int i;
 
   if( lemp->tokenprefix ) prefix = lemp->tokenprefix;
   else                    prefix = "";
-  in = file_open(lemp,".h","rb");
-  if( in ){
-    int nextChar;
-    for(i=1; i<lemp->nterminal && fgets(line,LINESIZE,in); i++){
-      lemon_sprintf(pattern,"#define %s%-30s %3d\n",
-                    prefix,lemp->symbols[i]->name,i);
-      if( strcmp(line,pattern) ) break;
-    }
-    nextChar = fgetc(in);
-    fclose(in);
-    if( i==lemp->nterminal && nextChar==EOF ){
-      /* No change in the file.  Don't rewrite it. */
-      return;
-    }
-  }
   out = file_open(lemp,".h","wb");
   if( out ){
+
+    fprintf(out,"public interface IToken {\n");
     for(i=1; i<lemp->nterminal; i++){
-      fprintf(out,"#define %s%-30s %3d\n",prefix,lemp->symbols[i]->name,i);
+      fprintf(out,"  int %s%-30s = %3d;\n",prefix,lemp->symbols[i]->name,i);
     }
+    fprintf(out,"  static String String(int token) {\n");
+    fprintf(out,"    switch(token) {\n");
+    for(i=1; i<lemp->nterminal; i++){
+      fprintf(out,"    case %-3d: return \"%s%s\";\n",i,prefix,lemp->symbols[i]->name);
+    }
+    fprintf(out,"    }\n");
+    fprintf(out,"    throw new AssertionError(String.format(\"Unexpected token: %%d\", token));\n");
+    fprintf(out,"  }\n");
+    fprintf(out,"}\n");
     fclose(out);
   }
   return;

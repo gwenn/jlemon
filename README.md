@@ -17,10 +17,6 @@ Files `lemon.c`, `lempar.c` are extracted from SQLite v3.18.0.
 > cpp -P <filename>.java
 ```
 
-## Unsupported
-
-* `-m` flag: "Output a makeheaders compatible file."
-
 ## TODO
 
 As there is no `union` in Java, `yy%d` fields of `YYMINORTYPE` have been replaced by `yy%d()` getters and `yy%d(%type value)` setters.

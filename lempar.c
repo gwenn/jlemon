@@ -31,13 +31,12 @@
 ***************** Begin makeheaders token definitions *************************/
 %%
 /**************** End makeheaders token definitions ***************************/
-// TODO
-//package ...;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.EmptyStackException;
 #ifndef NDEBUG
-import java.lang.StringBuilder
+import java.lang.StringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 #endif /* NDEBUG */
@@ -215,6 +214,9 @@ private static class yyStackEntry {
                          ** number for the token at this stack level */
   YYMINORTYPE minor;     /* The user-supplied minor token value.  This
                          ** is the value of the token  */
+  yyStackEntry() {
+    minor = new YYMINORTYPE();
+  }
 };
 
 /* The state of the parser is completely contained in an instance of
@@ -311,7 +313,7 @@ public yyParser() {
 #ifndef YYNOERRORRECOVERY
   yyerrcnt = -1;
 #endif
-  yystack.push(new yyStackEntry())
+  yystack.push(new yyStackEntry());
 }
 
 #ifndef Parse_ENGINEALWAYSONSTACK
@@ -570,9 +572,9 @@ private static class ruleInfoEntry {
   YYCODETYPE lhs;         /* Symbol on the left-hand side of the rule */
   byte nrhs;     /* Number of right-hand side symbols in the rule */
 
-  ruleInfoEntry(YYCODETYPE lhs, byte nrhs) {
-    this.lhs = lhs;
-    this.nrhs = nrhs;
+  ruleInfoEntry(int lhs, int nrhs) {
+    this.lhs = (YYCODETYPE)lhs;
+    this.nrhs = (byte)nrhs;
   }
 }
 private static final ruleInfoEntry
@@ -625,6 +627,7 @@ private void yy_reduce(
 #endif
   }
 
+  YYMINORTYPE yylhsminor = new YYMINORTYPE();
   switch( yyruleno ){
   /* Beginning here are the reduction cases.  A typical example
   ** follows:
@@ -733,7 +736,7 @@ void Parse(
   ParseTOKENTYPE yyminor       /* The value for the token */
   ParseARG_PDECL               /* Optional %extra_argument parameter */
 ){
-  YYMINORTYPE yyminorunion;
+  YYMINORTYPE yyminorunion = new YYMINORTYPE();
   int yyact;   /* The parser action. */
 #if !defined(YYERRORSYMBOL) && !defined(YYNOERRORRECOVERY)
   boolean yyendofinput;     /* True if we are at the end of input */
@@ -870,7 +873,7 @@ void Parse(
       cDiv = ' ';
     }
     msg.append(']');
-    logger.debug(msg);
+    logger.debug(msg.toString());
 #endif
   return;
 }
@@ -901,7 +904,7 @@ void Parse(
         times--;
       }
     }
-    E shift(int i) {
+    E peek(int i) {
       return get(size() - 1 + i);
     }
   }
