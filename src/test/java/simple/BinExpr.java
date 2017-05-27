@@ -1,13 +1,16 @@
 package simple;
 
 class BinExpr implements Expr {
-    final int op;
-    final Expr lhs;
-    final Expr rhs;
+    private final int op;
+    private final Expr lhs;
+    private final Expr rhs;
 
     BinExpr(int op, Expr lhs, Expr rhs) {
+        assert op > 0;
         this.op = op;
+        assert lhs != null;
         this.lhs = lhs;
+        assert rhs != null;
         this.rhs = rhs;
     }
 

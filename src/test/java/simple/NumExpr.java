@@ -1,7 +1,7 @@
 package simple;
 
 class NumExpr implements Expr {
-    final int value;
+    private final int value;
 
     NumExpr(int value) {
         this.value = value;
