@@ -4062,7 +4062,7 @@ void ReportTable(
 
   in = tplt_open(lemp);
   if( in==0 ) return;
-  out = file_open(lemp,".java","wb");
+  out = file_open(lemp,".j","wb");
   if( out==0 ){
     fclose(in);
     return;

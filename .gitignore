@@ -6,3 +6,4 @@ jlemon.dSYM/
 *.h
 *.y
 *.out
+*.j

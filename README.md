@@ -14,7 +14,7 @@ Files `lemon.c`, `lempar.c` are extracted from SQLite v3.18.0.
 > # run
 > jlemon <filename>.y
 > # preprocess generated code
-> cpp -P <filename>.java
+> cpp -P <filename>.j > yyParser.java
 ```
 
 ## Hack
