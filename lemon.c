@@ -4553,17 +4553,17 @@ void ReportHeader(struct lemon *lemp)
   out = file_open(lemp,".h","wb");
   if( out ){
 
-    fprintf(out,"public interface IToken {\n");
+    fprintf(out,"public interface TokenType {\n");
     for(i=1; i<lemp->nterminal; i++){
       fprintf(out,"  int %s%-30s = %3d;\n",prefix,lemp->symbols[i]->name,i);
     }
-    fprintf(out,"  static String String(int token) {\n");
-    fprintf(out,"    switch(token) {\n");
+    fprintf(out,"  static String String(int tokenType) {\n");
+    fprintf(out,"    switch(tokenType) {\n");
     for(i=1; i<lemp->nterminal; i++){
       fprintf(out,"    case %-3d: return \"%s%s\";\n",i,prefix,lemp->symbols[i]->name);
     }
     fprintf(out,"    }\n");
-    fprintf(out,"    throw new AssertionError(String.format(\"Unexpected token: %%d\", token));\n");
+    fprintf(out,"    throw new AssertionError(String.format(\"Unexpected token type: %%d\", tokenType));\n");
     fprintf(out,"  }\n");
     fprintf(out,"}\n");
     fclose(out);
