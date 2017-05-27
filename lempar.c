@@ -228,7 +228,7 @@ private static class yyStackEntry {
 #ifndef YYNOERRORRECOVERY
   private int yyerrcnt;                 /* Shifts left before out of the error */
 #endif
-  ParseARG_SDECL                /* A place to hold %extra_argument */
+  private ParseARG_SDECL                /* A place to hold %extra_argument */
 #if YYSTACKDEPTH<=0
   //int yystksz;                  /* Current side of the stack */
   private final Stack<yyStackEntry> yystack;        /* The parser's stack */
@@ -593,7 +593,6 @@ private void yy_reduce(
   int yyact;                      /* The next action */
   yyStackEntry yymsp;             /* The top of the parser's stack */
   int yysize;                     /* Amount to pop the stack */
-  yymsp = yystack.peek();
 #ifndef NDEBUG
   if( yyruleno<yyRuleName.length ){
     yysize = yyRuleInfo[yyruleno].nrhs;
@@ -640,7 +639,7 @@ private void yy_reduce(
 /********** Begin reduce actions **********************************************/
 %%
 /********** End reduce actions ************************************************/
-  };
+  }
   assert( yyruleno<yyRuleInfo.length );
   yygoto = yyRuleInfo[yyruleno].lhs;
   yysize = yyRuleInfo[yyruleno].nrhs;
@@ -875,7 +874,6 @@ void Parse(
     msg.append(']');
     logger.debug(msg.toString());
 #endif
-  return;
 }
 
   private static class Stack<E> extends ArrayList<E> {
