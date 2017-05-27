@@ -381,7 +381,7 @@ private void yy_pop_parser_stack(){
 ** Clear all secondary memory allocations from the parser
 */
 public void ParseFinalize(){
-  while( !yystack.isEmpty() ) yy_pop_parser_stack();
+  while( yystack.size() > 1 ) yy_pop_parser_stack();
 }
 
 #ifndef Parse_ENGINEALWAYSONSTACK
@@ -501,7 +501,7 @@ private void yyStackOverflow(){
 #ifndef NDEBUG
      logger.error("Stack Overflow!");
 #endif
-   while( !yystack.isEmpty() ) yy_pop_parser_stack();
+   while( yystack.size() > 1 ) yy_pop_parser_stack();
    /* Here code is inserted which will execute if the parser
    ** stack every overflows */
 /******** Begin %stack_overflow code ******************************************/
@@ -515,11 +515,11 @@ private void yyStackOverflow(){
 #ifndef NDEBUG
 private void yyTraceShift(int yyNewState){
     if( yyNewState<YYNSTATE ){
-      logger.trace("Shift '{}', go to state {}",
+      logger.debug("Shift '{}', go to state {}",
          yyTokenName[yystack.peek().major],
          yyNewState);
     }else{
-      logger.trace("Shift '{}'",
+      logger.debug("Shift '{}'",
          yyTokenName[yystack.peek().major]);
     }
 }
@@ -539,7 +539,7 @@ private void yy_shift(
 #ifdef YYTRACKMAXSTACKDEPTH
   if( yystack.size()>yyhwm ){
     yyhwm++;
-    assert( yyhwm == yystack.size()+1 );
+    assert( yyhwm == yystack.size() );
   }
 #endif
 #if YYSTACKDEPTH>0 
@@ -609,11 +609,11 @@ private void yy_reduce(
 #ifdef YYTRACKMAXSTACKDEPTH
     if( yystack.size()>yyhwm ){
       yyhwm++;
-      assert( yyhwm == yystack.size()+1);
+      assert( yyhwm == yystack.size() );
     }
 #endif
 #if YYSTACKDEPTH>0 
-    if( yystack.size() >= YYSTACKDEPTH-1 ){
+    if( yystack.size() >= YYSTACKDEPTH ){
       yyStackOverflow();
       return;
     }
@@ -671,7 +671,7 @@ private void yy_parse_failed(
 #ifndef NDEBUG
     logger.error("Fail!");
 #endif
-  while( !yystack.isEmpty() ) yy_pop_parser_stack();
+  while( yystack.size() > 1 ) yy_pop_parser_stack();
   /* Here code is inserted which will be executed whenever the
   ** parser fails */
 /************ Begin %parse_failure code ***************************************/
@@ -745,7 +745,7 @@ void Parse(
   boolean yyerrorhit = false;   /* True if yymajor has invoked an error */
 #endif
 
-  assert( yystack.size() != 0 );
+  assert( yystack.peek() != null );
 #if !defined(YYERRORSYMBOL) && !defined(YYNOERRORRECOVERY)
   yyendofinput = (yymajor==0);
 #endif
@@ -863,7 +863,7 @@ void Parse(
       yymajor = YYNOCODE;
 #endif
     }
-  }while( yymajor!=YYNOCODE && !yystack.isEmpty() );
+  }while( yymajor!=YYNOCODE && yystack.size() > 1 );
 #ifndef NDEBUG
     int i;
     char cDiv = '[';
@@ -899,7 +899,7 @@ void Parse(
       return get(size() - 1);
     }
     void popN(int times) {
-      while (times > 0 && !isEmpty()) {
+      while (times > 0/* && !isEmpty()*/) {
         pop();
         times--;
       }

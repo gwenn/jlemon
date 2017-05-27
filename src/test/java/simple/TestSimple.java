@@ -18,6 +18,6 @@ public class TestSimple {
         p.Parse(0, 0, r);
         p.ParseFinalize();
 
-        assertEquals("(5 + (10 * 4))", r.expr.String());
+        assertEquals("(5 PLUS (10 TIMES 4))", r.expr.String());
     }
 }

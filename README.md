@@ -17,7 +17,7 @@ Files `lemon.c`, `lempar.c` are extracted from SQLite v3.18.0.
 > cpp -P <filename>.java
 ```
 
-## TODO
+## Hack
 
 As there is no `union` in Java, `yy%d` fields of `YYMINORTYPE` have been replaced by `yy%d()` getters and `yy%d(%type value)` setters.
-But when translating code (see `translate_code`), I don't know how to make the difference between a read access to a `yy%d` field and a write access.
+But when translating code (see `translate_code`), the logic used to make the difference between a read access to a `yy%d` field and a write access is fallible.

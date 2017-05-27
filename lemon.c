@@ -3558,6 +3558,8 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
   char used[MAXRHS];     /* True for each RHS element which is used */
   char zLhs[50];         /* Convert the LHS symbol into this string */
   char zOvwrt[900];      /* Comment that to allow LHS to overwrite RHS */
+  char lhsaccess = 0;
+  char lhswrite = 0;
 
   for(i=0; i<rp->nrhs; i++) used[i] = 0;
   lhsused = 0;
@@ -3637,9 +3639,10 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
       saved = *xp;
       *xp = 0;
       if( rp->lhsalias && strcmp(cp,rp->lhsalias)==0 ){
-        append_str(zLhs,0,0,0); // FIXME getter zLhs => zLhs() vs setter zLhs = ... => zLhs(...)
+        append_str(zLhs,0,0,0);
         cp = xp;
         lhsused = 1;
+        lhsaccess = 1;
       }else{
         for(i=0; i<rp->nrhs; i++){
           if( rp->rhsalias[i] && strcmp(cp,rp->rhsalias[i])==0 ){
@@ -3669,6 +3672,23 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
         }
       }
       *xp = saved;
+    }else if( lhsaccess ){
+      if( cp[0] == '=' ){
+        lhswrite = cp[1] != '=';
+        lhsaccess = 0;
+        if( lhswrite ) {
+          append_str("(",0,0,0);
+          continue;
+        }
+      }else if ( !ISSPACE(*cp) ){
+        append_str("()",0,0,0);
+        lhsaccess = 0;
+      }
+    }else if( lhswrite ){
+      if( cp[0] == ';' ){
+        append_str(")",0,0,0);
+        lhswrite = 0;
+      }
     }
     append_str(cp, 1, 0, 0);
   } /* End loop */
