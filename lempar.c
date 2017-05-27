@@ -301,7 +301,9 @@ private boolean yyGrowStack(){
 
 /* Initialize a new parser that has already been allocated.
 */
-public yyParser() {
+public yyParser(
+  ParseARG_PDECL               /* Optional %extra_argument parameter */
+  ) {
 #ifdef YYTRACKMAXSTACKDEPTH
   yyhwm = 0;
 #endif
@@ -314,6 +316,7 @@ public yyParser() {
   yyerrcnt = -1;
 #endif
   yystack.push(new yyStackEntry());
+  ParseARG_STORE;
 }
 
 #ifndef Parse_ENGINEALWAYSONSTACK
@@ -730,10 +733,9 @@ private void yy_accept(
 ** Outputs:
 ** None.
 */
-void Parse(
+public void Parse(
   int yymajor,                 /* The major token code number */
   ParseTOKENTYPE yyminor       /* The value for the token */
-  ParseARG_PDECL               /* Optional %extra_argument parameter */
 ){
   YYMINORTYPE yyminorunion = new YYMINORTYPE();
   int yyact;   /* The parser action. */
@@ -748,7 +750,6 @@ void Parse(
 #if !defined(YYERRORSYMBOL) && !defined(YYNOERRORRECOVERY)
   yyendofinput = (yymajor==0);
 #endif
-  ParseARG_STORE;
 
 #ifndef NDEBUG
     logger.debug("Input '{}'",yyTokenName[yymajor]);
