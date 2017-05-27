@@ -3948,11 +3948,11 @@ void print_stack_union(
   fprintf(out,"    yy0,\n"); lineno++;
   for(i=0; i<arraysize; i++){
     if( types[i]==0 ) continue;
-    fprintf(out,"  yy%d,\n",i+1); lineno++;
+    fprintf(out,"    yy%d,\n",i+1); lineno++;
     free(types[i]);
   }
   if( lemp->errsym->useCnt ){
-    fprintf(out,"  yy%d,\n",lemp->errsym->dtnum); lineno++;
+    fprintf(out,"    yy%d,\n",lemp->errsym->dtnum); lineno++;
   }
   fprintf(out,"  }\n"); lineno++;
   free(stddt);

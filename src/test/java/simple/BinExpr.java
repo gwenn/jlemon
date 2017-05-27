@@ -13,6 +13,6 @@ class BinExpr implements Expr {
 
     @Override
     public String String() {
-        return String.format("(%s %s %s)", lhs.String(), IToken.String(op), rhs.String());
+        return String.format("(%s %s %s)", lhs.String(), TokenType.String(op), rhs.String());
     }
 }
