@@ -94,11 +94,6 @@ abstract class Scanner {
     return tokenType;
   }
 
-  /** @return Text of the token. */
-  String text() {
-    return new String(buf, start, end - start);
-  }
-
   private void read() throws ScanException {
     // Must read more data.
     // First, shift data to beginning of buffer if there's lots of empty space
@@ -148,6 +143,20 @@ abstract class Scanner {
 
   boolean atEndOfFile() {
     return eof;
+  }
+
+  int length() {
+    return end - start;
+  }
+
+  String subSequence(int start, int end) {
+    if (start < 0 || end < 0 || start > end || end > this.end) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (start == end) {
+      return "";
+    }
+    return new String(buf, /*this.start + */start, end - start);
   }
 
   /** Used by {@link #split} function to advance the input.
