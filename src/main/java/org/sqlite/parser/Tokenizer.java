@@ -214,7 +214,7 @@ class Tokenizer extends Scanner {
             c = data[i];
             i++;
           }
-          if (data[i] == '/') {
+          if (i < end && data[i] == '/') {
             advance(i+1);
             return 0;
           } else if (atEOF) {
@@ -355,7 +355,7 @@ class Tokenizer extends Scanner {
       if (c == ']') {
         advance(i+1);
         tokenStart=start; // do not include the '['/']' in the token
-        tokenEnd=i-1;
+        tokenEnd=i;
         return TK_ID;
       } else if (atEOF) {
         throw new ScanException(ErrorCode.UnterminatedBracket);
@@ -366,7 +366,6 @@ class Tokenizer extends Scanner {
       if (i < end || atEOF) {
         advance(i);
         tokenStart=start; // do not include the '?' in the token
-        tokenEnd=i-1;
         return TK_VARIABLE;
       } // else ask more data
     } else if (c == '$' || c == '@' || c == '#' || c == ':') {
@@ -378,7 +377,6 @@ class Tokenizer extends Scanner {
         }
         advance(i);
         // '$' is included as part of the name
-        tokenEnd=i-1;
         return TK_VARIABLE;
       } // else ask more data
     } else if (isIdentifierStart(c)) {
@@ -505,7 +503,7 @@ class Tokenizer extends Scanner {
       }
       int i;
       for (i = start; i < end && isDigit(data[i]); i++) {}
-      if (i < end) {
+      if (i < end || atEOF) {
         // Must not be empty
         if (i == start) {
             throw new ScanException(ErrorCode.BadNumber);
@@ -516,12 +514,10 @@ class Tokenizer extends Scanner {
         advance(i);
         return TK_FLOAT;
       }
-    }
-    if (atEOF) {
+    } else if (atEOF) {
       throw new ScanException(ErrorCode.BadNumber);
-    } else {
-      return 0; // ask more data
     }
+    return 0; // ask more data
   }
 
   /**
@@ -539,7 +535,7 @@ class Tokenizer extends Scanner {
       }
       advance(i+1);
       tokenStart=start+1;
-      tokenEnd=i-1;
+      tokenEnd=i;
       return TK_BLOB;
     } else if (atEOF) {
       throw new ScanException(ErrorCode.MalformedBlobLiteral);
