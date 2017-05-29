@@ -338,7 +338,7 @@ class Tokenizer extends Scanner {
     } else if (c == '.') {
       if (start < end) {
         if (isDigit(data[start])) {
-          return fractional_part(data, start, end, atEOF);
+          return fractionalPart(data, start, end, atEOF);
         } else {
           advance(start);
           return TK_DOT;
@@ -383,7 +383,7 @@ class Tokenizer extends Scanner {
       if (c == 'x' || c == 'X') {
         if (start < end) {
           if (data[start] == '\'') {
-            return blob_literal(data, start, end, atEOF);
+            return blobLiteral(data, start, end, atEOF);
           } else {
             return identifierish(data, start, end, atEOF);
           }
@@ -408,7 +408,7 @@ class Tokenizer extends Scanner {
     if (data[start-1] == '0') {
       if (start < end) {
         if (data[start] == 'x' || data[start] == 'X') {
-          return hex_integer(data, start+1, end, atEOF);
+          return hexInteger(data, start+1, end, atEOF);
         }
       } else if (atEOF) {
         advance(start);
@@ -422,9 +422,9 @@ class Tokenizer extends Scanner {
     for (i = start; i < end && isDigit(data[i]); i++) {}
     if (i < end) {
       if (data[i] == '.') {
-        return fractional_part(data, i+1, end, atEOF);
+        return fractionalPart(data, i+1, end, atEOF);
       } else if (data[i] == 'e' || data[i] == 'E') {
-        return exponential_part(data, i+1, end, atEOF);
+        return exponentialPart(data, i+1, end, atEOF);
       } else if (isIdentifierStart(data[i])) {
         throw new ScanException(ErrorCode.BadNumber);
       }
@@ -441,7 +441,7 @@ class Tokenizer extends Scanner {
    * data[start-2] is a zero
    * data[start-1] is a 'x' or a 'X'
    */
-  private int hex_integer(char[] data, int start, int end, boolean atEOF) throws ScanException {
+  private int hexInteger(char[] data, int start, int end, boolean atEOF) throws ScanException {
     int i;
     for (i = start; i < end && isHexaDigit(data[i]); i++) {}
     if (i < end) {
@@ -473,12 +473,12 @@ class Tokenizer extends Scanner {
    * (data[start-2] is a digit,
    * data[start-1] is a dot)
    */
-  private int fractional_part(char[] data, int start, int end, boolean atEOF) throws ScanException {
+  private int fractionalPart(char[] data, int start, int end, boolean atEOF) throws ScanException {
     int i;
     for (i = start; i < end && isDigit(data[i]); i++) {}
     if (i < end) {
       if (data[i] == 'e' || data[i] == 'E') {
-        return exponential_part(data, i+1, end, atEOF);
+        return exponentialPart(data, i+1, end, atEOF);
       } else if (isIdentifierStart(data[i])) {
         throw new ScanException(ErrorCode.BadNumber);
       }
@@ -496,7 +496,7 @@ class Tokenizer extends Scanner {
    * data[start-2] is a digit,
    * data[start-1] is a 'e' or a 'E'
    */
-  private int exponential_part(char[] data, int start, int end, boolean atEOF) throws ScanException {
+  private int exponentialPart(char[] data, int start, int end, boolean atEOF) throws ScanException {
     if (start < end) {
       if (data[start] == '+' || data[start] == '-') {
         start++;
@@ -524,7 +524,7 @@ class Tokenizer extends Scanner {
    * data[start-1] is a 'x' or 'X'
    * data[start] is a '\''
    */
-  private int blob_literal(char[] data, int start, int end, boolean atEOF) throws ScanException {
+  private int blobLiteral(char[] data, int start, int end, boolean atEOF) throws ScanException {
     int i, n = 0;
     for (i = start + 1; i < end && isHexaDigit(data[i]); i++) {
       n++;

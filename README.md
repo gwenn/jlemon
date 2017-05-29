@@ -36,10 +36,10 @@ public class yyParser {
   ) {
     // constructor
   }
-  public void ParseFinalize() {
+  public void ParseFinalize() {  /* or can be renamed to %nameFinalize */
     // optional (clean the stack)
   }
-  public void Parse(
+  public void Parse(             /* or can be renamed to %name */
     int yymajor,                 /* The major token code number */
     ParseTOKENTYPE yyminor       /* The value for the token */
   ){

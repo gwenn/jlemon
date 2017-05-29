@@ -129,18 +129,6 @@ abstract class Scanner {
     }
   }
 
-  char peek() throws ScanException {
-    while (true) {
-      if (end > start) {
-        return buf[start];
-      }
-      if (eof) {
-        return 0;
-      }
-      read();
-    }
-  }
-
   boolean atEndOfFile() {
     return eof;
   }

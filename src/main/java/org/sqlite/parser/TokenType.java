@@ -148,7 +148,7 @@ public interface TokenType {
   int TK_INDEX                          = 140;
   int TK_ALTER                          = 141;
   int TK_ADD                            = 142;
-  static String String(int tokenType) {
+  static String toString(int tokenType) {
     switch(tokenType) {
     case 1  : return "TK_SEMI";
     case 2  : return "TK_EXPLAIN";

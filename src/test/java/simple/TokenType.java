@@ -11,7 +11,7 @@ public interface TokenType {
   int DIVIDE                         =   3;
   int TIMES                          =   4;
   int INTEGER                        =   5;
-  static String String(int token) {
+  static String toString(int token) {
     switch(token) {
     case 1  : return "PLUS";
     case 2  : return "MINUS";

@@ -4557,7 +4557,7 @@ void ReportHeader(struct lemon *lemp)
     for(i=1; i<lemp->nterminal; i++){
       fprintf(out,"  int %s%-30s = %3d;\n",prefix,lemp->symbols[i]->name,i);
     }
-    fprintf(out,"  static String String(int tokenType) {\n");
+    fprintf(out,"  static String toString(int tokenType) {\n");
     fprintf(out,"    switch(tokenType) {\n");
     for(i=1; i<lemp->nterminal; i++){
       fprintf(out,"    case %-3d: return \"%s%s\";\n",i,prefix,lemp->symbols[i]->name);
