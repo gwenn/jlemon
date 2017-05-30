@@ -32,7 +32,6 @@
 %%
 /**************** End makeheaders token definitions ***************************/
 
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
 #ifndef NDEBUG
