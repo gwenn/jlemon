@@ -15,9 +15,9 @@ public class QualifiedName implements ToSql {
 
 	public void toSql(Appendable a) throws IOException {
 		if (dbName != null) {
-			a.append(dbName);
+			doubleQuote(a, dbName);
 			a.append('.');
 		}
-		a.append(name);
+		doubleQuote(a, name);
 	}
 }

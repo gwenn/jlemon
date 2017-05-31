@@ -10,8 +10,9 @@ public class Analyze implements Stmt {
 	}
 
 	public void toSql(Appendable a) throws IOException {
-		a.append("ANALYZE ");
+		a.append("ANALYZE");
 		if (objName != null) {
+			a.append(' ');
 			objName.toSql(a);
 		}
 	}
