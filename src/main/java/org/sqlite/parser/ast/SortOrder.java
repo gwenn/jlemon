@@ -6,6 +6,7 @@ public enum SortOrder implements ToSql {
 	Asc,
 	Desc;
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		if (Asc == this) {
 			a.append("ASC");

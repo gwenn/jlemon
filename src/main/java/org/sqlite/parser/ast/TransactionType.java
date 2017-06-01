@@ -7,6 +7,7 @@ public enum TransactionType implements ToSql {
 	Immediate,
 	Exclusive;
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		if (Deferred == this) {
 			a.append("DEFERRED");

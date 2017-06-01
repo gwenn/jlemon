@@ -11,6 +11,7 @@ public class AlterTable implements Stmt {
 		this.tblName = requireNonNull(tblName);
 	}
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		a.append("ALTER TABLE ");
 		tblName.toSql(a);

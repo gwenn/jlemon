@@ -13,6 +13,7 @@ public class QualifiedName implements ToSql {
 		this.name = requireNonNull(name);
 	}
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		if (dbName != null) {
 			doubleQuote(a, dbName);

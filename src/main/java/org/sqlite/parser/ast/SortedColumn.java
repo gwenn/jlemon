@@ -13,6 +13,7 @@ public class SortedColumn implements ToSql {
 		this.order = order;
 	}
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		name.toSql(a);
 		if (order != null) {

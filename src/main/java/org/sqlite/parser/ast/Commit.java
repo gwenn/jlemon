@@ -9,6 +9,7 @@ public class Commit implements Stmt {
 		this.name = name;
 	}
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		a.append("COMMIT");
 		if (name != null) {

@@ -11,6 +11,7 @@ public class Begin implements Stmt {
 		this.name = name;
 	}
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		a.append("BEGIN");
 		if (type != null) {

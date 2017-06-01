@@ -13,11 +13,13 @@ public class Cmd implements ToSql {
 		this.stmt = requireNonNull(stmt);
 	}
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		if (explain != null) {
 			a.append(explain);
 			a.append(' ');
 		}
 		stmt.toSql(a);
+		a.append(';');
 	}
 }

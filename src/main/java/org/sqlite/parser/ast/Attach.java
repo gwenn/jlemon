@@ -15,6 +15,7 @@ public class Attach implements Stmt {
 		this.key = key;
 	}
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		a.append("ATTACH ");
 		expr.toSql(a);

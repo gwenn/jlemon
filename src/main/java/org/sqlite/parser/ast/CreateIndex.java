@@ -27,6 +27,7 @@ public class CreateIndex implements Stmt {
 		this.whereClause = whereClause;
 	}
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		a.append("CREATE ");
 		if (unique) {
