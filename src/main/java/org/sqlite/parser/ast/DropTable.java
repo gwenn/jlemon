@@ -1,9 +1,6 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
-import java.util.List;
-
-import static java.util.Objects.requireNonNull;
 
 public class DropTable extends Drop {
 

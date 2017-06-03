@@ -2,8 +2,6 @@ package org.sqlite.parser;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
