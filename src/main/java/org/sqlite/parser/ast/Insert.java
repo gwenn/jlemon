@@ -40,7 +40,7 @@ public class Insert implements Stmt {
 		}
 		a.append(" INTO ");
 		tblName.toSql(a);
-		if (columns != null) {
+		if (columns != null && !columns.isEmpty()) {
 			a.append(" (");
 			commaNames(a, columns);
 			a.append(") ");

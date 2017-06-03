@@ -54,7 +54,7 @@ public class Update implements Stmt {
 			a.append(" WHERE ");
 			whereClause.toSql(a);
 		}
-		if (orderBy != null) {
+		if (orderBy != null && !orderBy.isEmpty()) {
 			a.append(" ORDER BY ");
 			comma(a, orderBy);
 		}

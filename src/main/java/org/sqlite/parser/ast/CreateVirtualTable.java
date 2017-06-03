@@ -31,7 +31,7 @@ public class CreateVirtualTable implements Stmt {
 		a.append("USING ");
 		doubleQuote(a, moduleName);
 		if (args != null && !args.isEmpty()) {
-			a.append(" (");
+			a.append('(');
 			comma(a, args);
 			a.append(')');
 		}

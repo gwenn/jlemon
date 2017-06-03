@@ -2,8 +2,6 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
-import static java.util.Objects.requireNonNull;
-
 public enum ResolveType implements ToSql {
 	Rollback,
 	Abort,

@@ -19,4 +19,5 @@ public enum TriggerEvent implements ToSql {
 		} else if (UpdateOf == this) {
 			a.append("UPDATE OF");
 		}
-	}}
+	}
+}
