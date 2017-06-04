@@ -24,6 +24,9 @@ public class CreateIndex implements Stmt {
 		this.idxName = requireNonNull(idxName);
 		this.tblName = requireNonNull(tblName);
 		this.columns = requireNonNull(columns);
+		if (columns.isEmpty()) {
+			throw new IllegalArgumentException("No columns");
+		}
 		this.whereClause = whereClause;
 	}
 

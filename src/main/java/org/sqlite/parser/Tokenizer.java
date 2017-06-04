@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static java.lang.Character.isWhitespace;
+import static org.sqlite.parser.Identifier.isIdentifierContinue;
+import static org.sqlite.parser.Identifier.isIdentifierStart;
 import static org.sqlite.parser.TokenType.*;
 
 /**
@@ -594,14 +596,5 @@ class Tokenizer extends Scanner {
 
   private static boolean isHexaDigit(char c) {
     return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
-  }
-
-  private static boolean isIdentifierStart(char c) {
-    return (c >= 'A' && c <= 'Z') || c == '_' || (c >= 'a' && c <= 'z') || c > 0x7F;
-  }
-
-  private static boolean isIdentifierContinue(char c) {
-    return c == '$' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || c == '_' ||
-      (c >= 'a' && c <= 'z') || c > 0x7F;
   }
 }

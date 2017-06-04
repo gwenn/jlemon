@@ -10,11 +10,16 @@ public class AlterTable implements Stmt {
 	public final ColumnDefinition colDefinition;
 
 	public AlterTable(QualifiedName tblName,
-			String renameTo,
+			String renameTo) {
+		this.tblName = requireNonNull(tblName);
+		this.renameTo = requireNonNull(renameTo);
+		this.colDefinition = null;
+	}
+	public AlterTable(QualifiedName tblName,
 			ColumnDefinition colDefinition) {
 		this.tblName = requireNonNull(tblName);
-		this.renameTo = renameTo;
-		this.colDefinition = colDefinition;
+		this.renameTo = null;
+		this.colDefinition = requireNonNull(colDefinition);
 	}
 
 	@Override
