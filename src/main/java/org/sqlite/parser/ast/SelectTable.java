@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+// Sum Type: table vs table call vs select vs sub select
 public class SelectTable implements ToSql {
 	public final QualifiedName tblName;
 	public final Indexed indexed;

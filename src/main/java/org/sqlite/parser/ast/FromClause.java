@@ -20,6 +20,7 @@ public class FromClause implements ToSql {
 		select.toSql(a);
 		if (joins != null) {
 			for (JoinedSelectTable join : joins) {
+				a.append(' ');
 				join.toSql(a);
 			}
 		}

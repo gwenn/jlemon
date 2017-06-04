@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+// Sum Type: Expr vs Star vs TableStar
 public class ResultColumn implements ToSql {
 	public final Expr expr;
 	public final As as;

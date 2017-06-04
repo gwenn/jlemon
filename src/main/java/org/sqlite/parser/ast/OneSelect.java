@@ -5,6 +5,7 @@ import java.util.List;
 
 import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
+// Sum Type: Select vs Values
 public class OneSelect implements ToSql {
 	public final Distinctness distinctness;
 	public final List<ResultColumn> columns;

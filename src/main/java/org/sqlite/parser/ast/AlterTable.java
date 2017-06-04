@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+// Sum Type: rename vs add column
 public class AlterTable implements Stmt {
 	public final QualifiedName tblName;
 	public final String renameTo;

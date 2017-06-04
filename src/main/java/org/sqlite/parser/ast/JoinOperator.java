@@ -2,6 +2,7 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
+// Sum Type: comma vs typed join
 public class JoinOperator implements ToSql {
 	public final boolean comma;
 	public final boolean natural;

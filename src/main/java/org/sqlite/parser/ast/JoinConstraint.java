@@ -6,6 +6,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
+// Sum Type: on vs using
 public class JoinConstraint implements ToSql {
 	public final Expr on;
 	public final List<String> colNames;
