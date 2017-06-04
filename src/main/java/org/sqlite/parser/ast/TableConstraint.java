@@ -3,10 +3,10 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 
 // Sum Type
-public abstract class ColumnConstraint implements ToSql {
+public abstract class TableConstraint implements ToSql {
 	public final String name;
 
-	ColumnConstraint(String name) {
+	TableConstraint(String name) {
 		this.name = name;
 	}
 

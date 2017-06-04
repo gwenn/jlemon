@@ -8,14 +8,16 @@ public class CreateTable implements Stmt {
 	public final boolean temporary;
 	public final boolean ifNotExists;
 	public final QualifiedName tblName;
-	// TODO body
+	public final CreateTableBody body;
 
 	public CreateTable(boolean temporary,
 			boolean ifNotExists,
-			QualifiedName tblName) {
+			QualifiedName tblName,
+			CreateTableBody body) {
 		this.temporary = temporary;
 		this.ifNotExists = ifNotExists;
 		this.tblName = requireNonNull(tblName);
+		this.body = requireNonNull(body);
 	}
 
 	@Override
@@ -29,5 +31,6 @@ public class CreateTable implements Stmt {
 			a.append("IF NOT EXISTS ");
 		}
 		tblName.toSql(a);
+		body.toSql(a);
 	}
 }
