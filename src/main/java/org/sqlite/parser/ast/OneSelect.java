@@ -3,7 +3,7 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 import java.util.List;
 
-import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class OneSelect implements ToSql {
 	public final Distinctness distinctness;
@@ -20,7 +20,7 @@ public class OneSelect implements ToSql {
 			Expr whereClause,
 			GroupBy groupBy) {
 		this.distinctness = distinctness;
-		this.columns = requireNonNull(columns);
+		this.columns = requireNotEmpty(columns);
 		this.from = from;
 		this.whereClause = whereClause;
 		this.groupBy = groupBy;
@@ -32,7 +32,7 @@ public class OneSelect implements ToSql {
 		this.from = null;
 		this.whereClause = null;
 		this.groupBy = null;
-		this.values = requireNonNull(values);
+		this.values = requireNotEmpty(values);
 	}
 
 	@Override
@@ -61,7 +61,7 @@ public class OneSelect implements ToSql {
 			from.toSql(a);
 		}
 		if (whereClause != null) {
-			a.append(' ');
+			a.append(" WHERE ");
 			whereClause.toSql(a);
 		}
 		if (groupBy != null) {

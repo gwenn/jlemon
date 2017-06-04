@@ -66,4 +66,14 @@ public interface ToSql {
 			doubleQuote(a, names.get(i));
 		}
 	}
+
+	static <T> List<T> requireNotEmpty(List<T> list) {
+		if (list == null) {
+			throw new NullPointerException();
+		}
+		if (list.isEmpty()) {
+			throw new IllegalArgumentException("empty list");
+		}
+		return list;
+	}
 }

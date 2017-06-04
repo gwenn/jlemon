@@ -18,9 +18,9 @@ public class SelectBody implements ToSql {
 	public void toSql(Appendable a) throws IOException {
 		select.toSql(a);
 		if (compounds != null && !compounds.isEmpty()) {
-			for (int i = 0; i < compounds.size(); i++) {
+			for (CompoundSelect compound : compounds) {
 				a.append(' ');
-				compounds.get(i).toSql(a);
+				compound.toSql(a);
 			}
 		}
 	}

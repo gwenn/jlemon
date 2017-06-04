@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class Update implements Stmt {
 	public final With with;
@@ -27,7 +28,7 @@ public class Update implements Stmt {
 		this.orConflict = orConflict;
 		this.tblName = requireNonNull(tblName);
 		this.indexed = indexed;
-		this.sets = requireNonNull(sets);
+		this.sets = requireNotEmpty(sets);
 		this.whereClause = whereClause;
 		this.orderBy = orderBy;
 		this.limit = limit;

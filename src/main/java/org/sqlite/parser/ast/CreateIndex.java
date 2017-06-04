@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class CreateIndex implements Stmt {
 	public final boolean unique;
@@ -23,10 +24,7 @@ public class CreateIndex implements Stmt {
 		this.ifNotExists = ifNotExists;
 		this.idxName = requireNonNull(idxName);
 		this.tblName = requireNonNull(tblName);
-		this.columns = requireNonNull(columns);
-		if (columns.isEmpty()) {
-			throw new IllegalArgumentException("No columns");
-		}
+		this.columns = requireNotEmpty(columns);
 		this.whereClause = whereClause;
 	}
 
