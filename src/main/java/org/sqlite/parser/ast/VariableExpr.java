@@ -4,15 +4,15 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
-public class LiteralExpr implements Expr {
-	public final String value;
+public class VariableExpr implements Expr {
+	public final String variable;
 
-	public LiteralExpr(String value) {
-		this.value = requireNonNull(value);
+	public VariableExpr(String variable) {
+		this.variable = requireNonNull(variable);
 	}
 
 	@Override
 	public void toSql(Appendable a) throws IOException {
-		singleQuote(a, value);
+		a.append(variable);
 	}
 }

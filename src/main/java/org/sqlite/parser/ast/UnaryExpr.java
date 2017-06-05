@@ -4,16 +4,19 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
-public class IsNullExpr implements Expr {
+public class UnaryExpr implements Expr {
+	public final Operator op;
 	public final Expr expr;
 
-	public IsNullExpr(Expr expr) {
+	public UnaryExpr(Operator op, Expr expr) {
+		this.op = op;
 		this.expr = requireNonNull(expr);
 	}
 
 	@Override
 	public void toSql(Appendable a) throws IOException {
+		op.toSql(a);
+		a.append(' ');
 		expr.toSql(a);
-		a.append("ISNULL");
 	}
 }

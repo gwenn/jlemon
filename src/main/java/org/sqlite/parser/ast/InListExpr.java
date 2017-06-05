@@ -5,7 +5,6 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
-import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class InListExpr implements Expr {
 	public final Expr lhs;
