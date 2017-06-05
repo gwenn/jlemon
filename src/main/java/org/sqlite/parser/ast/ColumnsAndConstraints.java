@@ -3,6 +3,7 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 import java.util.List;
 
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class ColumnsAndConstraints implements CreateTableBody {
@@ -20,7 +21,7 @@ public class ColumnsAndConstraints implements CreateTableBody {
 	public void toSql(Appendable a) throws IOException {
 		a.append('(');
 		comma(a, columns);
-		if (constraints != null && !constraints.isEmpty()) {
+		if (isNotEmpty(constraints)) {
 			a.append(", ");
 			comma(a, constraints);
 		}

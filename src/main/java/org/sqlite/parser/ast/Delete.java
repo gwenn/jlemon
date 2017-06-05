@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class Delete implements Stmt {
 	public final With with;
@@ -42,7 +43,7 @@ public class Delete implements Stmt {
 			a.append(" WHERE ");
 			whereClause.toSql(a);
 		}
-		if (orderBy != null && !orderBy.isEmpty()) {
+		if (isNotEmpty(orderBy)) {
 			a.append(" ORDER BY ");
 			comma(a, orderBy);
 		}

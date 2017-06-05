@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class Select implements Stmt, TriggerCmd {
 	public final With with;
@@ -28,7 +29,7 @@ public class Select implements Stmt, TriggerCmd {
 			a.append(' ');
 		}
 		body.toSql(a);
-		if (orderBy != null && !orderBy.isEmpty()) {
+		if (isNotEmpty(orderBy)) {
 			a.append(" ORDER BY ");
 			comma(a, orderBy);
 		}

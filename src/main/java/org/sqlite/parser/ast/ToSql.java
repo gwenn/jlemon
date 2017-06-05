@@ -76,4 +76,8 @@ public interface ToSql {
 		}
 		return list;
 	}
+
+	static <T> boolean isNotEmpty(List<T> list) {
+		return list != null && !list.isEmpty();
+	}
 }

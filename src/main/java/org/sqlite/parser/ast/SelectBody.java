@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class SelectBody implements ToSql {
 	public final OneSelect select;
@@ -17,7 +18,7 @@ public class SelectBody implements ToSql {
 	@Override
 	public void toSql(Appendable a) throws IOException {
 		select.toSql(a);
-		if (compounds != null && !compounds.isEmpty()) {
+		if (isNotEmpty(compounds)) {
 			for (CompoundSelect compound : compounds) {
 				a.append(' ');
 				compound.toSql(a);

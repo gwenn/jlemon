@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class CreateVirtualTable implements Stmt {
 	public final boolean ifNotExists;
@@ -30,7 +31,7 @@ public class CreateVirtualTable implements Stmt {
 		tblName.toSql(a);
 		a.append("USING ");
 		doubleQuote(a, moduleName);
-		if (args != null && !args.isEmpty()) {
+		if (isNotEmpty(args)) {
 			a.append('(');
 			comma(a, args);
 			a.append(')');

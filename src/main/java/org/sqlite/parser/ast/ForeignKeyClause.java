@@ -3,6 +3,8 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 import java.util.List;
 
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
+
 public class ForeignKeyClause implements ToSql {
 	public final String tblName;
 	public final List<IndexedColumn> columns;
@@ -17,12 +19,12 @@ public class ForeignKeyClause implements ToSql {
 	@Override
 	public void toSql(Appendable a) throws IOException {
 		doubleQuote(a, tblName);
-		if (columns != null && !columns.isEmpty()) {
+		if (isNotEmpty(columns)) {
 			a.append('(');
 			comma(a, columns);
 			a.append(')');
 		}
-		if (args != null && !args.isEmpty()) {
+		if (isNotEmpty(args)) {
 			for (RefArg arg : args) {
 				a.append(' ');
 				arg.toSql(a);

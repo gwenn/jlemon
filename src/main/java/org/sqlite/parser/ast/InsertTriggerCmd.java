@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class InsertTriggerCmd implements Stmt {
 	public final ResolveType orConflict;
@@ -34,7 +35,7 @@ public class InsertTriggerCmd implements Stmt {
 		}
 		a.append(" INTO ");
 		doubleQuote(a, tblName);
-		if (columns != null && !columns.isEmpty()) {
+		if (isNotEmpty(columns)) {
 			a.append(" (");
 			commaNames(a, columns);
 			a.append(") ");

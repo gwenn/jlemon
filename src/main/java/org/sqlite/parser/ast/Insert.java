@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class Insert implements Stmt {
 	public final With with;
@@ -40,7 +41,7 @@ public class Insert implements Stmt {
 		}
 		a.append(" INTO ");
 		tblName.toSql(a);
-		if (columns != null && !columns.isEmpty()) {
+		if (isNotEmpty(columns)) {
 			a.append(" (");
 			commaNames(a, columns);
 			a.append(") ");

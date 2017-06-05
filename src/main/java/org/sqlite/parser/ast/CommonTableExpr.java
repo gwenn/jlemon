@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class CommonTableExpr implements ToSql {
 	public final String tblName;
@@ -19,7 +20,7 @@ public class CommonTableExpr implements ToSql {
 	@Override
 	public void toSql(Appendable a) throws IOException {
 		doubleQuote(a, tblName);
-		if (columns != null) {
+		if (isNotEmpty(columns)) {
 			a.append(" (");
 			comma(a, columns);
 			a.append(')');

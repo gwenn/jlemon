@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class CreateView implements Stmt {
 	public final boolean temporary;
@@ -35,7 +36,7 @@ public class CreateView implements Stmt {
 			a.append("IF NOT EXISTS ");
 		}
 		viewName.toSql(a);
-		if (columns != null && !columns.isEmpty()) {
+		if (isNotEmpty(columns)) {
 			a.append(" (");
 			comma(a, columns);
 			a.append(')');
