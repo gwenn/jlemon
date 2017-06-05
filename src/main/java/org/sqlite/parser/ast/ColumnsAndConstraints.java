@@ -9,9 +9,9 @@ import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 public class ColumnsAndConstraints implements CreateTableBody {
 	public final List<ColumnDefinition> columns;
 	public final List<TableConstraint> constraints;
-	public final String without;
+	public final boolean without;
 
-	public ColumnsAndConstraints(List<ColumnDefinition> columns, List<TableConstraint> constraints, String without) {
+	public ColumnsAndConstraints(List<ColumnDefinition> columns, List<TableConstraint> constraints, boolean without) {
 		this.columns = requireNotEmpty(columns);
 		this.constraints = constraints;
 		this.without = without;
@@ -26,9 +26,8 @@ public class ColumnsAndConstraints implements CreateTableBody {
 			comma(a, constraints);
 		}
 		a.append(')');
-		if (without != null) {
-			a.append(" WITHOUT ");
-			doubleQuote(a, without);
+		if (without) {
+			a.append(" WITHOUT ROWID");
 		}
 	}
 }

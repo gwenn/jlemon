@@ -46,7 +46,10 @@
 // code file that implements the parser.
 //
 %include {
-#include "sqliteInt.h"
+package org.sqlite.parser;
+
+import java.util.List;
+import org.sqlite.parser.ast.*;
 
 /*
 ** Disable all error recovery processing in the parser push-down
@@ -84,35 +87,6 @@
 */
 #define YYMALLOCARGTYPE  u64
 
-/*
-** An instance of this structure holds information about the
-** LIMIT clause of a SELECT statement.
-*/
-struct LimitVal {
-  Expr *pLimit;    /* The LIMIT expression.  NULL if there is no limit */
-  Expr *pOffset;   /* The OFFSET expression.  NULL if there is none */
-};
-
-/*
-** An instance of the following structure describes the event of a
-** TRIGGER.  "a" is the event type, one of TK_UPDATE, TK_INSERT,
-** TK_DELETE, or TK_INSTEAD.  If the event is of the form
-**
-**      UPDATE ON (a,b,c)
-**
-** Then the "b" IdList records the list "a,b,c".
-*/
-struct TrigEvent { int a; IdList * b; };
-
-/*
-** Disable lookaside memory allocation for objects that might be
-** shared across database connections.
-*/
-static void disableLookaside(Parse *pParse){
-  pParse->disableLookaside++;
-  pParse->db->lookaside.bDisable++;
-}
-
 } // end %include
 
 // Input is a single SQL command
@@ -135,7 +109,7 @@ cmd ::= BEGIN transtype(Y) trans_opt.  {sqlite3BeginTransaction(pParse, Y);}
 trans_opt ::= .
 trans_opt ::= TRANSACTION.
 trans_opt ::= TRANSACTION nm.
-%type transtype {int}
+%type transtype {TransactionType}
 transtype(A) ::= .             {A = TK_DEFERRED;}
 transtype(A) ::= DEFERRED(X).  {A = @X; /*A-overwrites-X*/}
 transtype(A) ::= IMMEDIATE(X). {A = @X; /*A-overwrites-X*/}
@@ -164,10 +138,10 @@ create_table ::= createkw temp(T) TABLE ifnotexists(E) nm(Y) dbnm(Z). {
 }
 createkw(A) ::= CREATE(A).  {disableLookaside(pParse);}
 
-%type ifnotexists {int}
+%type ifnotexists {boolean}
 ifnotexists(A) ::= .              {A = 0;}
 ifnotexists(A) ::= IF NOT EXISTS. {A = 1;}
-%type temp {int}
+%type temp {boolean}
 %ifndef SQLITE_OMIT_TEMPDB
 temp(A) ::= TEMP.  {A = 1;}
 %endif  SQLITE_OMIT_TEMPDB
@@ -179,7 +153,7 @@ create_table_args ::= AS select(S). {
   sqlite3EndTable(pParse,0,0,0,S);
   sqlite3SelectDelete(pParse->db, S);
 }
-%type table_options {int}
+%type table_options {boolean}
 table_options(A) ::= .    {A = 0;}
 table_options(A) ::= WITHOUT nm(X). {
   if( X.n==5 && sqlite3_strnicmp(X.z,"rowid",5)==0 ){
@@ -308,7 +282,7 @@ ccons ::= defer_subclause(D).    {sqlite3DeferForeignKey(pParse,D);}
 ccons ::= COLLATE ids(C).        {sqlite3AddCollateType(pParse, &C);}
 
 // The optional AUTOINCREMENT keyword
-%type autoinc {int}
+%type autoinc {boolean}
 autoinc(X) ::= .          {X = 0;}
 autoinc(X) ::= AUTOINCR.  {X = 1;}
 
@@ -320,21 +294,21 @@ autoinc(X) ::= AUTOINCR.  {X = 1;}
 %type refargs {int}
 refargs(A) ::= .                  { A = OE_None*0x0101; /* EV: R-19803-45884 */}
 refargs(A) ::= refargs(A) refarg(Y). { A = (A & ~Y.mask) | Y.value; }
-%type refarg {struct {int value; int mask;}}
+%type refarg {RefArg}
 refarg(A) ::= MATCH nm.              { A.value = 0;     A.mask = 0x000000; }
 refarg(A) ::= ON INSERT refact.      { A.value = 0;     A.mask = 0x000000; }
 refarg(A) ::= ON DELETE refact(X).   { A.value = X;     A.mask = 0x0000ff; }
 refarg(A) ::= ON UPDATE refact(X).   { A.value = X<<8;  A.mask = 0x00ff00; }
-%type refact {int}
+%type refact {RefAct}
 refact(A) ::= SET NULL.              { A = OE_SetNull;  /* EV: R-33326-45252 */}
 refact(A) ::= SET DEFAULT.           { A = OE_SetDflt;  /* EV: R-33326-45252 */}
 refact(A) ::= CASCADE.               { A = OE_Cascade;  /* EV: R-33326-45252 */}
 refact(A) ::= RESTRICT.              { A = OE_Restrict; /* EV: R-33326-45252 */}
 refact(A) ::= NO ACTION.             { A = OE_None;     /* EV: R-33326-45252 */}
-%type defer_subclause {int}
+%type defer_subclause {DeferSubclause}
 defer_subclause(A) ::= NOT DEFERRABLE init_deferred_pred_opt.     {A = 0;}
 defer_subclause(A) ::= DEFERRABLE init_deferred_pred_opt(X).      {A = X;}
-%type init_deferred_pred_opt {int}
+%type init_deferred_pred_opt {InitDeferredPred}
 init_deferred_pred_opt(A) ::= .                       {A = 0;}
 init_deferred_pred_opt(A) ::= INITIALLY DEFERRED.     {A = 1;}
 init_deferred_pred_opt(A) ::= INITIALLY IMMEDIATE.    {A = 0;}
@@ -358,16 +332,16 @@ tcons ::= FOREIGN KEY LP eidlist(FA) RP
     sqlite3CreateForeignKey(pParse, FA, &T, TA, R);
     sqlite3DeferForeignKey(pParse, D);
 }
-%type defer_subclause_opt {int}
+%type defer_subclause_opt {DeferSubclause}
 defer_subclause_opt(A) ::= .                    {A = 0;}
 defer_subclause_opt(A) ::= defer_subclause(A).
 
 // The following is a non-standard extension that allows us to declare the
 // default behavior when there is a constraint conflict.
 //
-%type onconf {int}
-%type orconf {int}
-%type resolvetype {int}
+%type onconf {ResolveType}
+%type orconf {ResolveType}
+%type resolvetype {ResolveType}
 onconf(A) ::= .                              {A = OE_Default;}
 onconf(A) ::= ON CONFLICT resolvetype(X).    {A = X;}
 orconf(A) ::= .                              {A = OE_Default;}
@@ -381,7 +355,7 @@ resolvetype(A) ::= REPLACE.                  {A = OE_Replace;}
 cmd ::= DROP TABLE ifexists(E) fullname(X). {
   sqlite3DropTable(pParse, X, 0, E);
 }
-%type ifexists {int}
+%type ifexists {boolean}
 ifexists(A) ::= IF EXISTS.   {A = 1;}
 ifexists(A) ::= .            {A = 0;}
 
@@ -405,35 +379,11 @@ cmd ::= select(X).  {
   sqlite3SelectDelete(pParse->db, X);
 }
 
-%type select {Select*}
-%destructor select {sqlite3SelectDelete(pParse->db, $$);}
-%type selectnowith {Select*}
-%destructor selectnowith {sqlite3SelectDelete(pParse->db, $$);}
-%type oneselect {Select*}
-%destructor oneselect {sqlite3SelectDelete(pParse->db, $$);}
+%type select {Select}
+%type selectnowith {Select}
+%type oneselect {Select}
 
 %include {
-  /*
-  ** For a compound SELECT statement, make sure p->pPrior->pNext==p for
-  ** all elements in the list.  And make sure list length does not exceed
-  ** SQLITE_LIMIT_COMPOUND_SELECT.
-  */
-  static void parserDoubleLinkSelect(Parse *pParse, Select *p){
-    if( p->pPrior ){
-      Select *pNext = 0, *pLoop;
-      int mxSelect, cnt = 0;
-      for(pLoop=p; pLoop; pNext=pLoop, pLoop=pLoop->pPrior, cnt++){
-        pLoop->pNext = pNext;
-        pLoop->selFlags |= SF_Compound;
-      }
-      if( (p->selFlags & SF_MultiValue)==0 && 
-        (mxSelect = pParse->db->aLimit[SQLITE_LIMIT_COMPOUND_SELECT])>0 &&
-        cnt>mxSelect
-      ){
-        sqlite3ErrorMsg(pParse, "too many terms in compound SELECT");
-      }
-    }
-  }
 }
 
 select(A) ::= with(W) selectnowith(X). {
@@ -471,7 +421,7 @@ selectnowith(A) ::= selectnowith(A) multiselect_op(Y) oneselect(Z).  {
   }
   A = pRhs;
 }
-%type multiselect_op {int}
+%type multiselect_op {CompoundOperator}
 multiselect_op(A) ::= UNION(OP).             {A = @OP; /*A-overwrites-OP*/}
 multiselect_op(A) ::= UNION ALL.             {A = TK_ALL;}
 multiselect_op(A) ::= EXCEPT|INTERSECT(OP).  {A = @OP; /*A-overwrites-OP*/}
@@ -509,8 +459,7 @@ oneselect(A) ::= SELECT(S) distinct(D) selcollist(W) from(X) where_opt(Y)
 }
 oneselect(A) ::= values(A).
 
-%type values {Select*}
-%destructor values {sqlite3SelectDelete(pParse->db, $$);}
+%type values {Select}
 values(A) ::= VALUES LP nexprlist(X) RP. {
   A = sqlite3SelectNew(pParse,X,0,0,0,0,0,SF_Values,0,0);
 }
@@ -530,7 +479,7 @@ values(A) ::= values(A) COMMA LP exprlist(Y) RP. {
 // The "distinct" nonterminal is true (1) if the DISTINCT keyword is
 // present and false (0) if it is not.
 //
-%type distinct {int}
+%type distinct {Distinctness}
 distinct(A) ::= DISTINCT.   {A = SF_Distinct;}
 distinct(A) ::= ALL.        {A = SF_All;}
 distinct(A) ::= .           {A = 0;}
@@ -540,10 +489,8 @@ distinct(A) ::= .           {A = 0;}
 // "SELECT * FROM ..." is encoded as a special expression with an
 // opcode of TK_ASTERISK.
 //
-%type selcollist {ExprList*}
-%destructor selcollist {sqlite3ExprListDelete(pParse->db, $$);}
-%type sclp {ExprList*}
-%destructor sclp {sqlite3ExprListDelete(pParse->db, $$);}
+%type selcollist {List<ResultColumn>}
+%type sclp {List<ResultColumn>}
 sclp(A) ::= selcollist(A) COMMA.
 sclp(A) ::= .                                {A = 0;}
 selcollist(A) ::= sclp(A) expr(X) as(Y).     {
@@ -571,12 +518,9 @@ as(X) ::= ids(X).
 as(X) ::= .            {X.n = 0; X.z = 0;}
 
 
-%type seltablist {SrcList*}
-%destructor seltablist {sqlite3SrcListDelete(pParse->db, $$);}
-%type stl_prefix {SrcList*}
-%destructor stl_prefix {sqlite3SrcListDelete(pParse->db, $$);}
-%type from {SrcList*}
-%destructor from {sqlite3SrcListDelete(pParse->db, $$);}
+%type seltablist {FromClause}
+%type stl_prefix {FromClause}
+%type from {FromClause}
 
 // A complete FROM clause.
 //
@@ -637,12 +581,11 @@ seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) LP exprlist(E) RP as(Z)
 dbnm(A) ::= .          {A.z=0; A.n=0;}
 dbnm(A) ::= DOT nm(X). {A = X;}
 
-%type fullname {SrcList*}
-%destructor fullname {sqlite3SrcListDelete(pParse->db, $$);}
+%type fullname {FromClause}
 fullname(A) ::= nm(X) dbnm(Y).  
    {A = sqlite3SrcListAppend(pParse->db,0,&X,&Y); /*A-overwrites-X*/}
 
-%type joinop {int}
+%type joinop {JoinOperator}
 joinop(X) ::= COMMA|JOIN.              { X = JT_INNER; }
 joinop(X) ::= JOIN_KW(A) JOIN.
                   {X = sqlite3JoinType(pParse,&A,0,0);  /*X-overwrites-A*/}
@@ -651,8 +594,7 @@ joinop(X) ::= JOIN_KW(A) nm(B) JOIN.
 joinop(X) ::= JOIN_KW(A) nm(B) nm(C) JOIN.
                   {X = sqlite3JoinType(pParse,&A,&B,&C);/*X-overwrites-A*/}
 
-%type on_opt {Expr*}
-%destructor on_opt {sqlite3ExprDelete(pParse->db, $$);}
+%type on_opt {Expr}
 on_opt(N) ::= ON expr(E).   {N = E.pExpr;}
 on_opt(N) ::= .             {N = 0;}
 
@@ -666,26 +608,23 @@ on_opt(N) ::= .             {N = 0;}
 // normally illegal. The sqlite3SrcListIndexedBy() function 
 // recognizes and interprets this as a special case.
 //
-%type indexed_opt {Token}
+%type indexed_opt {Indexed}
 indexed_opt(A) ::= .                 {A.z=0; A.n=0;}
 indexed_opt(A) ::= INDEXED BY nm(X). {A = X;}
 indexed_opt(A) ::= NOT INDEXED.      {A.z=0; A.n=1;}
 
-%type using_opt {IdList*}
-%destructor using_opt {sqlite3IdListDelete(pParse->db, $$);}
+%type using_opt {List<String>}
 using_opt(U) ::= USING LP idlist(L) RP.  {U = L;}
 using_opt(U) ::= .                        {U = 0;}
 
 
-%type orderby_opt {ExprList*}
-%destructor orderby_opt {sqlite3ExprListDelete(pParse->db, $$);}
+%type orderby_opt {List<SortedColumn>}
 
 // the sortlist non-terminal stores a list of expression where each
 // expression is optionally followed by ASC or DESC to indicate the
 // sort order.
 //
-%type sortlist {ExprList*}
-%destructor sortlist {sqlite3ExprListDelete(pParse->db, $$);}
+%type sortlist {List<SortedColumn>}
 
 orderby_opt(A) ::= .                          {A = 0;}
 orderby_opt(A) ::= ORDER BY sortlist(X).      {A = X;}
@@ -698,23 +637,21 @@ sortlist(A) ::= expr(Y) sortorder(Z). {
   sqlite3ExprListSetSortOrder(A,Z);
 }
 
-%type sortorder {int}
+%type sortorder {SortOrder}
 
 sortorder(A) ::= ASC.           {A = SQLITE_SO_ASC;}
 sortorder(A) ::= DESC.          {A = SQLITE_SO_DESC;}
 sortorder(A) ::= .              {A = SQLITE_SO_UNDEFINED;}
 
-%type groupby_opt {ExprList*}
-%destructor groupby_opt {sqlite3ExprListDelete(pParse->db, $$);}
+%type groupby_opt {GroupBy}
 groupby_opt(A) ::= .                      {A = 0;}
 groupby_opt(A) ::= GROUP BY nexprlist(X). {A = X;}
 
-%type having_opt {Expr*}
-%destructor having_opt {sqlite3ExprDelete(pParse->db, $$);}
+%type having_opt {Expr}
 having_opt(A) ::= .                {A = 0;}
 having_opt(A) ::= HAVING expr(X).  {A = X.pExpr;}
 
-%type limit_opt {struct LimitVal}
+%type limit_opt {Limit}
 
 // The destructor for limit_opt will never fire in the current grammar.
 // The limit_opt non-terminal only occurs at the end of a single production
@@ -753,8 +690,7 @@ cmd ::= with(C) DELETE FROM fullname(X) indexed_opt(I) where_opt(W). {
 }
 %endif
 
-%type where_opt {Expr*}
-%destructor where_opt {sqlite3ExprDelete(pParse->db, $$);}
+%type where_opt {Expr}
 
 where_opt(A) ::= .                    {A = 0;}
 where_opt(A) ::= WHERE expr(X).       {A = X.pExpr;}
@@ -781,8 +717,7 @@ cmd ::= with(C) UPDATE orconf(R) fullname(X) indexed_opt(I) SET setlist(Y)
 }
 %endif
 
-%type setlist {ExprList*}
-%destructor setlist {sqlite3ExprListDelete(pParse->db, $$);}
+%type setlist {List<Set>}
 
 setlist(A) ::= setlist(A) COMMA nm(X) EQ expr(Y). {
   A = sqlite3ExprListAppend(pParse, A, Y.pExpr);
@@ -811,14 +746,12 @@ cmd ::= with(W) insert_cmd(R) INTO fullname(X) idlist_opt(F) DEFAULT VALUES.
   sqlite3Insert(pParse, X, 0, F, R);
 }
 
-%type insert_cmd {int}
+%type insert_cmd {boolean}
 insert_cmd(A) ::= INSERT orconf(R).   {A = R;}
 insert_cmd(A) ::= REPLACE.            {A = OE_Replace;}
 
-%type idlist_opt {IdList*}
-%destructor idlist_opt {sqlite3IdListDelete(pParse->db, $$);}
-%type idlist {IdList*}
-%destructor idlist {sqlite3IdListDelete(pParse->db, $$);}
+%type idlist_opt {List<String>}
+%type idlist {List<String>}
 
 idlist_opt(A) ::= .                       {A = 0;}
 idlist_opt(A) ::= LP idlist(X) RP.    {A = X;}
@@ -830,47 +763,10 @@ idlist(A) ::= nm(Y).
 /////////////////////////// Expression Processing /////////////////////////////
 //
 
-%type expr {ExprSpan}
-%destructor expr {sqlite3ExprDelete(pParse->db, $$.pExpr);}
-%type term {ExprSpan}
-%destructor term {sqlite3ExprDelete(pParse->db, $$.pExpr);}
+%type expr {Expr}
+%type term {Expr}
 
 %include {
-  /* This is a utility routine used to set the ExprSpan.zStart and
-  ** ExprSpan.zEnd values of pOut so that the span covers the complete
-  ** range of text beginning with pStart and going to the end of pEnd.
-  */
-  static void spanSet(ExprSpan *pOut, Token *pStart, Token *pEnd){
-    pOut->zStart = pStart->z;
-    pOut->zEnd = &pEnd->z[pEnd->n];
-  }
-
-  /* Construct a new Expr object from a single identifier.  Use the
-  ** new Expr to populate pOut.  Set the span of pOut to be the identifier
-  ** that created the expression.
-  */
-  static void spanExpr(ExprSpan *pOut, Parse *pParse, int op, Token t){
-    Expr *p = sqlite3DbMallocRawNN(pParse->db, sizeof(Expr)+t.n+1);
-    if( p ){
-      memset(p, 0, sizeof(Expr));
-      p->op = (u8)op;
-      p->flags = EP_Leaf;
-      p->iAgg = -1;
-      p->u.zToken = (char*)&p[1];
-      memcpy(p->u.zToken, t.z, t.n);
-      p->u.zToken[t.n] = 0;
-      if( sqlite3Isquote(p->u.zToken[0]) ){
-        if( p->u.zToken[0]=='"' ) p->flags |= EP_DblQuoted;
-        sqlite3Dequote(p->u.zToken);
-      }
-#if SQLITE_MAX_EXPR_DEPTH>0
-      p->nHeight = 1;
-#endif  
-    }
-    pOut->pExpr = p;
-    pOut->zStart = t.z;
-    pOut->zEnd = &t.z[t.n];
-  }
 }
 
 expr(A) ::= term(A).
@@ -953,27 +849,6 @@ term(A) ::= CTIME_KW(OP). {
 }
 
 %include {
-  /* This routine constructs a binary expression node out of two ExprSpan
-  ** objects and uses the result to populate a new ExprSpan object.
-  */
-  static void spanBinaryExpr(
-    Parse *pParse,      /* The parsing context.  Errors accumulate here */
-    int op,             /* The binary operation */
-    ExprSpan *pLeft,    /* The left operand, and output */
-    ExprSpan *pRight    /* The right operand */
-  ){
-    pLeft->pExpr = sqlite3PExpr(pParse, op, pLeft->pExpr, pRight->pExpr);
-    pLeft->zEnd = pRight->zEnd;
-  }
-
-  /* If doNot is true, then add a TK_NOT Expr-node wrapper around the
-  ** outside of *ppExpr.
-  */
-  static void exprNot(Parse *pParse, int doNot, ExprSpan *pSpan){
-    if( doNot ){
-      pSpan->pExpr = sqlite3PExpr(pParse, TK_NOT, pSpan->pExpr, 0);
-    }
-  }
 }
 
 expr(A) ::= LP(L) nexprlist(X) COMMA expr(Y) RP(R). {
@@ -1027,33 +902,12 @@ expr(A) ::= expr(A) likeop(OP) expr(Y) ESCAPE expr(E).  [LIKE_KW]  {
 }
 
 %include {
-  /* Construct an expression node for a unary postfix operator
-  */
-  static void spanUnaryPostfix(
-    Parse *pParse,         /* Parsing context to record errors */
-    int op,                /* The operator */
-    ExprSpan *pOperand,    /* The operand, and output */
-    Token *pPostOp         /* The operand token for setting the span */
-  ){
-    pOperand->pExpr = sqlite3PExpr(pParse, op, pOperand->pExpr, 0);
-    pOperand->zEnd = &pPostOp->z[pPostOp->n];
-  }                           
 }
 
 expr(A) ::= expr(A) ISNULL|NOTNULL(E).   {spanUnaryPostfix(pParse,@E,&A,&E);}
 expr(A) ::= expr(A) NOT NULL(E). {spanUnaryPostfix(pParse,TK_NOTNULL,&A,&E);}
 
 %include {
-  /* A routine to convert a binary TK_IS or TK_ISNOT expression into a
-  ** unary TK_ISNULL or TK_NOTNULL expression. */
-  static void binaryToUnaryIfNull(Parse *pParse, Expr *pY, Expr *pA, int op){
-    sqlite3 *db = pParse->db;
-    if( pA && pY && pY->op==TK_NULL ){
-      pA->op = (u8)op;
-      sqlite3ExprDelete(db, pA->pRight);
-      pA->pRight = 0;
-    }
-  }
 }
 
 //    expr1 IS expr2
@@ -1072,19 +926,6 @@ expr(A) ::= expr(A) IS NOT expr(Y). {
 }
 
 %include {
-  /* Construct an expression node for a unary prefix operator
-  */
-  static void spanUnaryPrefix(
-    ExprSpan *pOut,        /* Write the new expression node here */
-    Parse *pParse,         /* Parsing context to record errors */
-    int op,                /* The operator */
-    ExprSpan *pOperand,    /* The operand */
-    Token *pPreOp         /* The operand token for setting the span */
-  ){
-    pOut->zStart = pPreOp->z;
-    pOut->pExpr = sqlite3PExpr(pParse, op, pOperand->pExpr, 0);
-    pOut->zEnd = pOperand->zEnd;
-  }
 }
 
 
@@ -1098,7 +939,7 @@ expr(A) ::= MINUS(B) expr(X). [BITNOT]
 expr(A) ::= PLUS(B) expr(X). [BITNOT]
               {spanUnaryPrefix(&A,pParse,TK_UPLUS,&X,&B);/*A-overwrites-B*/}
 
-%type between_op {int}
+%type between_op {boolean}
 between_op(A) ::= BETWEEN.     {A = 0;}
 between_op(A) ::= NOT BETWEEN. {A = 1;}
 expr(A) ::= expr(A) between_op(N) expr(X) AND expr(Y). [BETWEEN] {
@@ -1208,8 +1049,7 @@ expr(A) ::= CASE(C) case_operand(X) case_exprlist(Y) case_else(Z) END(E). {
     sqlite3ExprDelete(pParse->db, Z);
   }
 }
-%type case_exprlist {ExprList*}
-%destructor case_exprlist {sqlite3ExprListDelete(pParse->db, $$);}
+%type case_exprlist {CaseExpr}
 case_exprlist(A) ::= case_exprlist(A) WHEN expr(Y) THEN expr(Z). {
   A = sqlite3ExprListAppend(pParse,A, Y.pExpr);
   A = sqlite3ExprListAppend(pParse,A, Z.pExpr);
@@ -1218,19 +1058,15 @@ case_exprlist(A) ::= WHEN expr(Y) THEN expr(Z). {
   A = sqlite3ExprListAppend(pParse,0, Y.pExpr);
   A = sqlite3ExprListAppend(pParse,A, Z.pExpr);
 }
-%type case_else {Expr*}
-%destructor case_else {sqlite3ExprDelete(pParse->db, $$);}
+%type case_else {Expr}
 case_else(A) ::=  ELSE expr(X).         {A = X.pExpr;}
 case_else(A) ::=  .                     {A = 0;} 
-%type case_operand {Expr*}
-%destructor case_operand {sqlite3ExprDelete(pParse->db, $$);}
+%type case_operand {Expr}
 case_operand(A) ::= expr(X).            {A = X.pExpr; /*A-overwrites-X*/} 
 case_operand(A) ::= .                   {A = 0;} 
 
-%type exprlist {ExprList*}
-%destructor exprlist {sqlite3ExprListDelete(pParse->db, $$);}
-%type nexprlist {ExprList*}
-%destructor nexprlist {sqlite3ExprListDelete(pParse->db, $$);}
+%type exprlist {List<Expr>}
+%type nexprlist {List<Expr>}
 
 exprlist(A) ::= nexprlist(A).
 exprlist(A) ::= .                            {A = 0;}
@@ -1242,8 +1078,7 @@ nexprlist(A) ::= expr(Y).
 %ifndef SQLITE_OMIT_SUBQUERY
 /* A paren_exprlist is an optional expression list contained inside
 ** of parenthesis */
-%type paren_exprlist {ExprList*}
-%destructor paren_exprlist {sqlite3ExprListDelete(pParse->db, $$);}
+%type paren_exprlist {List<Expr>}
 paren_exprlist(A) ::= .   {A = 0;}
 paren_exprlist(A) ::= LP exprlist(X) RP.  {A = X;}
 %endif SQLITE_OMIT_SUBQUERY
@@ -1258,7 +1093,7 @@ cmd ::= createkw(S) uniqueflag(U) INDEX ifnotexists(NE) nm(X) dbnm(D)
                       &S, W, SQLITE_SO_ASC, NE, SQLITE_IDXTYPE_APPDEF);
 }
 
-%type uniqueflag {int}
+%type uniqueflag {boolean}
 uniqueflag(A) ::= UNIQUE.  {A = OE_Abort;}
 uniqueflag(A) ::= .        {A = OE_None;}
 
@@ -1278,34 +1113,10 @@ uniqueflag(A) ::= .        {A = OE_None;}
 // (busted) old databases, we need to continue parsing them when loading
 // historical schemas.
 //
-%type eidlist {ExprList*}
-%destructor eidlist {sqlite3ExprListDelete(pParse->db, $$);}
-%type eidlist_opt {ExprList*}
-%destructor eidlist_opt {sqlite3ExprListDelete(pParse->db, $$);}
+%type eidlist {List<Expr>}
+%type eidlist_opt {List<Expr>}
 
 %include {
-  /* Add a single new term to an ExprList that is used to store a
-  ** list of identifiers.  Report an error if the ID list contains
-  ** a COLLATE clause or an ASC or DESC keyword, except ignore the
-  ** error while parsing a legacy schema.
-  */
-  static ExprList *parserAddExprIdListTerm(
-    Parse *pParse,
-    ExprList *pPrior,
-    Token *pIdToken,
-    int hasCollate,
-    int sortOrder
-  ){
-    ExprList *p = sqlite3ExprListAppend(pParse, pPrior, 0);
-    if( (hasCollate || sortOrder!=SQLITE_SO_UNDEFINED)
-        && pParse->db->init.busy==0
-    ){
-      sqlite3ErrorMsg(pParse, "syntax error after column name \"%.*s\"",
-                         pIdToken->n, pIdToken->z);
-    }
-    sqlite3ExprListSetName(pParse, p, pIdToken, 1);
-    return p;
-  }
 } // end %include
 
 eidlist_opt(A) ::= .                         {A = 0;}
@@ -1317,7 +1128,7 @@ eidlist(A) ::= nm(Y) collate(C) sortorder(Z). {
   A = parserAddExprIdListTerm(pParse, 0, &Y, C, Z); /*A-overwrites-Y*/
 }
 
-%type collate {int}
+%type collate {boolean}
 collate(C) ::= .              {C = 0;}
 collate(C) ::= COLLATE ids.   {C = 1;}
 
@@ -1374,14 +1185,13 @@ trigger_decl(A) ::= temp(T) TRIGGER ifnotexists(NOERR) nm(B) dbnm(Z)
   A = (Z.n==0?B:Z); /*A-overwrites-T*/
 }
 
-%type trigger_time {int}
+%type trigger_time {TriggerTime}
 trigger_time(A) ::= BEFORE.      { A = TK_BEFORE; }
 trigger_time(A) ::= AFTER.       { A = TK_AFTER;  }
 trigger_time(A) ::= INSTEAD OF.  { A = TK_INSTEAD;}
 trigger_time(A) ::= .            { A = TK_BEFORE; }
 
-%type trigger_event {struct TrigEvent}
-%destructor trigger_event {sqlite3IdListDelete(pParse->db, $$.b);}
+%type trigger_event {TriggerEvent}
 trigger_event(A) ::= DELETE|INSERT(X).   {A.a = @X; /*A-overwrites-X*/ A.b = 0;}
 trigger_event(A) ::= UPDATE(X).          {A.a = @X; /*A-overwrites-X*/ A.b = 0;}
 trigger_event(A) ::= UPDATE OF idlist(X).{A.a = TK_UPDATE; A.b = X;}
@@ -1389,13 +1199,11 @@ trigger_event(A) ::= UPDATE OF idlist(X).{A.a = TK_UPDATE; A.b = X;}
 foreach_clause ::= .
 foreach_clause ::= FOR EACH ROW.
 
-%type when_clause {Expr*}
-%destructor when_clause {sqlite3ExprDelete(pParse->db, $$);}
+%type when_clause {Expr}
 when_clause(A) ::= .             { A = 0; }
 when_clause(A) ::= WHEN expr(X). { A = X.pExpr; }
 
-%type trigger_cmd_list {TriggerStep*}
-%destructor trigger_cmd_list {sqlite3DeleteTriggerStep(pParse->db, $$);}
+%type trigger_cmd_list {List<TriggerCmd>}
 trigger_cmd_list(A) ::= trigger_cmd_list(A) trigger_cmd(X) SEMI. {
   assert( A!=0 );
   A->pLast->pNext = X;
@@ -1437,8 +1245,7 @@ tridxby ::= NOT INDEXED. {
 
 
 
-%type trigger_cmd {TriggerStep*}
-%destructor trigger_cmd {sqlite3DeleteTriggerStep(pParse->db, $$);}
+%type trigger_cmd {List<TriggerCmd>}
 // UPDATE 
 trigger_cmd(A) ::=
    UPDATE orconf(R) trnm(X) tridxby SET setlist(Y) where_opt(Z).  
@@ -1473,7 +1280,7 @@ expr(A) ::= RAISE(X) LP raisetype(T) COMMA nm(Z) RP(Y).  {
 }
 %endif  !SQLITE_OMIT_TRIGGER
 
-%type raisetype {int}
+%type raisetype {ResolveType}
 raisetype(A) ::= ROLLBACK.  {A = OE_Rollback;}
 raisetype(A) ::= ABORT.     {A = OE_Abort;}
 raisetype(A) ::= FAIL.      {A = OE_Fail;}
@@ -1495,8 +1302,7 @@ cmd ::= DETACH database_kw_opt expr(D). {
   sqlite3Detach(pParse, D.pExpr);
 }
 
-%type key_opt {Expr*}
-%destructor key_opt {sqlite3ExprDelete(pParse->db, $$);}
+%type key_opt {Expr}
 key_opt(A) ::= .                     { A = 0; }
 key_opt(A) ::= KEY expr(X).          { A = X.pExpr; }
 
@@ -1556,10 +1362,8 @@ anylist ::= anylist ANY.
 
 
 //////////////////////// COMMON TABLE EXPRESSIONS ////////////////////////////
-%type with {With*}
-%type wqlist {With*}
-%destructor with {sqlite3WithDelete(pParse->db, $$);}
-%destructor wqlist {sqlite3WithDelete(pParse->db, $$);}
+%type with {With}
+%type wqlist {With}
 
 with(A) ::= . {A = 0;}
 %ifndef SQLITE_OMIT_CTE
