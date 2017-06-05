@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class CreateTrigger implements Stmt {
 	public final boolean temporary;
@@ -15,7 +16,7 @@ public class CreateTrigger implements Stmt {
 	public final QualifiedName tblName;
 	public final boolean forEachRow;
 	public final Expr whenClause;
-	// TODO body
+	public final List<TriggerCmd> commands;
 
 	public CreateTrigger(boolean temporary,
 			boolean ifNotExists,
@@ -25,7 +26,8 @@ public class CreateTrigger implements Stmt {
 			List<String> colNames,
 			QualifiedName tblName,
 			boolean forEachRow,
-			Expr whenClause) {
+			Expr whenClause,
+			List<TriggerCmd> commands) {
 		this.temporary = temporary;
 		this.ifNotExists = ifNotExists;
 		this.triggerName = requireNonNull(triggerName);
@@ -35,6 +37,7 @@ public class CreateTrigger implements Stmt {
 		this.tblName = requireNonNull(tblName);
 		this.forEachRow = forEachRow;
 		this.whenClause = whenClause;
+		this.commands = requireNotEmpty(commands);
 	}
 
 	@Override
@@ -74,6 +77,13 @@ public class CreateTrigger implements Stmt {
 			whenClause.toSql(a);
 		}
 		a.append(" BEGIN\n");
+		for (int i = 0; i < commands.size(); i++) {
+			if (i != 0) {
+				a.append("\n");
+			}
+			commands.get(i).toSql(a);
+			a.append(';');
+		}
 		a.append("END");
 	}
 }

@@ -5,7 +5,7 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
-public class Select implements Stmt {
+public class Select implements Stmt, TriggerCmd {
 	public final With with;
 	public final SelectBody body;
 	public final List<SortedColumn> orderBy;

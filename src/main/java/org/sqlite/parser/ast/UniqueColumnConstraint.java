@@ -13,6 +13,7 @@ public class UniqueColumnConstraint extends ColumnConstraint {
 	@Override
 	public void toSql(Appendable a) throws IOException {
 		constraintName(a);
+		a.append("UNIQUE");
 		if (conflictClause != null) {
 			a.append(' ');
 			conflictClause.toSql(a);
