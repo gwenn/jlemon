@@ -1,11 +1,9 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
-import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-// Sum Type
 public class OnUpdateRefArg implements RefArg {
 	public final RefAct refAct;
 

@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
-// Sum Type
 public class OnDeleteRefArg implements RefArg {
 	public final RefAct refAct;
 
