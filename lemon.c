@@ -3684,7 +3684,8 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
         append_str("()",0,0,0);
         lhsaccess = 0;
       }
-    }else if( lhswrite ){
+    }
+    if( lhswrite ){
       if( cp[0] == ';' ){
         append_str(")",0,0,0);
         lhswrite = 0;
