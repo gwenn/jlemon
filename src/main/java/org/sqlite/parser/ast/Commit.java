@@ -13,7 +13,7 @@ public class Commit implements Stmt {
 	public void toSql(Appendable a) throws IOException {
 		a.append("COMMIT");
 		if (name != null) {
-			a.append(' ');
+			a.append(" TRANSACTION ");
 			doubleQuote(a, name);
 		}
 	}

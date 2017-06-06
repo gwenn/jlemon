@@ -103,29 +103,29 @@ cmdx ::= cmd.           { sqlite3FinishCoding(pParse); }
 ///////////////////// Begin and end transactions. ////////////////////////////
 //
 
-cmd ::= BEGIN transtype(Y) trans_opt.  {sqlite3BeginTransaction(pParse, Y);}
+cmd ::= BEGIN transtype(Y) trans_opt.  {new Begin(Y.text(), null);}
 trans_opt ::= .
 trans_opt ::= TRANSACTION.
 trans_opt ::= TRANSACTION nm.
 %type transtype {TransactionType}
-transtype(A) ::= .             {A = TK_DEFERRED;}
-transtype(A) ::= DEFERRED(X).  {A = @X; /*A-overwrites-X*/}
-transtype(A) ::= IMMEDIATE(X). {A = @X; /*A-overwrites-X*/}
-transtype(A) ::= EXCLUSIVE(X). {A = @X; /*A-overwrites-X*/}
-cmd ::= COMMIT trans_opt.      {sqlite3CommitTransaction(pParse);}
-cmd ::= END trans_opt.         {sqlite3CommitTransaction(pParse);}
-cmd ::= ROLLBACK trans_opt.    {sqlite3RollbackTransaction(pParse);}
+transtype(A) ::= .             {A = null;}
+transtype(A) ::= DEFERRED.  {A = TransactionType.Deferred;}
+transtype(A) ::= IMMEDIATE. {A = TransactionType.Immediate;}
+transtype(A) ::= EXCLUSIVE. {A = TransactionType.Exclusive;}
+cmd ::= COMMIT trans_opt.      {new Commit(null);}
+cmd ::= END trans_opt.         {new Commit(null);}
+cmd ::= ROLLBACK trans_opt.    {new Rollback(null, null);}
 
 savepoint_opt ::= SAVEPOINT.
 savepoint_opt ::= .
 cmd ::= SAVEPOINT nm(X). {
-  sqlite3Savepoint(pParse, SAVEPOINT_BEGIN, &X);
+  new Savepoint(X.text());
 }
 cmd ::= RELEASE savepoint_opt nm(X). {
-  sqlite3Savepoint(pParse, SAVEPOINT_RELEASE, &X);
+  new Release(X.text());
 }
 cmd ::= ROLLBACK trans_opt TO savepoint_opt nm(X). {
-  sqlite3Savepoint(pParse, SAVEPOINT_ROLLBACK, &X);
+  new Rollback(null, X.text());
 }
 
 ///////////////////// The CREATE TABLE statement ////////////////////////////
@@ -137,13 +137,13 @@ create_table ::= createkw temp(T) TABLE ifnotexists(E) nm(Y) dbnm(Z). {
 createkw(A) ::= CREATE(A).  {disableLookaside(pParse);}
 
 %type ifnotexists {boolean}
-ifnotexists(A) ::= .              {A = 0;}
-ifnotexists(A) ::= IF NOT EXISTS. {A = 1;}
+ifnotexists(A) ::= .              {A = false;}
+ifnotexists(A) ::= IF NOT EXISTS. {A = true;}
 %type temp {boolean}
 %ifndef SQLITE_OMIT_TEMPDB
-temp(A) ::= TEMP.  {A = 1;}
+temp(A) ::= TEMP.  {A = true;}
 %endif  SQLITE_OMIT_TEMPDB
-temp(A) ::= .      {A = 0;}
+temp(A) ::= .      {A = false;}
 create_table_args ::= LP columnlist conslist_opt(X) RP(E) table_options(F). {
   sqlite3EndTable(pParse,&X,&E,F,0);
 }
@@ -152,13 +152,13 @@ create_table_args ::= AS select(S). {
   sqlite3SelectDelete(pParse->db, S);
 }
 %type table_options {boolean}
-table_options(A) ::= .    {A = 0;}
+table_options(A) ::= .    {A = false;}
 table_options(A) ::= WITHOUT nm(X). {
-  if( X.n==5 && sqlite3_strnicmp(X.z,"rowid",5)==0 ){
-    A = TF_WithoutRowid | TF_NoVisibleRowid;
+  if( "rowid".equalsIgnoreCase(X.text()) ){
+    A = true;
   }else{
-    A = 0;
-    sqlite3ErrorMsg(pParse, "unknown table option: %.*s", X.n, X.z);
+    A = false;
+    throw new ParseException("unknown table option: %s", X.text());
   }
 }
 columnlist ::= columnlist COMMA columnname carglist.
@@ -281,8 +281,8 @@ ccons ::= COLLATE ids(C).        {sqlite3AddCollateType(pParse, &C);}
 
 // The optional AUTOINCREMENT keyword
 %type autoinc {boolean}
-autoinc(X) ::= .          {X = 0;}
-autoinc(X) ::= AUTOINCR.  {X = 1;}
+autoinc(X) ::= .          {X = false;}
+autoinc(X) ::= AUTOINCR.  {X = true;}
 
 // The next group of rules parses the arguments to a REFERENCES clause
 // that determine if the referential integrity checking is deferred or
@@ -307,9 +307,9 @@ refact(A) ::= NO ACTION.             { A = OE_None;     /* EV: R-33326-45252 */}
 defer_subclause(A) ::= NOT DEFERRABLE init_deferred_pred_opt.     {A = 0;}
 defer_subclause(A) ::= DEFERRABLE init_deferred_pred_opt(X).      {A = X;}
 %type init_deferred_pred_opt {InitDeferredPred}
-init_deferred_pred_opt(A) ::= .                       {A = 0;}
-init_deferred_pred_opt(A) ::= INITIALLY DEFERRED.     {A = 1;}
-init_deferred_pred_opt(A) ::= INITIALLY IMMEDIATE.    {A = 0;}
+init_deferred_pred_opt(A) ::= .                       {A = null;}
+init_deferred_pred_opt(A) ::= INITIALLY DEFERRED.     {A = InitDeferredPred.InitiallyDeferred;}
+init_deferred_pred_opt(A) ::= INITIALLY IMMEDIATE.    {A = InitDeferredPred.InitiallyImmediate;}
 
 conslist_opt(A) ::= .                         {A.n = 0; A.z = 0;}
 conslist_opt(A) ::= COMMA(A) conslist.
@@ -331,7 +331,7 @@ tcons ::= FOREIGN KEY LP eidlist(FA) RP
     sqlite3DeferForeignKey(pParse, D);
 }
 %type defer_subclause_opt {DeferSubclause}
-defer_subclause_opt(A) ::= .                    {A = 0;}
+defer_subclause_opt(A) ::= .                    {A = null;}
 defer_subclause_opt(A) ::= defer_subclause(A).
 
 // The following is a non-standard extension that allows us to declare the
@@ -340,32 +340,33 @@ defer_subclause_opt(A) ::= defer_subclause(A).
 %type onconf {ResolveType}
 %type orconf {ResolveType}
 %type resolvetype {ResolveType}
-onconf(A) ::= .                              {A = OE_Default;}
+onconf(A) ::= .                              {A = null;}
 onconf(A) ::= ON CONFLICT resolvetype(X).    {A = X;}
-orconf(A) ::= .                              {A = OE_Default;}
+orconf(A) ::= .                              {A = null;}
 orconf(A) ::= OR resolvetype(X).             {A = X;}
 resolvetype(A) ::= raisetype(A).
-resolvetype(A) ::= IGNORE.                   {A = OE_Ignore;}
-resolvetype(A) ::= REPLACE.                  {A = OE_Replace;}
+resolvetype(A) ::= IGNORE.                   {A = ResolveType.Ignore;}
+resolvetype(A) ::= REPLACE.                  {A = ResolveType.Replace;}
 
 ////////////////////////// The DROP TABLE /////////////////////////////////////
 //
 cmd ::= DROP TABLE ifexists(E) fullname(X). {
-  sqlite3DropTable(pParse, X, 0, E);
+  new DropTable(E, X);
 }
 %type ifexists {boolean}
-ifexists(A) ::= IF EXISTS.   {A = 1;}
-ifexists(A) ::= .            {A = 0;}
+ifexists(A) ::= IF EXISTS.   {A = true;}
+ifexists(A) ::= .            {A = false;}
 
 ///////////////////// The CREATE VIEW statement /////////////////////////////
 //
 %ifndef SQLITE_OMIT_VIEW
-cmd ::= createkw(X) temp(T) VIEW ifnotexists(E) nm(Y) dbnm(Z) eidlist_opt(C)
+cmd ::= createkw temp(T) VIEW ifnotexists(E) nm(Y) dbnm(Z) eidlist_opt(C)
           AS select(S). {
-  sqlite3CreateView(pParse, &X, &Y, &Z, C, S, T, E);
+  QualifiedName viewName = QualifiedName.from(Y, Z);
+  new CreateView(T, E, viewName, C, S);
 }
 cmd ::= DROP VIEW ifexists(E) fullname(X). {
-  sqlite3DropTable(pParse, X, 1, E);
+  new DropView(E, X);
 }
 %endif  SQLITE_OMIT_VIEW
 
@@ -579,9 +580,9 @@ seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) LP exprlist(E) RP as(Z)
 dbnm(A) ::= .          {A.z=0; A.n=0;}
 dbnm(A) ::= DOT nm(X). {A = X;}
 
-%type fullname {FromClause}
+%type fullname {QualifiedName}
 fullname(A) ::= nm(X) dbnm(Y).  
-   {A = sqlite3SrcListAppend(pParse->db,0,&X,&Y); /*A-overwrites-X*/}
+   {A = QualifiedName.from(X, Y);}
 
 %type joinop {JoinOperator}
 joinop(X) ::= COMMA|JOIN.              { X = JT_INNER; }

@@ -19,7 +19,7 @@ public class Begin implements Stmt {
 			type.toSql(a);
 		}
 		if (name != null) {
-			a.append(' ');
+			a.append(" TRANSACTION ");
 			doubleQuote(a, name);
 		}
 	}

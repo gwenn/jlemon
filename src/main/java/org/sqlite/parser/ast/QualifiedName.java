@@ -8,6 +8,14 @@ public class QualifiedName implements ToSql {
 	public final String dbName;
 	public final String name;
 
+	public static QualifiedName from(String xxx, String yyy) {
+		if (yyy == null) {
+			return new QualifiedName(null, xxx);
+		} else {
+			return new QualifiedName(xxx, yyy);
+		}
+	}
+
 	public QualifiedName(String dbName, String name) {
 		this.dbName = dbName;
 		this.name = requireNonNull(name);

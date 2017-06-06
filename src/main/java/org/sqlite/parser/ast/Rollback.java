@@ -16,7 +16,7 @@ public class Rollback implements Stmt {
 	public void toSql(Appendable a) throws IOException {
 		a.append("ROLLBACK");
 		if (txName != null) {
-			a.append(' ');
+			a.append(" TRANSACTION ");
 			doubleQuote(a, txName);
 		}
 		if (savepointName != null) {
