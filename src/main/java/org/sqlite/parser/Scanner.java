@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * Port of Go Scanner in Java.
  */
-abstract class Scanner {
+abstract class Scanner implements Token {
   // The reader provided by the client.
   private /*final*/ Reader r;
   // Maximum size of a token
@@ -60,7 +60,7 @@ abstract class Scanner {
   abstract int split(char[] data, int start, int end, boolean atEOF) throws ScanException;
 
   /** Advances the Scanner to the next token, which will then be
-   * available through the {@link #token} method.
+   * available through the {@link #text()} method.
    * @return {@code false} when the scan stops, by reaching the end of the input.
    */
   boolean scan() throws ScanException {
@@ -88,7 +88,7 @@ abstract class Scanner {
   }
 
   /** @return The token type returned by {@link #split} function */
-  int tokenType() {
+  public int tokenType() {
     return tokenType;
   }
 

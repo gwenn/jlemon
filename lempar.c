@@ -216,7 +216,7 @@ private static class yyStackEntry {
   yyStackEntry() {
     minor = new YYMINORTYPE();
   }
-};
+}
 
 /* The state of the parser is completely contained in an instance of
 ** the following structure */
@@ -341,6 +341,7 @@ public yyParser(
 ** deletions is derived from the %destructor and/or %token_destructor
 ** directives of the input grammar.
 */
+@SuppressWarnings("unused")
 private void yy_destructor(
   YYCODETYPE yymajor,     /* Type code for object to destroy */
   YYMINORTYPE yypminor   /* The object to be destroyed */
@@ -684,6 +685,7 @@ private void yy_parse_failed(
 /*
 ** The following code executes when a syntax error first occurs.
 */
+@SuppressWarnings("unused")
 private void yy_syntax_error(
   int yymajor,                   /* The major type of the error token */
   ParseTOKENTYPE yyminor         /* The minor type of the error token */

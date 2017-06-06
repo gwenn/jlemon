@@ -24,6 +24,12 @@ cc -g -O2 -o jlemon lemon.c
 cpp -P src/test/java/simple/parser.j > src/test/java/simple/yyParser.java
 mvn test
 ```
+Or on windows platform:
+```
+cl /O2 /Fejlemon.exe lemon.c
+jlemon.exe src\test\java\simple\parser.y
+cl /EP /C src\test\java\simple\parser.j > src\test\java\simple\yyParser.java
+```
 
 ## Generated Parser API
 

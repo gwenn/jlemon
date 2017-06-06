@@ -13,7 +13,8 @@ import static org.sqlite.parser.TokenType.*;
  * A SQL tokenizer.
  * Adapted from [SQLite tokenizer](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/tokenize.c)
  */
-class Tokenizer extends Scanner implements Token {
+@SuppressWarnings("StatementWithEmptyBody")
+class Tokenizer extends Scanner {
   private final static Map<String, Integer> KEYWORDS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
   static {

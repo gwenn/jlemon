@@ -25,17 +25,15 @@
 %default_type {Token}
 
 // The generated parser function takes a 4th argument as follows:
-%extra_argument {Parse *pParse}
+%extra_argument {Parser parser}
 
 // This code runs whenever there is a syntax error
 //
 %syntax_error {
-  UNUSED_PARAMETER(yymajor);  /* Silence some compiler warnings */
-  assert( TOKEN.z[0] );  /* The tokenizer always gives us a token */
-  sqlite3ErrorMsg(pParse, "near \"%T\": syntax error", &TOKEN);
+  throw new ParseException("near \"%s\": syntax error", yyminor.text());
 }
 %stack_overflow {
-  sqlite3ErrorMsg(pParse, "parser stack overflow");
+  throw new ParseException("parser stack overflow");
 }
 
 // The name of the generated procedure that implements the parser
@@ -60,7 +58,7 @@ import org.sqlite.parser.ast.*;
 /*
 ** Make yytestcase() the same as testcase()
 */
-#define yytestcase(X) testcase(X)
+#define yytestcase(X)
 
 /*
 ** Indicate that sqlite3ParserFree() will never be called with a null
