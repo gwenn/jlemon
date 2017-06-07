@@ -103,7 +103,7 @@ cmdx ::= cmd.           { sqlite3FinishCoding(pParse); }
 ///////////////////// Begin and end transactions. ////////////////////////////
 //
 
-cmd ::= BEGIN transtype(Y) trans_opt.  {new Begin(Y.text(), null);}
+cmd ::= BEGIN transtype(Y) trans_opt.  {new Begin(Y, null);}
 trans_opt ::= .
 trans_opt ::= TRANSACTION.
 trans_opt ::= TRANSACTION nm.
@@ -134,7 +134,7 @@ cmd ::= create_table create_table_args.
 create_table ::= createkw temp(T) TABLE ifnotexists(E) nm(Y) dbnm(Z). {
    sqlite3StartTable(pParse,&Y,&Z,T,0,0,E);
 }
-createkw(A) ::= CREATE(A).  {disableLookaside(pParse);}
+createkw(A) ::= CREATE(A).
 
 %type ifnotexists {boolean}
 ifnotexists(A) ::= .              {A = false;}
@@ -298,14 +298,14 @@ refarg(A) ::= ON INSERT refact.      { A.value = 0;     A.mask = 0x000000; }
 refarg(A) ::= ON DELETE refact(X).   { A.value = X;     A.mask = 0x0000ff; }
 refarg(A) ::= ON UPDATE refact(X).   { A.value = X<<8;  A.mask = 0x00ff00; }
 %type refact {RefAct}
-refact(A) ::= SET NULL.              { A = OE_SetNull;  /* EV: R-33326-45252 */}
-refact(A) ::= SET DEFAULT.           { A = OE_SetDflt;  /* EV: R-33326-45252 */}
-refact(A) ::= CASCADE.               { A = OE_Cascade;  /* EV: R-33326-45252 */}
-refact(A) ::= RESTRICT.              { A = OE_Restrict; /* EV: R-33326-45252 */}
-refact(A) ::= NO ACTION.             { A = OE_None;     /* EV: R-33326-45252 */}
+refact(A) ::= SET NULL.              { A = RefAct.SetNull;  /* EV: R-33326-45252 */}
+refact(A) ::= SET DEFAULT.           { A = RefAct.SetDefault;  /* EV: R-33326-45252 */}
+refact(A) ::= CASCADE.               { A = RefAct.Cascade;  /* EV: R-33326-45252 */}
+refact(A) ::= RESTRICT.              { A = RefAct.Restrict; /* EV: R-33326-45252 */}
+refact(A) ::= NO ACTION.             { A = RefAct.NoAction;     /* EV: R-33326-45252 */}
 %type defer_subclause {DeferSubclause}
-defer_subclause(A) ::= NOT DEFERRABLE init_deferred_pred_opt.     {A = 0;}
-defer_subclause(A) ::= DEFERRABLE init_deferred_pred_opt(X).      {A = X;}
+defer_subclause(A) ::= NOT DEFERRABLE init_deferred_pred_opt(X).     {A = new DeferSubclause(false, X);}
+defer_subclause(A) ::= DEFERRABLE init_deferred_pred_opt(X).      {A = new DeferSubclause(true, X);}
 %type init_deferred_pred_opt {InitDeferredPred}
 init_deferred_pred_opt(A) ::= .                       {A = null;}
 init_deferred_pred_opt(A) ::= INITIALLY DEFERRED.     {A = InitDeferredPred.InitiallyDeferred;}
@@ -362,7 +362,7 @@ ifexists(A) ::= .            {A = false;}
 %ifndef SQLITE_OMIT_VIEW
 cmd ::= createkw temp(T) VIEW ifnotexists(E) nm(Y) dbnm(Z) eidlist_opt(C)
           AS select(S). {
-  QualifiedName viewName = QualifiedName.from(Y, Z);
+  QualifiedName viewName = QualifiedName.from(Y.text(), Z);
   new CreateView(T, E, viewName, C, S);
 }
 cmd ::= DROP VIEW ifexists(E) fullname(X). {
@@ -421,9 +421,10 @@ selectnowith(A) ::= selectnowith(A) multiselect_op(Y) oneselect(Z).  {
   A = pRhs;
 }
 %type multiselect_op {CompoundOperator}
-multiselect_op(A) ::= UNION(OP).             {A = @OP; /*A-overwrites-OP*/}
-multiselect_op(A) ::= UNION ALL.             {A = TK_ALL;}
-multiselect_op(A) ::= EXCEPT|INTERSECT(OP).  {A = @OP; /*A-overwrites-OP*/}
+multiselect_op(A) ::= UNION.             {A = CompoundOperator.Union;}
+multiselect_op(A) ::= UNION ALL.             {A = CompoundOperator.UnionAll;}
+multiselect_op(A) ::= EXCEPT.  {A = CompoundOperator.Except;}
+multiselect_op(A) ::= INTERSECT.  {A = CompoundOperator.Intersect;}
 %endif SQLITE_OMIT_COMPOUND_SELECT
 oneselect(A) ::= SELECT(S) distinct(D) selcollist(W) from(X) where_opt(Y)
                  groupby_opt(P) having_opt(Q) orderby_opt(Z) limit_opt(L). {
@@ -479,9 +480,9 @@ values(A) ::= values(A) COMMA LP exprlist(Y) RP. {
 // present and false (0) if it is not.
 //
 %type distinct {Distinctness}
-distinct(A) ::= DISTINCT.   {A = SF_Distinct;}
-distinct(A) ::= ALL.        {A = SF_All;}
-distinct(A) ::= .           {A = 0;}
+distinct(A) ::= DISTINCT.   {A = Distinctness.Distinct;}
+distinct(A) ::= ALL.        {A = Distinctness.All;}
+distinct(A) ::= .           {A = null;}
 
 // selcollist is a list of expressions that are to become the return
 // values of the SELECT statement.  The "*" in statements like
@@ -576,9 +577,9 @@ seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) LP exprlist(E) RP as(Z)
   }
 %endif  SQLITE_OMIT_SUBQUERY
 
-%type dbnm {Token}
-dbnm(A) ::= .          {A.z=0; A.n=0;}
-dbnm(A) ::= DOT nm(X). {A = X;}
+%type dbnm {String}
+dbnm(A) ::= .          {A = null;}
+dbnm(A) ::= DOT nm(X). {A = X.text();}
 
 %type fullname {QualifiedName}
 fullname(A) ::= nm(X) dbnm(Y).  
@@ -1113,7 +1114,7 @@ uniqueflag(A) ::= .        {A = OE_None;}
 // historical schemas.
 //
 %type eidlist {List<Expr>}
-%type eidlist_opt {List<Expr>}
+%type eidlist_opt {List<IndexedColumn>}
 
 %include {
 } // end %include
@@ -1185,10 +1186,10 @@ trigger_decl(A) ::= temp(T) TRIGGER ifnotexists(NOERR) nm(B) dbnm(Z)
 }
 
 %type trigger_time {TriggerTime}
-trigger_time(A) ::= BEFORE.      { A = TK_BEFORE; }
-trigger_time(A) ::= AFTER.       { A = TK_AFTER;  }
-trigger_time(A) ::= INSTEAD OF.  { A = TK_INSTEAD;}
-trigger_time(A) ::= .            { A = TK_BEFORE; }
+trigger_time(A) ::= BEFORE.      { A = TriggerTime.Before; }
+trigger_time(A) ::= AFTER.       { A = TriggerTime.After;  }
+trigger_time(A) ::= INSTEAD OF.  { A = TriggerTime.InsteadOf;}
+trigger_time(A) ::= .            { A = null; }
 
 %type trigger_event {TriggerEvent}
 trigger_event(A) ::= DELETE|INSERT(X).   {A.a = @X; /*A-overwrites-X*/ A.b = 0;}

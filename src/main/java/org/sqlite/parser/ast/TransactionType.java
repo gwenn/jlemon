@@ -3,7 +3,7 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 
 public enum TransactionType implements ToSql {
-	Deferred,
+	Deferred, // default
 	Immediate,
 	Exclusive;
 

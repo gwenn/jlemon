@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public enum InitDeferredPred implements ToSql {
 	InitiallyDeferred,
-	InitiallyImmediate;
+	InitiallyImmediate; // default
 
 	@Override
 	public void toSql(Appendable a) throws IOException {

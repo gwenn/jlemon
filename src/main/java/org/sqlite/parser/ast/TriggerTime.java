@@ -3,7 +3,7 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 
 public enum TriggerTime implements ToSql {
-	Before,
+	Before, // default
 	After,
 	InsteadOf;
 
