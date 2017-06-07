@@ -5,10 +5,10 @@ import java.io.IOException;
 import static java.util.Objects.requireNonNull;
 
 public class Cmd implements ToSql {
-	public final String explain;
+	public final ExplainKind explain;
 	public final Stmt stmt;
 
-	public Cmd(String explain, Stmt stmt) {
+	public Cmd(ExplainKind explain, Stmt stmt) {
 		this.explain = explain;
 		this.stmt = requireNonNull(stmt);
 	}
@@ -16,7 +16,7 @@ public class Cmd implements ToSql {
 	@Override
 	public void toSql(Appendable a) throws IOException {
 		if (explain != null) {
-			a.append(explain);
+			explain.toSql(a);
 			a.append(' ');
 		}
 		stmt.toSql(a);
