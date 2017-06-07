@@ -3672,7 +3672,8 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
         }
       }
       *xp = saved;
-    }else if( lhsaccess ){
+    }
+    if( lhsaccess ){
       if( cp[0] == '=' ){
         lhswrite = cp[1] != '=';
         lhsaccess = 0;
