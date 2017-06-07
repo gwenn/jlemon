@@ -95,8 +95,8 @@ ecmd ::= SEMI.
 ecmd ::= explain cmdx SEMI.
 explain ::= .
 %ifndef SQLITE_OMIT_EXPLAIN
-explain ::= EXPLAIN.              { parse.explain = ExplainKind.Explain; }
-explain ::= EXPLAIN QUERY PLAN.   { parse.explain = ExplainKind.QueryPlan; }
+explain ::= EXPLAIN.              { parser.explain = ExplainKind.Explain; }
+explain ::= EXPLAIN QUERY PLAN.   { parser.explain = ExplainKind.QueryPlan; }
 %endif  SQLITE_OMIT_EXPLAIN
 cmdx ::= cmd.           { sqlite3FinishCoding(pParse); }
 
@@ -254,12 +254,12 @@ ccons ::= DEFAULT PLUS term(X).       {parser.sqlite3AddDefaultValue(new UnaryEx
 ccons ::= DEFAULT MINUS term(X).      {
   UnaryExpr v;
   v = new UnaryExpr(Operator.Substract, X);
-  parse.sqlite3AddDefaultValue(v);
+  parser.sqlite3AddDefaultValue(v);
 }
 ccons ::= DEFAULT id(X).              {
   IdExpr v;
-  IdExpr v = new IdExpr(X);
-  parse.sqlite3AddDefaultValue(v);
+  v = new IdExpr(X.text());
+  parser.sqlite3AddDefaultValue(v);
 }
 
 // In addition to the type name, we also care about the primary key and
@@ -312,9 +312,9 @@ conslist_opt(A) ::= .                         {A.n = 0; A.z = 0;}
 conslist_opt(A) ::= COMMA(A) conslist.
 conslist ::= conslist tconscomma tcons.
 conslist ::= tcons.
-tconscomma ::= COMMA.            {pParse->constraintName.n = 0;}
+tconscomma ::= COMMA.            {parser.constraintName = null;}
 tconscomma ::= .
-tcons ::= CONSTRAINT nm(X).      {pParse->constraintName = X;}
+tcons ::= CONSTRAINT nm(X).      {parser.constraintName = X;}
 tcons ::= PRIMARY KEY LP sortlist(X) autoinc(I) RP onconf(R).
                                  {sqlite3AddPrimaryKey(pParse,X,R,I,0);}
 tcons ::= UNIQUE LP sortlist(X) RP onconf(R).
@@ -359,10 +359,10 @@ ifexists(A) ::= .            {A = false;}
 %ifndef SQLITE_OMIT_VIEW
 cmd ::= createkw temp(T) VIEW ifnotexists(E) nm(Y) dbnm(Z) eidlist_opt(C)
           AS select(S). {
-  parse.sqlite3CreateView(T, E, Y, Z, C, S);
+  parser.sqlite3CreateView(T, E, Y, Z, C, S);
 }
 cmd ::= DROP VIEW ifexists(E) fullname(X). {
-  parse.sqlite3DropView(E, X);
+  parser.sqlite3DropView(E, X);
 }
 %endif  SQLITE_OMIT_VIEW
 
