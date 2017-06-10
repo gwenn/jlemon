@@ -2,11 +2,24 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
+import org.sqlite.parser.TokenType;
+
 public enum CompoundOperator implements ToSql {
 	Union,
 	UnionAll,
 	Except,
 	Intersect;
+
+	public static CompoundOperator from(int tt) {
+		if (TokenType.TK_UNION == tt) {
+			return Union;
+		} else if (TokenType.TK_EXCEPT == tt) {
+			return Except;
+		} else if (TokenType.TK_INTERSECT == tt) {
+			return Intersect;
+		}
+		throw new IllegalArgumentException(String.format("%d", tt));
+	}
 
 	@Override
 	public void toSql(Appendable a) throws IOException {

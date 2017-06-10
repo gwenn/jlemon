@@ -6,7 +6,7 @@ import static java.util.Objects.requireNonNull;
 
 // Sum Type: Expr vs Star vs TableStar
 public class ResultColumn implements ToSql {
-	public final Expr expr;
+	public final Expr expr; // TODO SQLite parser builds expression for Star and TableStar
 	public final As as;
 	public final String tblName;
 

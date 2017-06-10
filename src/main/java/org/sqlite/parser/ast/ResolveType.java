@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public enum ResolveType implements ToSql {
 	Rollback,
-	Abort,
+	Abort, // default
 	Fail,
 	Ignore,
 	Replace;
