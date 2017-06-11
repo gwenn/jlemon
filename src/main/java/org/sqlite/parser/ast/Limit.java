@@ -18,7 +18,7 @@ public class Limit implements ToSql {
 		a.append("LIMIT ");
 		expr.toSql(a);
 		if (offset != null) {
-			a.append(", ");
+			a.append(" OFFSET ");
 			offset.toSql(a);
 		}
 	}

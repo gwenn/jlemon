@@ -6,7 +6,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
-public class InsertTriggerCmd implements Stmt {
+public class InsertTriggerCmd implements TriggerCmd {
 	public final ResolveType orConflict;
 	public final String tblName;
 	public final List<String> columns;

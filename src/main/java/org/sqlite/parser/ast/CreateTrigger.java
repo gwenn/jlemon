@@ -12,7 +12,6 @@ public class CreateTrigger implements Stmt {
 	public final QualifiedName triggerName;
 	public final TriggerTime time;
 	public final TriggerEvent event;
-	public final List<String> colNames; // only for event = UpdateOf
 	public final QualifiedName tblName;
 	public final boolean forEachRow;
 	public final Expr whenClause;
@@ -23,7 +22,6 @@ public class CreateTrigger implements Stmt {
 			QualifiedName triggerName,
 			TriggerTime time,
 			TriggerEvent event,
-			List<String> colNames,
 			QualifiedName tblName,
 			boolean forEachRow,
 			Expr whenClause,
@@ -33,7 +31,6 @@ public class CreateTrigger implements Stmt {
 		this.triggerName = requireNonNull(triggerName);
 		this.time = time;
 		this.event = requireNonNull(event);
-		this.colNames = colNames;
 		this.tblName = requireNonNull(tblName);
 		this.forEachRow = forEachRow;
 		this.whenClause = whenClause;
@@ -57,16 +54,6 @@ public class CreateTrigger implements Stmt {
 		}
 		a.append(' ');
 		event.toSql(a);
-		if (TriggerEvent.UpdateOf == event) {
-			for (int i = 0; i < colNames.size(); i++) {
-				if (i == 0) {
-					a.append(' ');
-				} else {
-					a.append(", ");
-				}
-				doubleQuote(a, colNames.get(i));
-			}
-		}
 		a.append(" ON ");
 		tblName.toSql(a);
 		if (forEachRow) {

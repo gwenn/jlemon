@@ -10,7 +10,7 @@ public class RaiseExpr implements Expr {
 
 	public RaiseExpr(ResolveType type, String err) {
 		this.type = requireNonNull(type);
-		if (type == ResolveType.Ignore || type == ResolveType.Replace) {
+		if (type == ResolveType.Replace) {
 			throw new IllegalArgumentException();
 		}
 		this.err = err;

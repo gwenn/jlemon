@@ -8,6 +8,10 @@ public class Pragma implements Stmt {
 	public final QualifiedName name;
 	public final String value;
 
+	public static Pragma from(String x, String y, String value) {
+		return new Pragma(QualifiedName.from(x, y), value);
+	}
+
 	public Pragma(QualifiedName name, String value) {
 		this.name = requireNonNull(name);
 		this.value = value;

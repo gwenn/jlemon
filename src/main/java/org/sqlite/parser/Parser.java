@@ -8,26 +8,6 @@ public class Parser {
 	private Stmt stmt;
 	Token constraintName;
 
-	void sqlite3BeginTransaction(TransactionType type) {
-		stmt = new Begin(type, null); // TODO trans_opt
-	}
-	void sqlite3CommitTransaction() {
-		stmt = new Commit(null); // TODO trans_opt
-	}
-	void sqlite3RollbackTransaction() {
-		stmt = new Rollback(null, null); // TODO trans_opt
-	}
-
-	void sqlite3Savepoint(Token nm) {
-		stmt = new Savepoint(nm.text());
-	}
-	void sqlite3ReleaseSavepoint(Token nm) {
-		stmt = new Release(nm.text());
-	}
-	void sqlite3RollbackSavepoint(Token nm) {
-		stmt = new Rollback(null, nm.text()); // TODO trans_opt
-	}
-
 	void sqlite3AddDefaultValue(Expr expr) {
 		new DefaultColumnConstraint(null, expr); // TODO constraintName
 	}
@@ -50,20 +30,7 @@ public class Parser {
 		new CollateColumnConstraint(null, ids);
 	}
 
-	void sqlite3DropTable(boolean ifExists, QualifiedName fullname) {
-		stmt = new DropTable(ifExists, fullname);
-	}
-
-	void sqlite3CreateView(boolean temporary,
-		boolean ifNotExists,
-		Token nm,
-		String dbnm,
-		List<IndexedColumn> columns,
-		Select select) {
-		QualifiedName viewName = QualifiedName.from(nm.text(), dbnm);
-		stmt = new CreateView(temporary, ifNotExists, viewName, columns, select);
-	}
-	void sqlite3DropView(boolean ifExists, QualifiedName fullname) {
-		stmt = new DropView(ifExists, fullname);
+	void sqlite3ErrorMsg(String message, Object... args) {
+		throw new ParseException(message, args);
 	}
 }

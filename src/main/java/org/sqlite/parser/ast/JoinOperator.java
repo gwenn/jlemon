@@ -2,6 +2,9 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
+import org.sqlite.parser.Token;
+import org.sqlite.parser.TokenType;
+
 // Sum Type: comma vs typed join
 public class JoinOperator implements ToSql {
 	public final boolean comma;
@@ -19,6 +22,23 @@ public class JoinOperator implements ToSql {
 		this.comma = comma;
 		this.natural = natural;
 		this.joinType = joinType;
+	}
+
+	public static JoinOperator from(Token a, Token b, Token c) {
+		if (TokenType.TK_COMMA == a.tokenType()) {
+			return JoinOperator.comma();
+		} else if (b == null && c == null) {
+			if (TokenType.TK_JOIN == a.tokenType()) {
+				return JoinOperator.typedJoin(false, null);
+			} else if ("NATURAL".equalsIgnoreCase(a.text())) {
+				return JoinOperator.typedJoin(true, null);
+			}
+		} else if ("NATURAL".equalsIgnoreCase(a.text())) {
+			return JoinOperator.typedJoin(true, JoinType.from(b, c));
+		} else {
+			return JoinOperator.typedJoin(false, JoinType.from(b, c));
+		}
+		throw new IllegalArgumentException(); // TODO
 	}
 
 	@Override
