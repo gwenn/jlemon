@@ -821,8 +821,8 @@ expr(A) ::= expr(A) STAR|SLASH|REM(OP) expr(Y).
                                         {A = new BinaryExpr(A, Operator.from(@OP),Y);}
 expr(A) ::= expr(A) CONCAT(OP) expr(Y). {A = new BinaryExpr(A, Operator.from(@OP),Y);}
 %type likeop {NotLike}
-likeop(A) ::= LIKE_KW|MATCH(X).     {A = NotLike(false, LikeOperator.from(X));}
-likeop(A) ::= NOT LIKE_KW|MATCH(X). {A = NotLike(true, LikeOperator.from(X)); /*A-overwrite-X*/}
+likeop(A) ::= LIKE_KW|MATCH(X).     {A = new NotLike(false, LikeOperator.from(X));}
+likeop(A) ::= NOT LIKE_KW|MATCH(X). {A = new NotLike(true, LikeOperator.from(X)); /*A-overwrite-X*/}
 expr(A) ::= expr(A) likeop(OP) expr(Y).  [LIKE_KW]  {
   A = new LikeExpr(A, OP, Y, null);
 }
