@@ -6,14 +6,12 @@ import static java.util.Objects.requireNonNull;
 
 public class LikeExpr implements Expr {
 	public final Expr lhs;
-	public final boolean not;
-	public final LikeOperator op;
+	public final NotLike op;
 	public final Expr rhs;
 	public final Expr escape;
 
-	public LikeExpr(Expr lhs, boolean not, LikeOperator op, Expr rhs, Expr escape) {
+	public LikeExpr(Expr lhs, NotLike op, Expr rhs, Expr escape) {
 		this.lhs = requireNonNull(lhs);
-		this.not = not;
 		this.op = requireNonNull(op);
 		this.rhs = requireNonNull(rhs);
 		this.escape = escape;
@@ -22,10 +20,9 @@ public class LikeExpr implements Expr {
 	@Override
 	public void toSql(Appendable a) throws IOException {
 		lhs.toSql(a);
-		if (not) {
-			a.append(" NOT");
-		}
-		a.append(" LIKE ");
+		a.append(' ');
+		op.toSql(a);
+		a.append(' ');
 		rhs.toSql(a);
 		if (escape != null) {
 			a.append(" ESCAPE ");

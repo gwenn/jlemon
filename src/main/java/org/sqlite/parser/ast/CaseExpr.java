@@ -2,7 +2,6 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map.Entry;
 
 public class CaseExpr implements Expr {
 	public final Expr base;

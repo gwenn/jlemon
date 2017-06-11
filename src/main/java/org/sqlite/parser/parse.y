@@ -808,50 +808,33 @@ expr(A) ::= LP(L) nexprlist(X) COMMA expr(Y) RP(R). {
   }
 }
 
-expr(A) ::= expr(A) AND(OP) expr(Y).    {spanBinaryExpr(pParse,@OP,A,Y);}
-expr(A) ::= expr(A) OR(OP) expr(Y).     {spanBinaryExpr(pParse,@OP,A,Y);}
+expr(A) ::= expr(A) AND(OP) expr(Y).    {A = new BinaryExpr(A, Operator.from(@OP),Y);}
+expr(A) ::= expr(A) OR(OP) expr(Y).     {A = new BinaryExpr(A, Operator.from(@OP),Y);}
 expr(A) ::= expr(A) LT|GT|GE|LE(OP) expr(Y).
-                                        {spanBinaryExpr(pParse,@OP,A,Y);}
-expr(A) ::= expr(A) EQ|NE(OP) expr(Y).  {spanBinaryExpr(pParse,@OP,A,Y);}
+                                        {A = new BinaryExpr(A, Operator.from(@OP),Y);}
+expr(A) ::= expr(A) EQ|NE(OP) expr(Y).  {A = new BinaryExpr(A, Operator.from(@OP),Y);}
 expr(A) ::= expr(A) BITAND|BITOR|LSHIFT|RSHIFT(OP) expr(Y).
-                                        {spanBinaryExpr(pParse,@OP,A,Y);}
+                                        {A = new BinaryExpr(A, Operator.from(@OP),Y);}
 expr(A) ::= expr(A) PLUS|MINUS(OP) expr(Y).
-                                        {spanBinaryExpr(pParse,@OP,A,Y);}
+                                        {A = new BinaryExpr(A, Operator.from(@OP),Y);}
 expr(A) ::= expr(A) STAR|SLASH|REM(OP) expr(Y).
-                                        {spanBinaryExpr(pParse,@OP,A,Y);}
-expr(A) ::= expr(A) CONCAT(OP) expr(Y). {spanBinaryExpr(pParse,@OP,A,Y);}
-%type likeop {Token}
-likeop(A) ::= LIKE_KW|MATCH(A).
-likeop(A) ::= NOT LIKE_KW|MATCH(X). {A=X; A.n|=0x80000000; /*A-overwrite-X*/}
+                                        {A = new BinaryExpr(A, Operator.from(@OP),Y);}
+expr(A) ::= expr(A) CONCAT(OP) expr(Y). {A = new BinaryExpr(A, Operator.from(@OP),Y);}
+%type likeop {NotLike}
+likeop(A) ::= LIKE_KW|MATCH(X).     {A = NotLike(false, LikeOperator.from(X));}
+likeop(A) ::= NOT LIKE_KW|MATCH(X). {A = NotLike(true, LikeOperator.from(X)); /*A-overwrite-X*/}
 expr(A) ::= expr(A) likeop(OP) expr(Y).  [LIKE_KW]  {
-  ExprList *pList;
-  int bNot = OP.n & 0x80000000;
-  OP.n &= 0x7fffffff;
-  pList = sqlite3ExprListAppend(pParse,0, Y.pExpr);
-  pList = sqlite3ExprListAppend(pParse,pList, A.pExpr);
-  A.pExpr = sqlite3ExprFunction(pParse, pList, OP);
-  exprNot(pParse, bNot, A);
-  A.zEnd = Y.zEnd;
-  if( A.pExpr ) A.pExpr->flags |= EP_InfixFunc;
+  A = new LikeExpr(A, OP, Y, null);
 }
 expr(A) ::= expr(A) likeop(OP) expr(Y) ESCAPE expr(E).  [LIKE_KW]  {
-  ExprList *pList;
-  int bNot = OP.n & 0x80000000;
-  OP.n &= 0x7fffffff;
-  pList = sqlite3ExprListAppend(pParse,0, Y.pExpr);
-  pList = sqlite3ExprListAppend(pParse,pList, A.pExpr);
-  pList = sqlite3ExprListAppend(pParse,pList, E.pExpr);
-  A.pExpr = sqlite3ExprFunction(pParse, pList, OP);
-  exprNot(pParse, bNot, A);
-  A.zEnd = E.zEnd;
-  if( A.pExpr ) A.pExpr->flags |= EP_InfixFunc;
+  A = new LikeExpr(A, OP, Y, E);
 }
 
 %include {
 }
 
-expr(A) ::= expr(A) ISNULL|NOTNULL(E).   {spanUnaryPostfix(pParse,@E,A,E);}
-expr(A) ::= expr(A) NOT NULL(E). {spanUnaryPostfix(pParse,TK_NOTNULL,A,E);}
+expr(A) ::= expr(A) ISNULL|NOTNULL(E).   {A = IsNullExpr.from(A, @E);}
+expr(A) ::= expr(A) NOT NULL. {A = new NotNullExpr(A);}
 
 %include {
 }
@@ -863,12 +846,10 @@ expr(A) ::= expr(A) NOT NULL(E). {spanUnaryPostfix(pParse,TK_NOTNULL,A,E);}
 // is any other expression, code as TK_IS or TK_ISNOT.
 // 
 expr(A) ::= expr(A) IS expr(Y).     {
-  spanBinaryExpr(pParse,TK_IS,A,Y);
-  binaryToUnaryIfNull(pParse, Y.pExpr, A.pExpr, TK_ISNULL);
+  A = new BinaryExpr(A, Operator.Is, Y);
 }
 expr(A) ::= expr(A) IS NOT expr(Y). {
-  spanBinaryExpr(pParse,TK_ISNOT,A,Y);
-  binaryToUnaryIfNull(pParse, Y.pExpr, A.pExpr, TK_NOTNULL);
+  A = new BinaryExpr(A, Operator.IsNot, Y);
 }
 
 %include {
