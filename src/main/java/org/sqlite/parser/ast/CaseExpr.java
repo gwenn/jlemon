@@ -6,11 +6,11 @@ import java.util.Map.Entry;
 
 public class CaseExpr implements Expr {
 	public final Expr base;
-	public final List<Entry<Expr,Expr>> whenThenPairs;
+	public final List<WhenThenPair> whenThenPairs;
 	public final Expr elseExpr;
 
 	public CaseExpr(Expr base,
-			List<Entry<Expr, Expr>> whenThenPairs,
+			List<WhenThenPair> whenThenPairs,
 			Expr elseExpr) {
 		this.base = base;
 		this.whenThenPairs = ToSql.requireNotEmpty(whenThenPairs);
@@ -23,11 +23,9 @@ public class CaseExpr implements Expr {
 		if (base != null) {
 			base.toSql(a);
 		}
-		for (Entry<Expr, Expr> whenThenPair : whenThenPairs) {
-			a.append(" WHEN ");
-			whenThenPair.getKey().toSql(a);
-			a.append(" THEN ");
-			whenThenPair.getValue().toSql(a);
+		for (WhenThenPair whenThenPair : whenThenPairs) {
+			a.append(' ');
+			whenThenPair.toSql(a);
 		}
 		if (elseExpr != null) {
 			a.append(" ELSE ");

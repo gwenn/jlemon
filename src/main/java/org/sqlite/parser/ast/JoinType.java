@@ -3,7 +3,6 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 
 import org.sqlite.parser.Token;
-import org.sqlite.parser.TokenType;
 
 public enum JoinType implements ToSql {
 	Left,

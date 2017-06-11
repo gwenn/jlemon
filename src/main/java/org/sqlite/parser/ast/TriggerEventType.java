@@ -15,8 +15,6 @@ public enum TriggerEventType implements ToSql {
 			return Delete;
 		} else if (TokenType.TK_INSERT == tt) {
 			return Insert;
-		} else if (TokenType.TK_INSERT == tt) {
-			return Insert;
 		} else if (TokenType.TK_UPDATE == tt) {
 			return Update;
 		}

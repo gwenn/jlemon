@@ -105,11 +105,11 @@ cmdx ::= cmd.           { sqlite3FinishCoding(pParse); }
 ///////////////////// Begin and end transactions. ////////////////////////////
 //
 
-cmd ::= BEGIN transtype(Y) trans_opt(X).  {new Commit(Y, X);}
+cmd ::= BEGIN transtype(Y) trans_opt(X).  {new Begin(Y, X);}
 %type trans_opt {String}
 trans_opt(A) ::= .               {A = null;}
-trans_opt ::= TRANSACTION.       {A = null;}
-trans_opt ::= TRANSACTION nm(X). {A = X.text();}
+trans_opt(A) ::= TRANSACTION.       {A = null;}
+trans_opt(A) ::= TRANSACTION nm(X). {A = X.text();}
 %type transtype {TransactionType}
 transtype(A) ::= .             {A = null;}
 transtype(A) ::= DEFERRED(X).  {A = TransactionType.from(@X); /*A-overwrites-X*/}
@@ -273,7 +273,7 @@ ccons ::= NOT NULL onconf(R).    {parser.sqlite3AddNotNull(false, R);}
 ccons ::= PRIMARY KEY sortorder(Z) onconf(R) autoinc(I).
                                  {parser.sqlite3AddPrimaryKey(Z,R,I);}
 ccons ::= UNIQUE onconf(R).      {parser.sqlite3AddUnique(R);}
-ccons ::= CHECK LP expr(X) RP.   {parser.sqlite3AddCheckConstraint(X.pExpr);}
+ccons ::= CHECK LP expr(X) RP.   {parser.sqlite3AddCheckConstraint(X);}
 ccons ::= REFERENCES nm(T) eidlist_opt(TA) refargs(R).
                                  {parser.sqlite3CreateForeignKey(T,TA,R);}
 ccons ::= defer_subclause(D).    {sqlite3DeferForeignKey(pParse,D);}
@@ -876,95 +876,33 @@ expr(A) ::= expr(A) IS NOT expr(Y). {
 
 
 
-expr(A) ::= NOT(B) expr(X).  
-              {spanUnaryPrefix(A,pParse,@B,X,B);/*A-overwrites-B*/}
-expr(A) ::= BITNOT(B) expr(X).
-              {spanUnaryPrefix(A,pParse,@B,X,B);/*A-overwrites-B*/}
-expr(A) ::= MINUS(B) expr(X). [BITNOT]
-              {spanUnaryPrefix(A,pParse,TK_UMINUS,X,B);/*A-overwrites-B*/}
-expr(A) ::= PLUS(B) expr(X). [BITNOT]
-              {spanUnaryPrefix(A,pParse,TK_UPLUS,X,B);/*A-overwrites-B*/}
+expr(A) ::= NOT expr(X).
+              {A = new UnaryExpr(UnaryOperator.Not,X);}
+expr(A) ::= BITNOT expr(X).
+              {A = new UnaryExpr(UnaryOperator.BitwiseNot,X);}
+expr(A) ::= MINUS expr(X). [BITNOT]
+              {A = new UnaryExpr(UnaryOperator.Negative,X);}
+expr(A) ::= PLUS expr(X). [BITNOT]
+              {A = new UnaryExpr(UnaryOperator.Positive,X);}
 
 %type between_op {boolean}
 between_op(A) ::= BETWEEN.     {A = false;}
 between_op(A) ::= NOT BETWEEN. {A = true;}
 expr(A) ::= expr(A) between_op(N) expr(X) AND expr(Y). [BETWEEN] {
-  ExprList *pList = sqlite3ExprListAppend(pParse,0, X.pExpr);
-  pList = sqlite3ExprListAppend(pParse,pList, Y.pExpr);
-  A.pExpr = sqlite3PExpr(pParse, TK_BETWEEN, A.pExpr, 0);
-  if( A.pExpr ){
-    A.pExpr->x.pList = pList;
-  }else{
-    sqlite3ExprListDelete(pParse->db, pList);
-  } 
-  exprNot(pParse, N, A);
-  A.zEnd = Y.zEnd;
+  A = new BetweenExpr(A, N, X, Y);
 }
 %ifndef SQLITE_OMIT_SUBQUERY
   %type in_op {boolean}
   in_op(A) ::= IN.      {A = false;}
   in_op(A) ::= NOT IN.  {A = true;}
-  expr(A) ::= expr(A) in_op(N) LP exprlist(Y) RP(E). [IN] {
-    if( Y==0 ){
-      /* Expressions of the form
-      **
-      **      expr1 IN ()
-      **      expr1 NOT IN ()
-      **
-      ** simplify to constants 0 (false) and 1 (true), respectively,
-      ** regardless of the value of expr1.
-      */
-      sqlite3ExprDelete(pParse->db, A.pExpr);
-      A.pExpr = sqlite3ExprAlloc(pParse->db, TK_INTEGER,sqlite3IntTokens[N],1);
-    }else if( Y->nExpr==1 ){
-      /* Expressions of the form:
-      **
-      **      expr1 IN (?1)
-      **      expr1 NOT IN (?2)
-      **
-      ** with exactly one value on the RHS can be simplified to something
-      ** like this:
-      **
-      **      expr1 == ?1
-      **      expr1 <> ?2
-      **
-      ** But, the RHS of the == or <> is marked with the EP_Generic flag
-      ** so that it may not contribute to the computation of comparison
-      ** affinity or the collating sequence to use for comparison.  Otherwise,
-      ** the semantics would be subtly different from IN or NOT IN.
-      */
-      Expr *pRHS = Y->a[0].pExpr;
-      Y->a[0].pExpr = 0;
-      sqlite3ExprListDelete(pParse->db, Y);
-      /* pRHS cannot be NULL because a malloc error would have been detected
-      ** before now and control would have never reached this point */
-      if( ALWAYS(pRHS) ){
-        pRHS->flags &= ~EP_Collate;
-        pRHS->flags |= EP_Generic;
-      }
-      A.pExpr = sqlite3PExpr(pParse, N ? TK_NE : TK_EQ, A.pExpr, pRHS);
-    }else{
-      A.pExpr = sqlite3PExpr(pParse, TK_IN, A.pExpr, 0);
-      if( A.pExpr ){
-        A.pExpr->x.pList = Y;
-        sqlite3ExprSetHeightAndFlags(pParse, A.pExpr);
-      }else{
-        sqlite3ExprListDelete(pParse->db, Y);
-      }
-      exprNot(pParse, N, A);
-    }
-    A.zEnd = E.z[E.n];
+  expr(A) ::= expr(A) in_op(N) LP exprlist(Y) RP. [IN] {
+    A = new InListExpr(A, N, Y);
   }
-  expr(A) ::= LP(B) select(X) RP(E). {
-    spanSet(A,B,E); /*A-overwrites-B*/
-    A.pExpr = sqlite3PExpr(pParse, TK_SELECT, 0, 0);
-    sqlite3PExprAddSelect(pParse, A.pExpr, X);
+  expr(A) ::= LP select(X) RP. {
+    A = new SubqueryExpr(X);
   }
-  expr(A) ::= expr(A) in_op(N) LP select(Y) RP(E).  [IN] {
-    A.pExpr = sqlite3PExpr(pParse, TK_IN, A.pExpr, 0);
-    sqlite3PExprAddSelect(pParse, A.pExpr, Y);
-    exprNot(pParse, N, A);
-    A.zEnd = E.z[E.n];
+  expr(A) ::= expr(A) in_op(N) LP select(Y) RP.  [IN] {
+    A = new InSelectExpr(A, N, Y);
   }
   expr(A) ::= expr(A) in_op(N) nm(Y) dbnm(Z) paren_exprlist(E). [IN] {
     SrcList *pSrc = sqlite3SrcListAppend(pParse->db, 0,Y,Z);
@@ -975,34 +913,23 @@ expr(A) ::= expr(A) between_op(N) expr(X) AND expr(Y). [BETWEEN] {
     exprNot(pParse, N, A);
     A.zEnd = Z.z ? Z.z[Z.n] : Y.z[Y.n];
   }
-  expr(A) ::= EXISTS(B) LP select(Y) RP(E). {
-    Expr *p;
-    spanSet(A,B,E); /*A-overwrites-B*/
-    p = A.pExpr = sqlite3PExpr(pParse, TK_EXISTS, 0, 0);
-    sqlite3PExprAddSelect(pParse, p, Y);
+  expr(A) ::= EXISTS LP select(Y) RP. {
+    A = new ExistsExpr(Y); /*A-overwrites-B*/
   }
 %endif SQLITE_OMIT_SUBQUERY
 
 /* CASE expressions */
-expr(A) ::= CASE(C) case_operand(X) case_exprlist(Y) case_else(Z) END(E). {
-  spanSet(A,C,E);  /*A-overwrites-C*/
-  A.pExpr = sqlite3PExpr(pParse, TK_CASE, X, 0);
-  if( A.pExpr ){
-    A.pExpr->x.pList = Z ? sqlite3ExprListAppend(pParse,Y,Z) : Y;
-    sqlite3ExprSetHeightAndFlags(pParse, A.pExpr);
-  }else{
-    sqlite3ExprListDelete(pParse->db, Y);
-    sqlite3ExprDelete(pParse->db, Z);
-  }
+expr(A) ::= CASE case_operand(X) case_exprlist(Y) case_else(Z) END. {
+  A = new CaseExpr(X, Y, Z);
 }
-%type case_exprlist {CaseExpr}
+%type case_exprlist {List<WhenThenPair>}
 case_exprlist(A) ::= case_exprlist(A) WHEN expr(Y) THEN expr(Z). {
-  A = sqlite3ExprListAppend(pParse,A, Y.pExpr);
-  A = sqlite3ExprListAppend(pParse,A, Z.pExpr);
+  WhenThenPair wtp = new WhenThenPair(Y, Z);
+  A = append(A, wtp);
 }
 case_exprlist(A) ::= WHEN expr(Y) THEN expr(Z). {
-  A = sqlite3ExprListAppend(pParse,0, Y.pExpr);
-  A = sqlite3ExprListAppend(pParse,A, Z.pExpr);
+  WhenThenPair wtp = new WhenThenPair(Y, Z);
+  A = append(null, wtp);
 }
 %type case_else {Expr}
 case_else(A) ::=  ELSE expr(X).         {A = X;}
@@ -1067,17 +994,17 @@ uniqueflag(A) ::= .        {A = false;}
 eidlist_opt(A) ::= .                         {A = null;}
 eidlist_opt(A) ::= LP eidlist(X) RP.         {A = X;}
 eidlist(A) ::= eidlist(A) COMMA nm(Y) collate(C) sortorder(Z).  {
-  IndexedColumn ic = new IndexedColumn(Y, C, Z);
+  IndexedColumn ic = new IndexedColumn(Y.text(), C, Z);
   A = append(A, ic);
 }
 eidlist(A) ::= nm(Y) collate(C) sortorder(Z). {
-  IndexedColumn ic = new IndexedColumn(Y, C, Z);
-  A = append(0, ic); /*A-overwrites-Y*/
+  IndexedColumn ic = new IndexedColumn(Y.text(), C, Z);
+  A = append(null, ic); /*A-overwrites-Y*/
 }
 
-%type collate {boolean}
-collate(C) ::= .              {C = false;}
-collate(C) ::= COLLATE ids.   {C = true;}
+%type collate {String}
+collate(C) ::= .              {C = null;}
+collate(C) ::= COLLATE ids(X).   {C = X.text();}
 
 
 ///////////////////////////// The DROP INDEX command /////////////////////////
@@ -1118,18 +1045,16 @@ minus_num(A) ::= MINUS number(X).     {A = X;}
 
 %ifndef SQLITE_OMIT_TRIGGER
 
-cmd ::= createkw trigger_decl(A) BEGIN trigger_cmd_list(S) END(Z). {
-  Token all;
-  all.z = A.z;
-  all.n = (int)(Z.z - A.z) + Z.n;
-  sqlite3FinishTrigger(pParse, S, all);
+cmd ::= createkw trigger_decl(A) BEGIN trigger_cmd_list(S) END. {
+  A.commands.addAll(S);
 }
 
+%type trigger_decl {CreateTrigger}
 trigger_decl(A) ::= temp(T) TRIGGER ifnotexists(NOERR) nm(B) dbnm(Z) 
                     trigger_time(C) trigger_event(D)
-                    ON fullname(E) foreach_clause when_clause(G). {
-  sqlite3BeginTrigger(pParse, B, Z, C, D.a, D.b, E, G, T, NOERR);
-  A = (Z.n==0?B:Z); /*A-overwrites-T*/
+                    ON fullname(E) foreach_clause(X) when_clause(G). {
+  QualifiedName triggerName = QualifiedName.from(B.text(), Z);
+  A = new CreateTrigger(T, NOERR, triggerName, C, D, E, X, G); /*A-overwrites-T*/
 }
 
 %type trigger_time {TriggerTime}
@@ -1143,8 +1068,9 @@ trigger_event(A) ::= DELETE|INSERT(X).   {A = TriggerEvent.from(@X); /*A-overwri
 trigger_event(A) ::= UPDATE(X).          {A = TriggerEvent.from(@X); /*A-overwrites-X*/}
 trigger_event(A) ::= UPDATE OF idlist(X).{A = new TriggerEvent(TriggerEventType.UpdateOf, X);}
 
-foreach_clause ::= .
-foreach_clause ::= FOR EACH ROW.
+%type foreach_clause {boolean}
+foreach_clause(X) ::= .          {X = false;}
+foreach_clause(X) ::= FOR EACH ROW. {X = true;}
 
 %type when_clause {Expr}
 when_clause(A) ::= .             { A = null; }

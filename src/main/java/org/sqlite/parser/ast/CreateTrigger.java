@@ -1,10 +1,10 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
-import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class CreateTrigger implements Stmt {
 	public final boolean temporary;
@@ -15,7 +15,7 @@ public class CreateTrigger implements Stmt {
 	public final QualifiedName tblName;
 	public final boolean forEachRow;
 	public final Expr whenClause;
-	public final List<TriggerCmd> commands;
+	public final List<TriggerCmd> commands = new ArrayList<>();
 
 	public CreateTrigger(boolean temporary,
 			boolean ifNotExists,
@@ -24,8 +24,7 @@ public class CreateTrigger implements Stmt {
 			TriggerEvent event,
 			QualifiedName tblName,
 			boolean forEachRow,
-			Expr whenClause,
-			List<TriggerCmd> commands) {
+			Expr whenClause) {
 		this.temporary = temporary;
 		this.ifNotExists = ifNotExists;
 		this.triggerName = requireNonNull(triggerName);
@@ -34,7 +33,7 @@ public class CreateTrigger implements Stmt {
 		this.tblName = requireNonNull(tblName);
 		this.forEachRow = forEachRow;
 		this.whenClause = whenClause;
-		this.commands = requireNotEmpty(commands);
+		//this.commands = requireNotEmpty(commands);
 	}
 
 	@Override
