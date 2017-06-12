@@ -211,7 +211,7 @@ private static class yyStackEntry {
   YYACTIONTYPE stateno;  /* The state-number, or reduce action in SHIFTREDUCE */
   YYCODETYPE major;      /* The major token value.  This is the code
                          ** number for the token at this stack level */
-  YYMINORTYPE minor;     /* The user-supplied minor token value.  This
+  final YYMINORTYPE minor;     /* The user-supplied minor token value.  This
                          ** is the value of the token  */
   yyStackEntry() {
     minor = new YYMINORTYPE();
@@ -227,7 +227,7 @@ private static class yyStackEntry {
 #ifndef YYNOERRORRECOVERY
   private int yyerrcnt;                 /* Shifts left before out of the error */
 #endif
-  private ParseARG_SDECL                /* A place to hold %extra_argument */
+  private final ParseARG_SDECL                /* A place to hold %extra_argument */
 #if YYSTACKDEPTH<=0
   //int yystksz;                  /* Current side of the stack */
   private final Stack<yyStackEntry> yystack;        /* The parser's stack */
@@ -572,8 +572,8 @@ private void yy_shift(
 ** is used during the reduce.
 */
 private static class ruleInfoEntry {
-  YYCODETYPE lhs;         /* Symbol on the left-hand side of the rule */
-  byte nrhs;     /* Number of right-hand side symbols in the rule */
+  final YYCODETYPE lhs;         /* Symbol on the left-hand side of the rule */
+  final byte nrhs;     /* Number of right-hand side symbols in the rule */
 
   ruleInfoEntry(int lhs, int nrhs) {
     this.lhs = (YYCODETYPE)lhs;

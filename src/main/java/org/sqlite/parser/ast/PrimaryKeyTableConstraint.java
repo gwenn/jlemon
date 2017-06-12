@@ -7,13 +7,13 @@ import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class PrimaryKeyTableConstraint extends TableConstraint {
 	public final List<SortedColumn> columns;
-	public final ResolveType conflictClause;
 	public final boolean autoIncrement;
+	public final ResolveType conflictClause;
 
 	public PrimaryKeyTableConstraint(String name,
 			List<SortedColumn> columns,
-			ResolveType conflictClause,
-			boolean autoIncrement) {
+			boolean autoIncrement,
+			ResolveType conflictClause) {
 		super(name);
 		this.columns = requireNotEmpty(columns);
 		this.conflictClause = conflictClause;

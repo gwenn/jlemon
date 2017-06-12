@@ -248,36 +248,38 @@ signed ::= minus_num.
 // "carglist" is a list of additional constraints that come after the
 // column name and column type in a CREATE TABLE statement.
 //
-carglist ::= carglist ccons.
-carglist ::= .
-ccons ::= CONSTRAINT nm(X).           {parser.constraintName = X;}
-ccons ::= DEFAULT term(X).            {parser.sqlite3AddDefaultValue(X);}
-ccons ::= DEFAULT LP expr(X) RP.      {parser.sqlite3AddDefaultValue(new ParenthesizedExpr(X));}
-ccons ::= DEFAULT PLUS term(X).       {parser.sqlite3AddDefaultValue(new UnaryExpr(UnaryOperator.Positive, X));}
-ccons ::= DEFAULT MINUS term(X).      {
+%type carglist {List<ColumnConstraint>}
+carglist(A) ::= carglist(A) ccons(X). {A=append(A,X);}
+carglist(A) ::= .                     {A=null;}
+%type ccons {ColumnConstraint}
+ccons ::= CONSTRAINT nm(X).           {parser.constraintName(X.text());}
+ccons(A) ::= DEFAULT term(X).            {A = new DefaultColumnConstraint(parser.constraintName(),X);}
+ccons(A) ::= DEFAULT LP expr(X) RP.      {A = new DefaultColumnConstraint(parser.constraintName(),new ParenthesizedExpr(X));}
+ccons(A) ::= DEFAULT PLUS term(X).       {A = new DefaultColumnConstraint(parser.constraintName(),new UnaryExpr(UnaryOperator.Positive, X));}
+ccons(A) ::= DEFAULT MINUS term(X).      {
   UnaryExpr v;
   v = new UnaryExpr(UnaryOperator.Negative, X);
-  parser.sqlite3AddDefaultValue(v);
+  A = new DefaultColumnConstraint(parser.constraintName(),v);
 }
-ccons ::= DEFAULT id(X).              {
+ccons(A) ::= DEFAULT id(X).              {
   IdExpr v;
   v = new IdExpr(X.text());
-  parser.sqlite3AddDefaultValue(v);
+  A = new DefaultColumnConstraint(parser.constraintName(),v);
 }
 
 // In addition to the type name, we also care about the primary key and
 // UNIQUE constraints.
 //
-ccons ::= NULL onconf(R). {parser.sqlite3AddNotNull(true, R);}
-ccons ::= NOT NULL onconf(R).    {parser.sqlite3AddNotNull(false, R);}
-ccons ::= PRIMARY KEY sortorder(Z) onconf(R) autoinc(I).
-                                 {parser.sqlite3AddPrimaryKey(Z,R,I);}
-ccons ::= UNIQUE onconf(R).      {parser.sqlite3AddUnique(R);}
-ccons ::= CHECK LP expr(X) RP.   {parser.sqlite3AddCheckConstraint(X);}
-ccons ::= REFERENCES nm(T) eidlist_opt(TA) refargs(R).
-                                 {parser.sqlite3CreateForeignKey(T,TA,R);}
-ccons ::= defer_subclause(D).    {sqlite3DeferForeignKey(pParse,D);}
-ccons ::= COLLATE ids(C).        {parser.sqlite3AddCollateType(C);}
+ccons(A) ::= NULL onconf(R). {A = new NotNullColumnConstraint(parser.constraintName(),true, R);}
+ccons(A) ::= NOT NULL onconf(R).    {A = new NotNullColumnConstraint(parser.constraintName(),false, R);}
+ccons(A) ::= PRIMARY KEY sortorder(Z) onconf(R) autoinc(I).
+                                 {A = new PrimaryKeyColumnConstraint(parser.constraintName(),Z, R, I);}
+ccons(A) ::= UNIQUE onconf(R).      {A = new UniqueColumnConstraint(parser.constraintName(),R);}
+ccons(A) ::= CHECK LP expr(X) RP.   {A = new CheckColumnConstraint(parser.constraintName(),X);}
+ccons(A) ::= REFERENCES nm(T) eidlist_opt(TA) refargs(R).
+                                 {A = new ForeignKeyColumnConstraint(parser.constraintName(),new ForeignKeyClause(T.text(),TA,R), null);}
+ccons(A) ::= defer_subclause(D).    {A = D;}
+ccons(A) ::= COLLATE ids(C).        {A = new CollateColumnConstraint(parser.constraintName(),C.text());}
 
 // The optional AUTOINCREMENT keyword
 %type autoinc {boolean}
@@ -294,7 +296,7 @@ refargs(A) ::= .                  { A = null; /* EV: R-19803-45884 */}
 refargs(A) ::= refargs(A) refarg(Y). { A = append(A, Y); }
 %type refarg {RefArg}
 refarg(A) ::= MATCH nm(X).              { A = new MatchRefArg(X.text()); }
-refarg(A) ::= ON INSERT refact.      { A = new OnInsertRefArg(X); }
+refarg(A) ::= ON INSERT refact(X).      { A = new OnInsertRefArg(X); }
 refarg(A) ::= ON DELETE refact(X).   { A = new OnDeleteRefArg(X); }
 refarg(A) ::= ON UPDATE refact(X).   { A = new OnUpdateRefArg(X); }
 %type refact {RefAct}
@@ -311,24 +313,26 @@ init_deferred_pred_opt(A) ::= .                       {A = null;}
 init_deferred_pred_opt(A) ::= INITIALLY DEFERRED.     {A = InitDeferredPred.InitiallyDeferred;}
 init_deferred_pred_opt(A) ::= INITIALLY IMMEDIATE.    {A = InitDeferredPred.InitiallyImmediate;}
 
-conslist_opt(A) ::= .                         {A.n = 0; A.z = 0;}
-conslist_opt(A) ::= COMMA(A) conslist.
-conslist ::= conslist tconscomma tcons.
-conslist ::= tcons.
-tconscomma ::= COMMA.            {parser.constraintName = null;}
+%type conslist_opt {List<TableConstraint>}
+conslist_opt(A) ::= .                         {A = null;}
+conslist_opt(A) ::= COMMA conslist(X).        {A = X;}
+%type conslist {List<TableConstraint>}
+conslist(A) ::= conslist(A) tconscomma tcons(X). {A = append(A,X);}
+conslist(A) ::= tcons(X).                        {A = append(null,X);}
+tconscomma ::= COMMA.            {parser.constraintName(null);}
 tconscomma ::= .
-tcons ::= CONSTRAINT nm(X).      {parser.constraintName = X;}
-tcons ::= PRIMARY KEY LP sortlist(X) autoinc(I) RP onconf(R).
-                                 {sqlite3AddPrimaryKey(pParse,X,R,I,0);}
-tcons ::= UNIQUE LP sortlist(X) RP onconf(R).
-                                 {sqlite3CreateIndex(pParse,0,0,0,X,R,0,0,0,0,
-                                       SQLITE_IDXTYPE_UNIQUE);}
-tcons ::= CHECK LP expr(E) RP onconf.
-                                 {sqlite3AddCheckConstraint(pParse,E);}
-tcons ::= FOREIGN KEY LP eidlist(FA) RP
-          REFERENCES nm(T) eidlist_opt(TA) refargs(R) defer_subclause_opt(D). {
-    sqlite3CreateForeignKey(pParse, FA, T, TA, R);
-    sqlite3DeferForeignKey(pParse, D);
+%type tcons {TableConstraint}
+tcons ::= CONSTRAINT nm(X).      {parser.constraintName(X.text());}
+tcons(A) ::= PRIMARY KEY LP sortlist(X) autoinc(I) RP onconf(R).
+                                 {A = new PrimaryKeyTableConstraint(parser.constraintName(),X, I, R);}
+tcons(A) ::= UNIQUE LP sortlist(X) RP onconf(R).
+                                 {A = new UniqueTableConstraint(parser.constraintName(),X, R
+                                       );}
+tcons(A) ::= CHECK LP expr(E) RP onconf.
+                                 {A = new CheckTableConstraint(parser.constraintName(),E);}
+tcons(A) ::= FOREIGN KEY LP eidlist(FA) RP
+           REFERENCES nm(T) eidlist_opt(TA) refargs(R) defer_subclause_opt(D). {
+    A = new ForeignKeyTableConstraint(parser.constraintName(),FA, new ForeignKeyClause(T.text(),TA,R), D);
 }
 %type defer_subclause_opt {DeferSubclause}
 defer_subclause_opt(A) ::= .                    {A = null;}
@@ -1187,7 +1191,7 @@ cmd ::= create_vtab(A) LP vtabarglist(X) RP.  {A.args = X;}
 create_vtab(A) ::= createkw VIRTUAL TABLE ifnotexists(E)
                 nm(X) dbnm(Y) USING nm(Z). {
     QualifiedName tblName = QualifiedName.from(X.text(), Y);
-    A = new CreateVirtualTable(E, tblName, Z.text(), null);
+    A = new CreateVirtualTable(E, tblName, Z.text());
 }
 vtabarglist ::= vtabarg.
 vtabarglist ::= vtabarglist COMMA vtabarg.
