@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * bind-parameter
+ */
 public class VariableExpr implements Expr {
 	public final String variable;
 

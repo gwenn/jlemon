@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * expr [NOT] BETWEEN expr AND expr
+ */
 public class BetweenExpr implements Expr {
 	public final Expr lhs;
 	public final boolean not;

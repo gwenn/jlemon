@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * [NOT] EXISTS (select-stmt)
+ */
 public class ExistsExpr implements Expr {
 	public final Select subquery;
 

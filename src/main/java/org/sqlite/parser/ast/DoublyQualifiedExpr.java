@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * schema-name.table-name.column-name
+ */
 public class DoublyQualifiedExpr implements Expr {
 	public final String dbName;
 	public final String tblName;

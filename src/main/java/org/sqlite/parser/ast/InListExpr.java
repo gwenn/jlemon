@@ -6,6 +6,9 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
+/**
+ * expr [NOT] IN (expr[,expr]*)
+ */
 public class InListExpr implements Expr {
 	public final Expr lhs;
 	public final boolean not;

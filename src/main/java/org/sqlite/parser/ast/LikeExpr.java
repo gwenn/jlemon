@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * expr [NOT] LIKE|GLOB|REGEXP|MATCH expr ESCAPE expr
+ */
 public class LikeExpr implements Expr {
 	public final Expr lhs;
 	public final NotLike op;

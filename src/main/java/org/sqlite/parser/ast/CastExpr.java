@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * CAST(expr AS type-name)
+ */
 public class CastExpr implements Expr {
 	public final Expr expr;
 	public final Type typeName;

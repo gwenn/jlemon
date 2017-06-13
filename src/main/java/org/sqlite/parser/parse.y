@@ -801,15 +801,9 @@ term(A) ::= CTIME_KW(OP). {
 %include {
 }
 
-expr(A) ::= LP(L) nexprlist(X) COMMA expr(Y) RP(R). {
-  ExprList *pList = sqlite3ExprListAppend(pParse, X, Y.pExpr);
-  A.pExpr = sqlite3PExpr(pParse, TK_VECTOR, 0, 0);
-  if( A.pExpr ){
-    A.pExpr->x.pList = pList;
-    spanSet(A, L, R);
-  }else{
-    sqlite3ExprListDelete(pParse->db, pList);
-  }
+expr(A) ::= LP nexprlist(X) COMMA expr(Y) RP. {
+  append(X, Y);
+  A = new ParenthesizedExpr(X);
 }
 
 expr(A) ::= expr(A) AND(OP) expr(Y).    {A = new BinaryExpr(A, Operator.from(@OP),Y);}
@@ -838,7 +832,7 @@ expr(A) ::= expr(A) likeop(OP) expr(Y) ESCAPE expr(E).  [LIKE_KW]  {
 }
 
 expr(A) ::= expr(A) ISNULL|NOTNULL(E).   {A = IsNullExpr.from(A, @E);}
-expr(A) ::= expr(A) NOT NULL. {A = new NotNullExpr(A);}
+expr(A) ::= expr(A) NOT NULL. {A = new IsNullExpr(A, NullOperator.Not_Null);}
 
 %include {
 }

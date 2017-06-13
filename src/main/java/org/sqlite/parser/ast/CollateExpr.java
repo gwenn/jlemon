@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * expr COLLATE collation-name
+ */
 public class CollateExpr implements Expr {
 	public final Expr expr;
 	public final String name;

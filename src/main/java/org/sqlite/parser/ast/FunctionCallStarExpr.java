@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * function-name(*)
+ */
 public class FunctionCallStarExpr implements Expr {
 	public final String name;
 

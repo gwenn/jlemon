@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * expr [NOT] IN (select-stmt)
+ */
 public class InSelectExpr implements Expr {
 	public final Expr lhs;
 	public final boolean not;

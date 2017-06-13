@@ -4,6 +4,10 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * expr binary-operator expr
+ * expr IS [NOT] expr
+ */
 public class BinaryExpr implements Expr {
 	public final Expr lhs;
 	public final Operator op;

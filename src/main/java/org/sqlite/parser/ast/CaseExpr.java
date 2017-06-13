@@ -3,6 +3,9 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * CASE [expr] [WHEN expr THEN expr]* [ELSE expr] END
+ */
 public class CaseExpr implements Expr {
 	public final Expr base;
 	public final List<WhenThenPair> whenThenPairs;

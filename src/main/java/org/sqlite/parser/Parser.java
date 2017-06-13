@@ -1,6 +1,5 @@
 package org.sqlite.parser;
 
-import java.util.List;
 import org.sqlite.parser.ast.*;
 
 public class Parser {

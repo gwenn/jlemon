@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * raise-function
+ */
 public class RaiseExpr implements Expr {
 	public final ResolveType type;
 	public final String err;
