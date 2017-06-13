@@ -760,7 +760,7 @@ idlist(A) ::= nm(Y).
 expr(A) ::= term(A).
 expr(A) ::= LP expr(X) RP.
             {A=new ParenthesizedExpr(X); /*A-overwrites-B*/}
-term(A) ::= NULL(X).        {spanExpr(A,pParse,@X,X);/*A-overwrites-X*/}
+term(A) ::= NULL(X).        {A=LiteralExpr.from(X);/*A-overwrites-X*/}
 expr(A) ::= id(X).          {A=new IdExpr(X.text()); /*A-overwrites-X*/}
 expr(A) ::= JOIN_KW(X).     {A=new IdExpr(X.text()); /*A-overwrites-X*/}
 expr(A) ::= nm(X) DOT nm(Y). {
@@ -769,10 +769,10 @@ expr(A) ::= nm(X) DOT nm(Y). {
 expr(A) ::= nm(X) DOT nm(Y) DOT nm(Z). {
   A = new DoublyQualifiedExpr(X.text(),Y.text(),Z.text()); /*A-overwrites-X*/
 }
-term(A) ::= FLOAT|BLOB(X). {spanExpr(A,pParse,@X,X);/*A-overwrites-X*/}
-term(A) ::= STRING(X).     {A=new LiteralExpr(X.text());/*A-overwrites-X*/}
+term(A) ::= FLOAT|BLOB(X). {A=LiteralExpr.from(X);/*A-overwrites-X*/}
+term(A) ::= STRING(X).     {A=LiteralExpr.from(X);/*A-overwrites-X*/}
 term(A) ::= INTEGER(X). {
-  A = new NumericLiteralExpr(X.text(), true);
+  A=LiteralExpr.from(X);
 }
 expr(A) ::= VARIABLE(X).     {
   A = new VariableExpr(X.text());
