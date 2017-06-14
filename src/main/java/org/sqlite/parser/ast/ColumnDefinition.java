@@ -6,25 +6,18 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 public class ColumnDefinition implements ToSql {
-	public final String colName;
-	public final Type colType;
+	public final ColumnNameAndType nameAndType;
 	public final List<ColumnConstraint> constraints;
 
-	public ColumnDefinition(String colName,
-			Type colType,
+	public ColumnDefinition(ColumnNameAndType nameAndType,
 			List<ColumnConstraint> constraints) {
-		this.colName = requireNonNull(colName);
-		this.colType = colType;
+		this.nameAndType = requireNonNull(nameAndType);
 		this.constraints = constraints;
 	}
 
 	@Override
 	public void toSql(Appendable a) throws IOException {
-		doubleQuote(a, colName);
-		if (colType != null) {
-			a.append(' ');
-			colType.toSql(a);
-		}
+		nameAndType.toSql(a);
 		if (constraints != null) {
 			for (ColumnConstraint constraint : constraints) {
 				a.append(' ');

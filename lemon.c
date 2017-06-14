@@ -3914,6 +3914,7 @@ void print_stack_union(
   fprintf(out,"#define %sTOKENTYPE %s\n",name,
     lemp->tokentype?lemp->tokentype:"Object");  lineno++;
   if( mhflag ){ fprintf(out,"#endif\n"); lineno++; }
+  fprintf(out,"@SuppressWarnings(\"unchecked\")\n"); lineno++;
   fprintf(out,"private static class YYMINORTYPE {\n"); lineno++;
   fprintf(out,"  Tag tag;\n"); lineno++;
   fprintf(out,"  Object value;\n"); lineno++;

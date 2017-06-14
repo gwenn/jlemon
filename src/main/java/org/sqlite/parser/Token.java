@@ -1,8 +1,23 @@
 package org.sqlite.parser;
 
-public interface Token {
+public class Token {
+	private final int type;
+	private String text;
+
+	public Token(int type, String text) {
+		this.type = type;
+		this.text = text;
+	}
+
 	/** @return The token type */
-	int tokenType();
+	public int tokenType() {
+		return type;
+	}
 	/** @return Text of the token. */
-	String text();
+	public String text() {
+		return text;
+	}
+	public void append(Token t) {
+		text = text + ' ' + t.text;
+	}
 }

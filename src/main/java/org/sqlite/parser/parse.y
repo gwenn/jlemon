@@ -25,15 +25,15 @@
 %default_type {Token}
 
 // The generated parser function takes a 4th argument as follows:
-%extra_argument {Parser parser}
+%extra_argument {Context context}
 
 // This code runs whenever there is a syntax error
 //
 %syntax_error {
-  parser.sqlite3ErrorMsg("near \"%s\": syntax error", yyminor.text());
+  context.sqlite3ErrorMsg("near \"%s\": syntax error", yyminor.text());
 }
 %stack_overflow {
-  parser.sqlite3ErrorMsg("parser stack overflow");
+  context.sqlite3ErrorMsg("parser stack overflow");
 }
 
 // The name of the generated procedure that implements the parser
@@ -97,10 +97,10 @@ ecmd ::= SEMI.
 ecmd ::= explain cmdx SEMI.
 explain ::= .
 %ifndef SQLITE_OMIT_EXPLAIN
-explain ::= EXPLAIN.              { parser.explain = ExplainKind.Explain; }
-explain ::= EXPLAIN QUERY PLAN.   { parser.explain = ExplainKind.QueryPlan; }
+explain ::= EXPLAIN.              { context.explain = ExplainKind.Explain; }
+explain ::= EXPLAIN QUERY PLAN.   { context.explain = ExplainKind.QueryPlan; }
 %endif  SQLITE_OMIT_EXPLAIN
-cmdx ::= cmd.           { sqlite3FinishCoding(pParse); }
+cmdx ::= cmd.           { context.sqlite3FinishCoding(); }
 
 ///////////////////// Begin and end transactions. ////////////////////////////
 //
@@ -161,12 +161,18 @@ table_options(A) ::= WITHOUT nm(X). {
     A = true;
   }else{
     A = false;
-    parser.sqlite3ErrorMsg("unknown table option: %s", X.text());
+    context.sqlite3ErrorMsg("unknown table option: %s", X.text());
   }
 }
-columnlist ::= columnlist COMMA columnname carglist.
-columnlist ::= columnname carglist.
-columnname(A) ::= nm(A) typetoken(Y). {sqlite3AddColumn(pParse,A,Y);}
+%type columnlist {List<ColumnDefinition>}
+columnlist(A) ::= columnlist(A) COMMA columnname(X) carglist(Y). {
+  A = append(A, new ColumnDefinition(X,Y));
+}
+columnlist(A) ::= columnname(X) carglist(Y). {
+  A = append(null, new ColumnDefinition(X,Y));
+}
+%type columnname {ColumnNameAndType}
+columnname(A) ::= nm(X) typetoken(Y). {A = new ColumnNameAndType(X.text(), Y);}
 
 // Define operator precedence early so that this is the first occurrence
 // of the operator tokens in the grammer.  Keeping the operators together
@@ -241,7 +247,7 @@ typetoken(A) ::= typename(X) LP signed(Y) COMMA signed(Z) RP. {
 }
 %type typename {Token}
 typename(A) ::= ids(A).
-typename(A) ::= typename(A) ids(Y). {A.n=Y.n+(int)(Y.z-A.z);}
+typename(A) ::= typename(A) ids(Y). {A.append(Y);}
 signed ::= plus_num.
 signed ::= minus_num.
 
@@ -252,34 +258,34 @@ signed ::= minus_num.
 carglist(A) ::= carglist(A) ccons(X). {A=append(A,X);}
 carglist(A) ::= .                     {A=null;}
 %type ccons {ColumnConstraint}
-ccons ::= CONSTRAINT nm(X).           {parser.constraintName(X.text());}
-ccons(A) ::= DEFAULT term(X).            {A = new DefaultColumnConstraint(parser.constraintName(),X);}
-ccons(A) ::= DEFAULT LP expr(X) RP.      {A = new DefaultColumnConstraint(parser.constraintName(),new ParenthesizedExpr(X));}
-ccons(A) ::= DEFAULT PLUS term(X).       {A = new DefaultColumnConstraint(parser.constraintName(),new UnaryExpr(UnaryOperator.Positive, X));}
+ccons ::= CONSTRAINT nm(X).           {context.constraintName(X.text());}
+ccons(A) ::= DEFAULT term(X).            {A = new DefaultColumnConstraint(context.constraintName(),X);}
+ccons(A) ::= DEFAULT LP expr(X) RP.      {A = new DefaultColumnConstraint(context.constraintName(),new ParenthesizedExpr(X));}
+ccons(A) ::= DEFAULT PLUS term(X).       {A = new DefaultColumnConstraint(context.constraintName(),new UnaryExpr(UnaryOperator.Positive, X));}
 ccons(A) ::= DEFAULT MINUS term(X).      {
   UnaryExpr v;
   v = new UnaryExpr(UnaryOperator.Negative, X);
-  A = new DefaultColumnConstraint(parser.constraintName(),v);
+  A = new DefaultColumnConstraint(context.constraintName(),v);
 }
 ccons(A) ::= DEFAULT id(X).              {
   IdExpr v;
   v = new IdExpr(X.text());
-  A = new DefaultColumnConstraint(parser.constraintName(),v);
+  A = new DefaultColumnConstraint(context.constraintName(),v);
 }
 
 // In addition to the type name, we also care about the primary key and
 // UNIQUE constraints.
 //
-ccons(A) ::= NULL onconf(R). {A = new NotNullColumnConstraint(parser.constraintName(),true, R);}
-ccons(A) ::= NOT NULL onconf(R).    {A = new NotNullColumnConstraint(parser.constraintName(),false, R);}
+ccons(A) ::= NULL onconf(R). {A = new NotNullColumnConstraint(context.constraintName(),true, R);}
+ccons(A) ::= NOT NULL onconf(R).    {A = new NotNullColumnConstraint(context.constraintName(),false, R);}
 ccons(A) ::= PRIMARY KEY sortorder(Z) onconf(R) autoinc(I).
-                                 {A = new PrimaryKeyColumnConstraint(parser.constraintName(),Z, R, I);}
-ccons(A) ::= UNIQUE onconf(R).      {A = new UniqueColumnConstraint(parser.constraintName(),R);}
-ccons(A) ::= CHECK LP expr(X) RP.   {A = new CheckColumnConstraint(parser.constraintName(),X);}
+                                 {A = new PrimaryKeyColumnConstraint(context.constraintName(),Z, R, I);}
+ccons(A) ::= UNIQUE onconf(R).      {A = new UniqueColumnConstraint(context.constraintName(),R);}
+ccons(A) ::= CHECK LP expr(X) RP.   {A = new CheckColumnConstraint(context.constraintName(),X);}
 ccons(A) ::= REFERENCES nm(T) eidlist_opt(TA) refargs(R).
-                                 {A = new ForeignKeyColumnConstraint(parser.constraintName(),new ForeignKeyClause(T.text(),TA,R), null);}
-ccons(A) ::= defer_subclause(D).    {A = D;}
-ccons(A) ::= COLLATE ids(C).        {A = new CollateColumnConstraint(parser.constraintName(),C.text());}
+                                 {A = new ForeignKeyColumnConstraint(context.constraintName(),new ForeignKeyClause(T.text(),TA,R), null);}
+ccons(A) ::= defer_subclause(D).    {A = D;/*FIXME ForeignKeyColumnConstraint.derefClause*/}
+ccons(A) ::= COLLATE ids(C).        {A = new CollateColumnConstraint(context.constraintName(),C.text());}
 
 // The optional AUTOINCREMENT keyword
 %type autoinc {boolean}
@@ -319,20 +325,20 @@ conslist_opt(A) ::= COMMA conslist(X).        {A = X;}
 %type conslist {List<TableConstraint>}
 conslist(A) ::= conslist(A) tconscomma tcons(X). {A = append(A,X);}
 conslist(A) ::= tcons(X).                        {A = append(null,X);}
-tconscomma ::= COMMA.            {parser.constraintName(null);}
+tconscomma ::= COMMA.            {context.constraintName(null);}
 tconscomma ::= .
 %type tcons {TableConstraint}
-tcons ::= CONSTRAINT nm(X).      {parser.constraintName(X.text());}
+tcons ::= CONSTRAINT nm(X).      {context.constraintName(X.text());}
 tcons(A) ::= PRIMARY KEY LP sortlist(X) autoinc(I) RP onconf(R).
-                                 {A = new PrimaryKeyTableConstraint(parser.constraintName(),X, I, R);}
+                                 {A = new PrimaryKeyTableConstraint(context.constraintName(),X, I, R);}
 tcons(A) ::= UNIQUE LP sortlist(X) RP onconf(R).
-                                 {A = new UniqueTableConstraint(parser.constraintName(),X, R
+                                 {A = new UniqueTableConstraint(context.constraintName(),X, R
                                        );}
 tcons(A) ::= CHECK LP expr(E) RP onconf.
-                                 {A = new CheckTableConstraint(parser.constraintName(),E);}
+                                 {A = new CheckTableConstraint(context.constraintName(),E);}
 tcons(A) ::= FOREIGN KEY LP eidlist(FA) RP
            REFERENCES nm(T) eidlist_opt(TA) refargs(R) defer_subclause_opt(D). {
-    A = new ForeignKeyTableConstraint(parser.constraintName(),FA, new ForeignKeyClause(T.text(),TA,R), D);
+    A = new ForeignKeyTableConstraint(context.constraintName(),FA, new ForeignKeyClause(T.text(),TA,R), D);
 }
 %type defer_subclause_opt {DeferSubclause}
 defer_subclause_opt(A) ::= .                    {A = null;}
@@ -430,7 +436,7 @@ multiselect_op(A) ::= UNION ALL.             {A = CompoundOperator.UnionAll;}
 multiselect_op(A) ::= EXCEPT|INTERSECT(OP).  {A = CompoundOperator.from(@OP); /*A-overwrites-OP*/}
 %endif SQLITE_OMIT_COMPOUND_SELECT
 oneselect(A) ::= SELECT(S) distinct(D) selcollist(W) from(X) where_opt(Y)
-                 groupby_opt(P) having_opt(Q) orderby_opt(Z) limit_opt(L). {
+                 groupby_opt(P) orderby_opt(Z) limit_opt(L). {
 #if SELECTTRACE_ENABLED
   Token s = S; /*A-overwrites-S*/
 #endif
@@ -645,7 +651,7 @@ sortorder(A) ::= .              {A = null;}
 
 %type groupby_opt {GroupBy}
 groupby_opt(A) ::= .                      {A = null;}
-groupby_opt(A) ::= GROUP BY nexprlist(X). {A = new GroupBy(X, null);}
+groupby_opt(A) ::= GROUP BY nexprlist(X) having_opt(Y). {A = new GroupBy(X, Y);}
 
 %type having_opt {Expr}
 having_opt(A) ::= .                {A = null;}
@@ -787,7 +793,7 @@ expr(A) ::= CAST LP expr(E) AS typetoken(T) RP. {
 %endif  SQLITE_OMIT_CAST
 expr(A) ::= id(X) LP distinct(D) exprlist(Y) RP. {
   /*if( Y && Y->nExpr>pParse->db->aLimit[SQLITE_LIMIT_FUNCTION_ARG] ){
-    parser.sqlite3ErrorMsg("too many arguments on function %T", X);
+    context.sqlite3ErrorMsg("too many arguments on function %T", X);
   }*/
   A = new FunctionCallExpr(X.text(), D, Y);
 }
@@ -1071,7 +1077,7 @@ trigger_cmd_list(A) ::= trigger_cmd(X) SEMI. {
 trnm(A) ::= nm(A).
 trnm(A) ::= nm DOT nm(X). {
   A = X;
-  parser.sqlite3ErrorMsg(
+  context.sqlite3ErrorMsg(
         "qualified table names are not allowed on INSERT, UPDATE, and DELETE "+
         "statements within triggers");
 }
@@ -1082,12 +1088,12 @@ trnm(A) ::= nm DOT nm(X). {
 //
 tridxby ::= .
 tridxby ::= INDEXED BY nm. {
-  parser.sqlite3ErrorMsg(
+  context.sqlite3ErrorMsg(
         "the INDEXED BY clause is not allowed on UPDATE or DELETE statements "+
         "within triggers");
 }
 tridxby ::= NOT INDEXED. {
-  parser.sqlite3ErrorMsg(
+  context.sqlite3ErrorMsg(
         "the NOT INDEXED clause is not allowed on UPDATE or DELETE statements "+
         "within triggers");
 }
@@ -1170,7 +1176,7 @@ cmd ::= ALTER TABLE fullname(X) RENAME TO nm(Z). {
 }
 cmd ::= ALTER TABLE fullname(X)
         ADD kwcolumn_opt columnname(Y) carglist(C). {
-  ColumnDefinition colDefinition = new ColumnDefinition(Y.text(), null, C);
+  ColumnDefinition colDefinition = new ColumnDefinition(Y, C);
   new AlterTable(X, colDefinition);
 }
 kwcolumn_opt ::= .

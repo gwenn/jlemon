@@ -567,7 +567,6 @@ class Tokenizer extends Scanner {
 	}
 
 	/** @return Text of the token. */
-	@Override
 	public String text() {
 		return subSequence(tokenStart, tokenEnd);
 	}

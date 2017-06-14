@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * Port of Go Scanner in Java.
  */
-abstract class Scanner implements Token {
+abstract class Scanner {
 	// The reader provided by the client.
 	private /*final*/ Reader r;
 	// Maximum size of a token

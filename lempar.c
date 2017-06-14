@@ -589,6 +589,7 @@ private static final ruleInfoEntry
 ** Perform a reduce action and the shift that must immediately
 ** follow the reduce.
 */
+@SuppressWarnings("UnnecessarySemicolon")
 private void yy_reduce(
   int yyruleno        /* Number of the rule by which to reduce */
 ){
