@@ -135,7 +135,7 @@ cmd ::= ROLLBACK trans_opt(Y) TO savepoint_opt nm(X). {
 //
 cmd ::= create_table create_table_args.
 create_table ::= createkw temp(T) TABLE ifnotexists(E) nm(Y) dbnm(Z). {
-   sqlite3StartTable(pParse,Y,Z,T,0,0,E);
+   /*FIXME sqlite3StartTable(pParse,Y,Z,T,0,0,E);*/
 }
 createkw(A) ::= CREATE(A).
 
@@ -148,11 +148,11 @@ temp(A) ::= TEMP.  {A = true;}
 %endif  SQLITE_OMIT_TEMPDB
 temp(A) ::= .      {A = false;}
 create_table_args ::= LP columnlist conslist_opt(X) RP(E) table_options(F). {
-  sqlite3EndTable(pParse,X,E,F,0);
+  /*FIXME sqlite3EndTable(pParse,X,E,F,0);*/
 }
 create_table_args ::= AS select(S). {
-  sqlite3EndTable(pParse,0,0,0,S);
-  sqlite3SelectDelete(pParse->db, S);
+  /*FIXME sqlite3EndTable(pParse,0,0,0,S);
+  sqlite3SelectDelete(pParse->db, S);*/
 }
 %type table_options {boolean}
 table_options(A) ::= .    {A = false;}
@@ -284,7 +284,7 @@ ccons(A) ::= UNIQUE onconf(R).      {A = new UniqueColumnConstraint(context.cons
 ccons(A) ::= CHECK LP expr(X) RP.   {A = new CheckColumnConstraint(context.constraintName(),X);}
 ccons(A) ::= REFERENCES nm(T) eidlist_opt(TA) refargs(R).
                                  {A = new ForeignKeyColumnConstraint(context.constraintName(),new ForeignKeyClause(T.text(),TA,R), null);}
-ccons(A) ::= defer_subclause(D).    {A = D;/*FIXME ForeignKeyColumnConstraint.derefClause*/}
+ccons(A) ::= defer_subclause(D).    {/*FIXME A = D; ForeignKeyColumnConstraint.derefClause*/}
 ccons(A) ::= COLLATE ids(C).        {A = new CollateColumnConstraint(context.constraintName(),C.text());}
 
 // The optional AUTOINCREMENT keyword
@@ -383,9 +383,9 @@ cmd ::= DROP VIEW ifexists(E) fullname(X). {
 //////////////////////// The SELECT statement /////////////////////////////////
 //
 cmd ::= select(X).  {
-  SelectDest dest = {SRT_Output, 0, 0, 0, 0, 0};
+  /*FIXME SelectDest dest = {SRT_Output, 0, 0, 0, 0, 0};
   sqlite3Select(pParse, X, dest);
-  sqlite3SelectDelete(pParse->db, X);
+  sqlite3SelectDelete(pParse->db, X);*/
 }
 
 %type select {Select}
@@ -396,20 +396,20 @@ cmd ::= select(X).  {
 }
 
 select(A) ::= with(W) selectnowith(X). {
-  Select *p = X;
+  /*FIXME Select *p = X;
   if( p ){
     p->pWith = W;
     parserDoubleLinkSelect(pParse, p);
   }else{
     sqlite3WithDelete(pParse->db, W);
   }
-  A = p; /*A-overwrites-W*/
+  A = p;*/ /*A-overwrites-W*/
 }
 
 selectnowith(A) ::= oneselect(A).
 %ifndef SQLITE_OMIT_COMPOUND_SELECT
 selectnowith(A) ::= selectnowith(A) multiselect_op(Y) oneselect(Z).  {
-  Select *pRhs = Z;
+  /*FIXME Select *pRhs = Z;
   Select *pLhs = A;
   if( pRhs && pRhs->pPrior ){
     SrcList *pFrom;
@@ -428,7 +428,7 @@ selectnowith(A) ::= selectnowith(A) multiselect_op(Y) oneselect(Z).  {
   }else{
     sqlite3SelectDelete(pParse->db, pLhs);
   }
-  A = pRhs;
+  A = pRhs;*/
 }
 %type multiselect_op {CompoundOperator}
 multiselect_op(A) ::= UNION(OP).             {A = CompoundOperator.from(@OP); /*A-overwrites-OP*/}
@@ -440,7 +440,7 @@ oneselect(A) ::= SELECT(S) distinct(D) selcollist(W) from(X) where_opt(Y)
 #if SELECTTRACE_ENABLED
   Token s = S; /*A-overwrites-S*/
 #endif
-  A = sqlite3SelectNew(pParse,W,X,Y,P,Q,Z,D,L.pLimit,L.pOffset);
+  /*FIXME A = sqlite3SelectNew(pParse,W,X,Y,P,Q,Z,D,L.pLimit,L.pOffset);*/
 #if SELECTTRACE_ENABLED
   /* Populate the Select.zSelName[] string that is used to help with
   ** query planner debugging, to differentiate between multiple Select
@@ -470,10 +470,10 @@ oneselect(A) ::= values(A).
 
 %type values {Select}
 values(A) ::= VALUES LP nexprlist(X) RP. {
-  A = sqlite3SelectNew(pParse,X,0,0,0,0,0,SF_Values,0,0);
+  /*FIXME A = sqlite3SelectNew(pParse,X,0,0,0,0,0,SF_Values,0,0);*/
 }
 values(A) ::= values(A) COMMA LP exprlist(Y) RP. {
-  Select *pRight, *pLeft = A;
+  /*FIXME Select *pRight, *pLeft = A;
   pRight = sqlite3SelectNew(pParse,Y,0,0,0,0,0,SF_Values|SF_MultiValue,0,0);
   if( ALWAYS(pLeft) ) pLeft->selFlags &= ~SF_MultiValue;
   if( pRight ){
@@ -482,7 +482,7 @@ values(A) ::= values(A) COMMA LP exprlist(Y) RP. {
     A = pRight;
   }else{
     A = pLeft;
-  }
+  }*/
 }
 
 // The "distinct" nonterminal is true (1) if the DISTINCT keyword is
@@ -530,37 +530,37 @@ as(A) ::= .            {A = null;}
 
 // A complete FROM clause.
 //
-from(A) ::= .                {A = sqlite3DbMallocZero(pParse->db, sizeof(*A));}
+from(A) ::= .                {/*FIXME A = sqlite3DbMallocZero(pParse->db, sizeof(*A));*/}
 from(A) ::= FROM seltablist(X). {
-  A = X;
-  sqlite3SrcListShiftJoinType(A);
+  /*FIXME A = X;
+  sqlite3SrcListShiftJoinType(A);*/
 }
 
 // "seltablist" is a "Select Table List" - the content of the FROM clause
 // in a SELECT statement.  "stl_prefix" is a prefix of this list.
 //
 stl_prefix(A) ::= seltablist(A) joinop(Y).    {
-   if( ALWAYS(A && A->nSrc>0) ) A->a[A->nSrc-1].fg.jointype = (u8)Y;
+   /*FIXME if( ALWAYS(A && A->nSrc>0) ) A->a[A->nSrc-1].fg.jointype = (u8)Y;*/
 }
 stl_prefix(A) ::= .                           {A = null;}
 seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) as(Z) indexed_opt(I)
                   on_opt(N) using_opt(U). {
-  A = sqlite3SrcListAppendFromTerm(pParse,A,Y,D,Z,0,N,U);
-  sqlite3SrcListIndexedBy(pParse, A, I);
+  /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,Y,D,Z,0,N,U);
+  sqlite3SrcListIndexedBy(pParse, A, I);*/
 }
 seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) LP exprlist(E) RP as(Z)
                   on_opt(N) using_opt(U). {
-  A = sqlite3SrcListAppendFromTerm(pParse,A,Y,D,Z,0,N,U);
-  sqlite3SrcListFuncArgs(pParse, A, E);
+  /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,Y,D,Z,0,N,U);
+  sqlite3SrcListFuncArgs(pParse, A, E);*/
 }
 %ifndef SQLITE_OMIT_SUBQUERY
   seltablist(A) ::= stl_prefix(A) LP select(S) RP
                     as(Z) on_opt(N) using_opt(U). {
-    A = sqlite3SrcListAppendFromTerm(pParse,A,0,0,Z,S,N,U);
+    /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,0,0,Z,S,N,U);*/
   }
   seltablist(A) ::= stl_prefix(A) LP seltablist(F) RP
                     as(Z) on_opt(N) using_opt(U). {
-    if( A==0 && Z.n==0 && N==0 && U==0 ){
+    /*FIXME if( A==0 && Z.n==0 && N==0 && U==0 ){
       A = F;
     }else if( F->nSrc==1 ){
       A = sqlite3SrcListAppendFromTerm(pParse,A,0,0,Z,0,N,U);
@@ -579,7 +579,7 @@ seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) LP exprlist(E) RP as(Z)
       sqlite3SrcListShiftJoinType(F);
       pSubquery = sqlite3SelectNew(pParse,0,F,0,0,0,0,SF_NestedFrom,0,0);
       A = sqlite3SrcListAppendFromTerm(pParse,A,0,0,Z,pSubquery,N,U);
-    }
+    }*/
   }
 %endif  SQLITE_OMIT_SUBQUERY
 
@@ -890,13 +890,8 @@ expr(A) ::= expr(A) between_op(N) expr(X) AND expr(Y). [BETWEEN] {
     A = new InSelectExpr(A, N, Y);
   }
   expr(A) ::= expr(A) in_op(N) nm(Y) dbnm(Z) paren_exprlist(E). [IN] {
-    SrcList *pSrc = sqlite3SrcListAppend(pParse->db, 0,Y,Z);
-    Select *pSelect = sqlite3SelectNew(pParse, 0,pSrc,0,0,0,0,0,0,0);
-    if( E )  sqlite3SrcListFuncArgs(pParse, pSelect ? pSrc : 0, E);
-    A.pExpr = sqlite3PExpr(pParse, TK_IN, A.pExpr, 0);
-    sqlite3PExprAddSelect(pParse, A.pExpr, pSelect);
-    exprNot(pParse, N, A);
-    A.zEnd = Z.z ? Z.z[Z.n] : Y.z[Y.n];
+    QualifiedName qn = QualifiedName.from(Y.text(),Z);
+    A = new InTableExpr(A, N, qn, E);
   }
   expr(A) ::= EXISTS LP select(Y) RP. {
     A = new ExistsExpr(Y); /*A-overwrites-B*/
@@ -1009,12 +1004,12 @@ cmd ::= VACUUM nm(X).          {new Vacuum(X.text());}
 //
 %ifndef SQLITE_OMIT_PRAGMA
 cmd ::= PRAGMA nm(X) dbnm(Z).                {Pragma.from(X.text(),Z,null);}
-cmd ::= PRAGMA nm(X) dbnm(Z) EQ nmnum(Y).    {Pragma.from(X.text(),Z,Y);}
-cmd ::= PRAGMA nm(X) dbnm(Z) LP nmnum(Y) RP. {Pragma.from(X.text(),Z,Y);}
+cmd ::= PRAGMA nm(X) dbnm(Z) EQ nmnum(Y).    {Pragma.from(X.text(),Z,Y.text());}
+cmd ::= PRAGMA nm(X) dbnm(Z) LP nmnum(Y) RP. {Pragma.from(X.text(),Z,Y.text());}
 cmd ::= PRAGMA nm(X) dbnm(Z) EQ minus_num(Y). 
-                                             {Pragma.from(X.text(),Z,Y);}
+                                             {Pragma.from(X.text(),Z,Y.text());}
 cmd ::= PRAGMA nm(X) dbnm(Z) LP minus_num(Y) RP.
-                                             {Pragma.from(X.text(),Z,Y);}
+                                             {Pragma.from(X.text(),Z,Y.text());}
 
 nmnum(A) ::= plus_num(A).
 nmnum(A) ::= nm(A).
@@ -1186,7 +1181,7 @@ kwcolumn_opt ::= COLUMNKW.
 //////////////////////// CREATE VIRTUAL TABLE ... /////////////////////////////
 %ifndef SQLITE_OMIT_VIRTUALTABLE
 cmd ::= create_vtab.                       {}
-cmd ::= create_vtab(A) LP vtabarglist(X) RP.  {A.args = X;}
+cmd ::= create_vtab(A) LP vtabarglist(X) RP.  {A.args = X.text();}
 %type create_vtab {CreateVirtualTable}
 create_vtab(A) ::= createkw VIRTUAL TABLE ifnotexists(E)
                 nm(X) dbnm(Y) USING nm(Z). {
@@ -1195,11 +1190,11 @@ create_vtab(A) ::= createkw VIRTUAL TABLE ifnotexists(E)
 }
 vtabarglist ::= vtabarg.
 vtabarglist ::= vtabarglist COMMA vtabarg.
-vtabarg ::= .                       {sqlite3VtabArgInit(pParse);}
+vtabarg ::= .                       {/*FIXME sqlite3VtabArgInit(pParse);*/}
 vtabarg ::= vtabarg vtabargtoken.
-vtabargtoken ::= ANY(X).            {sqlite3VtabArgExtend(pParse,X);}
-vtabargtoken ::= lp anylist RP(X).  {sqlite3VtabArgExtend(pParse,X);}
-lp ::= LP(X).                       {sqlite3VtabArgExtend(pParse,X);}
+vtabargtoken ::= ANY(X).            {/*FIXME sqlite3VtabArgExtend(pParse,X);*/}
+vtabargtoken ::= lp anylist RP(X).  {/*FIXME sqlite3VtabArgExtend(pParse,X);*/}
+lp ::= LP(X).                       {/*FIXME sqlite3VtabArgExtend(pParse,X);*/}
 anylist ::= .
 anylist ::= anylist LP anylist RP.
 anylist ::= anylist ANY.

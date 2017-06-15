@@ -11,7 +11,7 @@ public class CreateVirtualTable implements Stmt {
 	public final boolean ifNotExists;
 	public final QualifiedName tblName;
 	public final String moduleName;
-	public final List<Expr> args = new ArrayList<>();
+	public String args;
 
 	public CreateVirtualTable(boolean ifNotExists,
 			QualifiedName tblName,
@@ -30,10 +30,10 @@ public class CreateVirtualTable implements Stmt {
 		tblName.toSql(a);
 		a.append("USING ");
 		doubleQuote(a, moduleName);
-		if (isNotEmpty(args)) {
-			a.append('(');
-			comma(a, args);
-			a.append(')');
+		a.append('(');
+		if (args != null && !args.isEmpty()) {
+			a.append(args);
 		}
+		a.append(')');
 	}
 }
