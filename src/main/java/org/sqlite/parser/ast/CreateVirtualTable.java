@@ -1,11 +1,8 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static java.util.Objects.requireNonNull;
-import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class CreateVirtualTable implements Stmt {
 	public final boolean ifNotExists;

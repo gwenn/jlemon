@@ -9,7 +9,7 @@ import static org.sqlite.parser.Identifier.isIdentifierContinue;
 public interface ToSql {
 	void toSql(Appendable a) throws IOException;
 
-	default void doubleQuote(Appendable a, String name) throws IOException {
+	static void doubleQuote(Appendable a, String name) throws IOException {
 		if (name.isEmpty()) {
 			a.append("\"\"");
 			return;
@@ -37,7 +37,7 @@ public interface ToSql {
 		a.append('"');
 	}
 
-	default void singleQuote(Appendable a, String value) throws IOException {
+	static void singleQuote(Appendable a, String value) throws IOException {
 		a.append('\'');
 		for (int i = 0; i < value.length(); i++) {
 			char c = value.charAt(i);
@@ -49,7 +49,7 @@ public interface ToSql {
 		a.append('\'');
 	}
 
-	default void comma(Appendable a, List<? extends ToSql> items) throws IOException {
+	static void comma(Appendable a, List<? extends ToSql> items) throws IOException {
 		for (int i = 0; i < items.size(); i++) {
 			if (i != 0) {
 				a.append(", ");
@@ -58,7 +58,7 @@ public interface ToSql {
 		}
 	}
 
-	default void commaNames(Appendable a, List<String> names) throws IOException {
+	static void commaNames(Appendable a, List<String> names) throws IOException {
 		for (int i = 0; i < names.size(); i++) {
 			if (i != 0) {
 				a.append(", ");
