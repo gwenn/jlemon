@@ -2,6 +2,8 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
+import static org.sqlite.parser.ast.ToSql.doubleQuote;
+
 // Sum Type: Indexed by vs Not Indexed
 public class Indexed implements ToSql {
 	public final String idxName;

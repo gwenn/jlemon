@@ -3,6 +3,7 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 import java.util.List;
 
+import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class With implements ToSql {

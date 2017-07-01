@@ -2,6 +2,8 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
+import static org.sqlite.parser.ast.ToSql.doubleQuote;
+
 public class Begin implements Stmt {
 	public final TransactionType type;
 	public final String name;

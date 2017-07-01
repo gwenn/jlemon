@@ -3,6 +3,7 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.doubleQuote;
 
 // Sum Type: Expr vs Star vs TableStar
 public class ResultColumn implements ToSql {

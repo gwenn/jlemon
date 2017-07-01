@@ -3,6 +3,7 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.doubleQuote;
 
 public class QualifiedName implements ToSql {
 	public final String dbName;

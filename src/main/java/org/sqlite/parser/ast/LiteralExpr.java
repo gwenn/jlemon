@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.sqlite.parser.Token;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.singleQuote;
 
 /**
  * literal-value

@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.commaNames;
+import static org.sqlite.parser.ast.ToSql.doubleQuote;
 import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class Set implements ToSql {

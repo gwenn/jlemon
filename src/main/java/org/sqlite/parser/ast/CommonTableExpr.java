@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.comma;
+import static org.sqlite.parser.ast.ToSql.doubleQuote;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class CommonTableExpr implements ToSql {

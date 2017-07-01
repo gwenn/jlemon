@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class ParenthesizedExpr implements Expr {

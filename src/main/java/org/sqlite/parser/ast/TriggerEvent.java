@@ -3,6 +3,8 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 import java.util.List;
 
+import static org.sqlite.parser.ast.ToSql.doubleQuote;
+
 public class TriggerEvent implements ToSql {
 	public final TriggerEventType type;
 	public final List<String> colNames; // only for event = UpdateOf

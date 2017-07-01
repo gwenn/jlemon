@@ -2,6 +2,8 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
+import static org.sqlite.parser.ast.ToSql.doubleQuote;
+
 public class Rollback implements Stmt {
 	public final String txName;
 	public final String savepointName;

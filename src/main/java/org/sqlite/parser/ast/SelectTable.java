@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import static org.sqlite.parser.ast.ToSql.comma;
+
 // Sum Type: table vs table call vs select vs sub select
 public class SelectTable implements ToSql {
 	public final QualifiedName tblName;

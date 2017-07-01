@@ -3,6 +3,8 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 import java.util.List;
 
+import static org.sqlite.parser.ast.ToSql.comma;
+import static org.sqlite.parser.ast.ToSql.doubleQuote;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class ForeignKeyClause implements ToSql {
