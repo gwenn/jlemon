@@ -63,6 +63,27 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>1.3.2</version>
+        <configuration>
+          <!-- TODO windows support -->
+          <executable>${project.basedir}/parser.sh</executable>
+          <arguments>
+            <argument>${project.basedir}</argument>
+          </arguments>
+        </configuration>
+        <executions>
+          <execution>
+            <id>parser-generation</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>generate-sources</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.1</version>
