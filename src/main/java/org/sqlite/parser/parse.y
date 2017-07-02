@@ -395,8 +395,8 @@ cmd ::= select(X).  {
 %include {
 }
 
-select(A) ::= with(W) selectnowith(X). {
-  A = new Select(W, X, null, null); /*A-overwrites-W*/
+select(A) ::= with(W) selectnowith(X) orderby_opt(Z) limit_opt(L). {
+  A = new Select(W, X, Z, L); /*A-overwrites-W*/
 }
 
 selectnowith(A) ::= oneselect(X). {
@@ -413,7 +413,7 @@ multiselect_op(A) ::= UNION ALL.             {A = CompoundOperator.UnionAll;}
 multiselect_op(A) ::= EXCEPT|INTERSECT(OP).  {A = CompoundOperator.from(@OP); /*A-overwrites-OP*/}
 %endif SQLITE_OMIT_COMPOUND_SELECT
 oneselect(A) ::= SELECT distinct(D) selcollist(W) from(X) where_opt(Y)
-                 groupby_opt(P) orderby_opt(Z) limit_opt(L). {
+                 groupby_opt(P). {
   A = new OneSelect(D, W, X, Y, P);
 }
 oneselect(A) ::= values(A).

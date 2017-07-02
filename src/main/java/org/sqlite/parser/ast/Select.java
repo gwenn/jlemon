@@ -21,6 +21,9 @@ public class Select implements Stmt, TriggerCmd {
 		this.body = requireNonNull(body);
 		this.orderBy = orderBy;
 		this.limit = limit;
+		if (body.select.values != null && (isNotEmpty(orderBy) || limit != null)) {
+			throw new IllegalStateException(); // TODO only SELECT (not VALUES (...))
+		}
 	}
 
 	@Override
