@@ -282,9 +282,9 @@ ccons(A) ::= PRIMARY KEY sortorder(Z) onconf(R) autoinc(I).
                                  {A = new PrimaryKeyColumnConstraint(context.constraintName(),Z, R, I);}
 ccons(A) ::= UNIQUE onconf(R).      {A = new UniqueColumnConstraint(context.constraintName(),R);}
 ccons(A) ::= CHECK LP expr(X) RP.   {A = new CheckColumnConstraint(context.constraintName(),X);}
-ccons(A) ::= REFERENCES nm(T) eidlist_opt(TA) refargs(R).
-                                 {A = new ForeignKeyColumnConstraint(context.constraintName(),new ForeignKeyClause(T.text(),TA,R), null);}
-ccons(A) ::= defer_subclause(D).    {/*FIXME A = D; ForeignKeyColumnConstraint.derefClause*/}
+ccons(A) ::= REFERENCES nm(T) eidlist_opt(TA) refargs(R) defer_subclause(D).
+                                 {A = new ForeignKeyColumnConstraint(context.constraintName(),new ForeignKeyClause(T.text(),TA,R), D);}
+//ccons(A) ::= defer_subclause(D).    {A = D;}
 ccons(A) ::= COLLATE ids(C).        {A = new CollateColumnConstraint(context.constraintName(),C.text());}
 
 // The optional AUTOINCREMENT keyword
@@ -389,100 +389,43 @@ cmd ::= select(X).  {
 }
 
 %type select {Select}
-%type selectnowith {Select}
-%type oneselect {Select}
+%type selectnowith {SelectBody}
+%type oneselect {OneSelect}
 
 %include {
 }
 
 select(A) ::= with(W) selectnowith(X). {
-  /*FIXME Select *p = X;
-  if( p ){
-    p->pWith = W;
-    parserDoubleLinkSelect(pParse, p);
-  }else{
-    sqlite3WithDelete(pParse->db, W);
-  }
-  A = p;*/ /*A-overwrites-W*/
+  A = new Select(W, X, null, null); /*A-overwrites-W*/
 }
 
-selectnowith(A) ::= oneselect(A).
+selectnowith(A) ::= oneselect(X). {
+  A = new SelectBody(X, new ArrayList<>());
+}
 %ifndef SQLITE_OMIT_COMPOUND_SELECT
 selectnowith(A) ::= selectnowith(A) multiselect_op(Y) oneselect(Z).  {
-  /*FIXME Select *pRhs = Z;
-  Select *pLhs = A;
-  if( pRhs && pRhs->pPrior ){
-    SrcList *pFrom;
-    Token x;
-    x.n = 0;
-    parserDoubleLinkSelect(pParse, pRhs);
-    pFrom = sqlite3SrcListAppendFromTerm(pParse,0,0,0,x,pRhs,0,0);
-    pRhs = sqlite3SelectNew(pParse,0,pFrom,0,0,0,0,0,0,0);
-  }
-  if( pRhs ){
-    pRhs->op = (u8)Y;
-    pRhs->pPrior = pLhs;
-    if( ALWAYS(pLhs) ) pLhs->selFlags &= ~SF_MultiValue;
-    pRhs->selFlags &= ~SF_MultiValue;
-    if( Y!=TK_ALL ) pParse->hasCompound = 1;
-  }else{
-    sqlite3SelectDelete(pParse->db, pLhs);
-  }
-  A = pRhs;*/
+  CompoundSelect cs = new CompoundSelect(Y, Z);
+  A.compounds.add(cs);
 }
 %type multiselect_op {CompoundOperator}
 multiselect_op(A) ::= UNION(OP).             {A = CompoundOperator.from(@OP); /*A-overwrites-OP*/}
 multiselect_op(A) ::= UNION ALL.             {A = CompoundOperator.UnionAll;}
 multiselect_op(A) ::= EXCEPT|INTERSECT(OP).  {A = CompoundOperator.from(@OP); /*A-overwrites-OP*/}
 %endif SQLITE_OMIT_COMPOUND_SELECT
-oneselect(A) ::= SELECT(S) distinct(D) selcollist(W) from(X) where_opt(Y)
+oneselect(A) ::= SELECT distinct(D) selcollist(W) from(X) where_opt(Y)
                  groupby_opt(P) orderby_opt(Z) limit_opt(L). {
-#if SELECTTRACE_ENABLED
-  Token s = S; /*A-overwrites-S*/
-#endif
-  /*FIXME A = sqlite3SelectNew(pParse,W,X,Y,P,Q,Z,D,L.pLimit,L.pOffset);*/
-#if SELECTTRACE_ENABLED
-  /* Populate the Select.zSelName[] string that is used to help with
-  ** query planner debugging, to differentiate between multiple Select
-  ** objects in a complex query.
-  **
-  ** If the SELECT keyword is immediately followed by a C-style comment
-  ** then extract the first few alphanumeric characters from within that
-  ** comment to be the zSelName value.  Otherwise, the label is #N where
-  ** is an integer that is incremented with each SELECT statement seen.
-  */
-  if( A!=0 ){
-    const char *z = s.z+6;
-    int i;
-    sqlite3_snprintf(sizeof(A->zSelName), A->zSelName, "#%d",
-                     ++pParse->nSelect);
-    while( z[0]==' ' ) z++;
-    if( z[0]=='/' && z[1]=='*' ){
-      z += 2;
-      while( z[0]==' ' ) z++;
-      for(i=0; sqlite3Isalnum(z[i]); i++){}
-      sqlite3_snprintf(sizeof(A->zSelName), A->zSelName, "%.*s", i, z);
-    }
-  }
-#endif /* SELECTRACE_ENABLED */
+  A = new OneSelect(D, W, X, Y, P);
 }
 oneselect(A) ::= values(A).
 
-%type values {Select}
+%type values {OneSelect}
 values(A) ::= VALUES LP nexprlist(X) RP. {
-  /*FIXME A = sqlite3SelectNew(pParse,X,0,0,0,0,0,SF_Values,0,0);*/
+  List<List<Expr>> values = new ArrayList<>();
+  values.add(X);
+  A = new OneSelect(values);
 }
 values(A) ::= values(A) COMMA LP exprlist(Y) RP. {
-  /*FIXME Select *pRight, *pLeft = A;
-  pRight = sqlite3SelectNew(pParse,Y,0,0,0,0,0,SF_Values|SF_MultiValue,0,0);
-  if( ALWAYS(pLeft) ) pLeft->selFlags &= ~SF_MultiValue;
-  if( pRight ){
-    pRight->op = TK_ALL;
-    pRight->pPrior = pLeft;
-    A = pRight;
-  }else{
-    A = pLeft;
-  }*/
+  A.values.add(Y);
 }
 
 // The "distinct" nonterminal is true (1) if the DISTINCT keyword is
@@ -530,7 +473,7 @@ as(A) ::= .            {A = null;}
 
 // A complete FROM clause.
 //
-from(A) ::= .                {/*FIXME A = sqlite3DbMallocZero(pParse->db, sizeof(*A));*/}
+from(A) ::= .                {A = null;}
 from(A) ::= FROM seltablist(X). {
   /*FIXME A = X;
   sqlite3SrcListShiftJoinType(A);*/
