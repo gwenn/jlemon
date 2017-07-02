@@ -2,6 +2,8 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
+import org.sqlite.parser.Token;
+
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.singleQuote;
 
@@ -9,7 +11,7 @@ public class Pragma implements Stmt {
 	public final QualifiedName name;
 	public final String value;
 
-	public static Pragma from(String x, String y, String value) {
+	public static Pragma from(Token x, String y, String value) {
 		return new Pragma(QualifiedName.from(x, y), value);
 	}
 

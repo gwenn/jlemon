@@ -373,7 +373,7 @@ ifexists(A) ::= .            {A = false;}
 %ifndef SQLITE_OMIT_VIEW
 cmd ::= createkw temp(T) VIEW ifnotexists(E) nm(Y) dbnm(Z) eidlist_opt(C)
           AS select(S). {
-  QualifiedName viewName = QualifiedName.from(Y.text(), Z);
+  QualifiedName viewName = QualifiedName.from(Y, Z);
   new CreateView(T, E, viewName, C, S);
 }
 cmd ::= DROP VIEW ifexists(E) fullname(X). {
@@ -485,11 +485,15 @@ stl_prefix(A) ::= seltablist(A) joinop(Y).    {
 stl_prefix(A) ::= .                           {A = null;}
 seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) as(Z) indexed_opt(I)
                   on_opt(N) using_opt(U). {
+  QualifiedName tblName = QualifiedName.from(Y, D);
+  SelectTable st = SelectTable.table(tblName, Z, I);
   /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,Y,D,Z,0,N,U);
   sqlite3SrcListIndexedBy(pParse, A, I);*/
 }
 seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) LP exprlist(E) RP as(Z)
                   on_opt(N) using_opt(U). {
+  QualifiedName tblName = QualifiedName.from(Y, D);
+  SelectTable st = SelectTable.tableCall(tblName, E, Z);
   /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,Y,D,Z,0,N,U);
   sqlite3SrcListFuncArgs(pParse, A, E);*/
 }
@@ -529,7 +533,7 @@ dbnm(A) ::= DOT nm(X). {A = X.text();}
 
 %type fullname {QualifiedName}
 fullname(A) ::= nm(X) dbnm(Y).  
-   {A = QualifiedName.from(X.text(), Y); /*A-overwrites-X*/}
+   {A = QualifiedName.from(X, Y); /*A-overwrites-X*/}
 
 %type joinop {JoinOperator}
 joinop(X) ::= COMMA|JOIN(A).              { X = JoinOperator.from(A, null, null); }
@@ -830,7 +834,7 @@ expr(A) ::= expr(A) between_op(N) expr(X) AND expr(Y). [BETWEEN] {
     A = new InSelectExpr(A, N, Y);
   }
   expr(A) ::= expr(A) in_op(N) nm(Y) dbnm(Z) paren_exprlist(E). [IN] {
-    QualifiedName qn = QualifiedName.from(Y.text(),Z);
+    QualifiedName qn = QualifiedName.from(Y,Z);
     A = new InTableExpr(A, N, qn, E);
   }
   expr(A) ::= EXISTS LP select(Y) RP. {
@@ -881,7 +885,7 @@ paren_exprlist(A) ::= LP exprlist(X) RP.  {A = X;}
 //
 cmd ::= createkw uniqueflag(U) INDEX ifnotexists(NE) nm(X) dbnm(D)
         ON nm(Y) LP sortlist(Z) RP where_opt(W). {
-  QualifiedName idxName = QualifiedName.from(X.text(), D);
+  QualifiedName idxName = QualifiedName.from(X, D);
   new CreateIndex(U, NE, idxName, Y.text(), Z, W);
 }
 
@@ -943,13 +947,13 @@ cmd ::= VACUUM nm(X).          {new Vacuum(X.text());}
 ///////////////////////////// The PRAGMA command /////////////////////////////
 //
 %ifndef SQLITE_OMIT_PRAGMA
-cmd ::= PRAGMA nm(X) dbnm(Z).                {Pragma.from(X.text(),Z,null);}
-cmd ::= PRAGMA nm(X) dbnm(Z) EQ nmnum(Y).    {Pragma.from(X.text(),Z,Y.text());}
-cmd ::= PRAGMA nm(X) dbnm(Z) LP nmnum(Y) RP. {Pragma.from(X.text(),Z,Y.text());}
+cmd ::= PRAGMA nm(X) dbnm(Z).                {Pragma.from(X,Z,null);}
+cmd ::= PRAGMA nm(X) dbnm(Z) EQ nmnum(Y).    {Pragma.from(X,Z,Y.text());}
+cmd ::= PRAGMA nm(X) dbnm(Z) LP nmnum(Y) RP. {Pragma.from(X,Z,Y.text());}
 cmd ::= PRAGMA nm(X) dbnm(Z) EQ minus_num(Y). 
-                                             {Pragma.from(X.text(),Z,Y.text());}
+                                             {Pragma.from(X,Z,Y.text());}
 cmd ::= PRAGMA nm(X) dbnm(Z) LP minus_num(Y) RP.
-                                             {Pragma.from(X.text(),Z,Y.text());}
+                                             {Pragma.from(X,Z,Y.text());}
 
 nmnum(A) ::= plus_num(A).
 nmnum(A) ::= nm(A).
@@ -973,7 +977,7 @@ cmd ::= createkw trigger_decl(A) BEGIN trigger_cmd_list(S) END. {
 trigger_decl(A) ::= temp(T) TRIGGER ifnotexists(NOERR) nm(B) dbnm(Z) 
                     trigger_time(C) trigger_event(D)
                     ON fullname(E) foreach_clause(X) when_clause(G). {
-  QualifiedName triggerName = QualifiedName.from(B.text(), Z);
+  QualifiedName triggerName = QualifiedName.from(B, Z);
   A = new CreateTrigger(T, NOERR, triggerName, C, D, E, X, G); /*A-overwrites-T*/
 }
 
@@ -1095,13 +1099,13 @@ database_kw_opt ::= .
 ////////////////////////// REINDEX collation //////////////////////////////////
 %ifndef SQLITE_OMIT_REINDEX
 cmd ::= REINDEX.                {new ReIndex(null);}
-cmd ::= REINDEX nm(X) dbnm(Y).  {new ReIndex(QualifiedName.from(X.text(), Y));}
+cmd ::= REINDEX nm(X) dbnm(Y).  {new ReIndex(QualifiedName.from(X, Y));}
 %endif  SQLITE_OMIT_REINDEX
 
 /////////////////////////////////// ANALYZE ///////////////////////////////////
 %ifndef SQLITE_OMIT_ANALYZE
 cmd ::= ANALYZE.                {new Analyze(null);}
-cmd ::= ANALYZE nm(X) dbnm(Y).  {new Analyze(QualifiedName.from(X.text(), Y));}
+cmd ::= ANALYZE nm(X) dbnm(Y).  {new Analyze(QualifiedName.from(X, Y));}
 %endif
 
 //////////////////////// ALTER TABLE table ... ////////////////////////////////
@@ -1125,7 +1129,7 @@ cmd ::= create_vtab(A) LP vtabarglist(X) RP.  {A.args = X.text();}
 %type create_vtab {CreateVirtualTable}
 create_vtab(A) ::= createkw VIRTUAL TABLE ifnotexists(E)
                 nm(X) dbnm(Y) USING nm(Z). {
-    QualifiedName tblName = QualifiedName.from(X.text(), Y);
+    QualifiedName tblName = QualifiedName.from(X, Y);
     A = new CreateVirtualTable(E, tblName, Z.text());
 }
 vtabarglist ::= vtabarg.
