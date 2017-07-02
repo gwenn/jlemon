@@ -133,9 +133,9 @@ cmd ::= ROLLBACK trans_opt(Y) TO savepoint_opt nm(X). {
 
 ///////////////////// The CREATE TABLE statement ////////////////////////////
 //
-cmd ::= create_table create_table_args.
-create_table ::= createkw temp(T) TABLE ifnotexists(E) nm(Y) dbnm(Z). {
-   /*FIXME sqlite3StartTable(pParse,Y,Z,T,0,0,E);*/
+cmd ::= createkw temp(T) TABLE ifnotexists(E) nm(Y) dbnm(Z) create_table_args. {
+  QualifiedName tblName = QualifiedName.from(Y, Z);
+  new CreateTable(T, E, tblName, null);
 }
 createkw(A) ::= CREATE(A).
 
@@ -147,12 +147,13 @@ ifnotexists(A) ::= IF NOT EXISTS. {A = true;}
 temp(A) ::= TEMP.  {A = true;}
 %endif  SQLITE_OMIT_TEMPDB
 temp(A) ::= .      {A = false;}
-create_table_args ::= LP columnlist conslist_opt(X) RP(E) table_options(F). {
-  /*FIXME sqlite3EndTable(pParse,X,E,F,0);*/
+
+%type create_table_args {CreateTableBody}
+create_table_args(A) ::= LP columnlist(C) conslist_opt(X) RP table_options(F). {
+  A = new ColumnsAndConstraints(C, X, F);
 }
-create_table_args ::= AS select(S). {
-  /*FIXME sqlite3EndTable(pParse,0,0,0,S);
-  sqlite3SelectDelete(pParse->db, S);*/
+create_table_args(A) ::= AS select(S). {
+  A = new AsSelect(S);
 }
 %type table_options {boolean}
 table_options(A) ::= .    {A = false;}
@@ -382,11 +383,7 @@ cmd ::= DROP VIEW ifexists(E) fullname(X). {
 
 //////////////////////// The SELECT statement /////////////////////////////////
 //
-cmd ::= select(X).  {
-  /*FIXME SelectDest dest = {SRT_Output, 0, 0, 0, 0, 0};
-  sqlite3Select(pParse, X, dest);
-  sqlite3SelectDelete(pParse->db, X);*/
-}
+cmd ::= select.
 
 %type select {Select}
 %type selectnowith {SelectBody}
