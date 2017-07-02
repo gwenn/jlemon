@@ -15,6 +15,16 @@ public class JoinConstraint implements ToSql {
 	public static JoinConstraint on(Expr expr) {
 		return new JoinConstraint(requireNonNull(expr), null);
 	}
+	public static JoinConstraint from(Expr expr, List<String> colNames) {
+		if (expr == null && colNames == null) {
+			return null;
+		}
+		if (expr != null && colNames != null) {
+			throw new IllegalArgumentException(); // TODO
+		}
+		return new JoinConstraint(expr, colNames);
+	}
+
 	public static JoinConstraint using(List<String> colNames) {
 		return new JoinConstraint(null, requireNotEmpty(colNames));
 	}

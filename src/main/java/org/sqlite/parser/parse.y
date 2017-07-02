@@ -487,6 +487,7 @@ seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) as(Z) indexed_opt(I)
                   on_opt(N) using_opt(U). {
   QualifiedName tblName = QualifiedName.from(Y, D);
   SelectTable st = SelectTable.table(tblName, Z, I);
+  JoinConstraint jc = JoinConstraint.from(N, U);
   /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,Y,D,Z,0,N,U);
   sqlite3SrcListIndexedBy(pParse, A, I);*/
 }
@@ -494,16 +495,21 @@ seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) LP exprlist(E) RP as(Z)
                   on_opt(N) using_opt(U). {
   QualifiedName tblName = QualifiedName.from(Y, D);
   SelectTable st = SelectTable.tableCall(tblName, E, Z);
+  JoinConstraint jc = JoinConstraint.from(N, U);
   /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,Y,D,Z,0,N,U);
   sqlite3SrcListFuncArgs(pParse, A, E);*/
 }
 %ifndef SQLITE_OMIT_SUBQUERY
   seltablist(A) ::= stl_prefix(A) LP select(S) RP
                     as(Z) on_opt(N) using_opt(U). {
+    SelectTable st = SelectTable.select(S, Z);
+    JoinConstraint jc = JoinConstraint.from(N, U);
     /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,0,0,Z,S,N,U);*/
   }
   seltablist(A) ::= stl_prefix(A) LP seltablist(F) RP
                     as(Z) on_opt(N) using_opt(U). {
+    SelectTable st = SelectTable.sub(F, Z);
+    JoinConstraint jc = JoinConstraint.from(N, U);
     /*FIXME if( A==0 && Z.n==0 && N==0 && U==0 ){
       A = F;
     }else if( F->nSrc==1 ){
