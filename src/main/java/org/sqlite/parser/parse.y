@@ -472,15 +472,14 @@ as(A) ::= .            {A = null;}
 //
 from(A) ::= .                {A = null;}
 from(A) ::= FROM seltablist(X). {
-  /*FIXME A = X;
-  sqlite3SrcListShiftJoinType(A);*/
+  A = X;
 }
 
 // "seltablist" is a "Select Table List" - the content of the FROM clause
 // in a SELECT statement.  "stl_prefix" is a prefix of this list.
 //
 stl_prefix(A) ::= seltablist(A) joinop(Y).    {
-   /*FIXME if( ALWAYS(A && A->nSrc>0) ) A->a[A->nSrc-1].fg.jointype = (u8)Y;*/
+  FromClause.from(A, Y);
 }
 stl_prefix(A) ::= .                           {A = null;}
 seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) as(Z) indexed_opt(I)
@@ -488,48 +487,27 @@ seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) as(Z) indexed_opt(I)
   QualifiedName tblName = QualifiedName.from(Y, D);
   SelectTable st = SelectTable.table(tblName, Z, I);
   JoinConstraint jc = JoinConstraint.from(N, U);
-  /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,Y,D,Z,0,N,U);
-  sqlite3SrcListIndexedBy(pParse, A, I);*/
+  A = FromClause.from(A, st, jc);
 }
 seltablist(A) ::= stl_prefix(A) nm(Y) dbnm(D) LP exprlist(E) RP as(Z)
                   on_opt(N) using_opt(U). {
   QualifiedName tblName = QualifiedName.from(Y, D);
   SelectTable st = SelectTable.tableCall(tblName, E, Z);
   JoinConstraint jc = JoinConstraint.from(N, U);
-  /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,Y,D,Z,0,N,U);
-  sqlite3SrcListFuncArgs(pParse, A, E);*/
+  A = FromClause.from(A, st, jc);
 }
 %ifndef SQLITE_OMIT_SUBQUERY
   seltablist(A) ::= stl_prefix(A) LP select(S) RP
                     as(Z) on_opt(N) using_opt(U). {
     SelectTable st = SelectTable.select(S, Z);
     JoinConstraint jc = JoinConstraint.from(N, U);
-    /*FIXME A = sqlite3SrcListAppendFromTerm(pParse,A,0,0,Z,S,N,U);*/
+    A = FromClause.from(A, st, jc);
   }
   seltablist(A) ::= stl_prefix(A) LP seltablist(F) RP
                     as(Z) on_opt(N) using_opt(U). {
     SelectTable st = SelectTable.sub(F, Z);
     JoinConstraint jc = JoinConstraint.from(N, U);
-    /*FIXME if( A==0 && Z.n==0 && N==0 && U==0 ){
-      A = F;
-    }else if( F->nSrc==1 ){
-      A = sqlite3SrcListAppendFromTerm(pParse,A,0,0,Z,0,N,U);
-      if( A ){
-        struct SrcList_item *pNew = &A->a[A->nSrc-1];
-        struct SrcList_item *pOld = F->a;
-        pNew->zName = pOld->zName;
-        pNew->zDatabase = pOld->zDatabase;
-        pNew->pSelect = pOld->pSelect;
-        pOld->zName = pOld->zDatabase = 0;
-        pOld->pSelect = 0;
-      }
-      sqlite3SrcListDelete(pParse->db, F);
-    }else{
-      Select *pSubquery;
-      sqlite3SrcListShiftJoinType(F);
-      pSubquery = sqlite3SelectNew(pParse,0,F,0,0,0,0,SF_NestedFrom,0,0);
-      A = sqlite3SrcListAppendFromTerm(pParse,A,0,0,Z,pSubquery,N,U);
-    }*/
+    A = FromClause.from(A, st, jc);
   }
 %endif  SQLITE_OMIT_SUBQUERY
 
