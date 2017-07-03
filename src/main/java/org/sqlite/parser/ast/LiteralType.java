@@ -23,6 +23,6 @@ public enum LiteralType {
 		} else if (TokenType.TK_CTIME_KW == tt) {
 			return Keyword;
 		}
-		throw new IllegalArgumentException(); // TODO
+		throw new IllegalArgumentException(java.lang.String.format("Unsupported Literal type: %d", tt));
 	}
 }

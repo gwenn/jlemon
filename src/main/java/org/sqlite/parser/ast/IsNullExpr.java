@@ -16,7 +16,7 @@ public class IsNullExpr implements Expr {
 		} else if (TokenType.TK_NOTNULL == tt) {
 			return new IsNullExpr(expr, NullOperator.NotNull);
 		}
-		throw new IllegalArgumentException(); // TODO
+		throw new IllegalArgumentException(String.format("Unsupported null expression: %d", tt));
 	}
 
 	public IsNullExpr(Expr expr, NullOperator op) {

@@ -17,7 +17,7 @@ public enum TransactionType implements ToSql {
 		} else if (TokenType.TK_EXCLUSIVE == tt) {
 			return Exclusive;
 		}
-		throw new IllegalArgumentException(String.format("%d", tt));
+		throw new IllegalArgumentException(String.format("Unsupported Transaction type: %d", tt));
 	}
 
 	@Override

@@ -15,7 +15,7 @@ public class RaiseExpr implements Expr {
 	public RaiseExpr(ResolveType type, String err) {
 		this.type = requireNonNull(type);
 		if (type == ResolveType.Replace) {
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("REPLACE cannot be used as a resolve type in a RAISE expression");
 		}
 		this.err = err;
 	}

@@ -26,7 +26,7 @@ public enum JoinType implements ToSql {
 				return Cross;
 			}
 		}
-		throw new IllegalArgumentException(); // TODO
+		throw new IllegalArgumentException(String.format("Unsupported Join operator: %s, %s", b, c));
 	}
 
 	@Override

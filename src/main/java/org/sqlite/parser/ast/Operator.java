@@ -66,7 +66,7 @@ public enum Operator implements ToSql {
 		} else if (TokenType.TK_MINUS == tt) {
 			return Substract;
 		}
-		throw new IllegalArgumentException(); // TODO
+		throw new IllegalArgumentException(String.format("Unsupported Operator: %d", tt));
 	}
 
 	@Override

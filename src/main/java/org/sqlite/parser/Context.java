@@ -5,6 +5,7 @@ import org.sqlite.parser.ast.*;
 public class Context {
 	ExplainKind explain;
 	private String constraintName;
+	private boolean done;
 
 	void sqlite3ErrorMsg(String message, Object... args) {
 		throw new ParseException(message, args);
@@ -20,6 +21,10 @@ public class Context {
 	}
 
 	public void sqlite3FinishCoding() {
-		// TODO
+		done = true;
+	}
+
+	public boolean done() {
+		return done;
 	}
 }

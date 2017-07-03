@@ -22,7 +22,7 @@ public class Select implements Stmt, TriggerCmd {
 		this.orderBy = orderBy;
 		this.limit = limit;
 		if (body.select.values != null && (isNotEmpty(orderBy) || limit != null)) {
-			throw new IllegalArgumentException(); // TODO only SELECT (not VALUES (...))
+			throw new IllegalArgumentException(String.format("ORDER BY or LIMIT clauses cannot be used with VALUES"));
 		}
 	}
 

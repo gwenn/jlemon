@@ -20,7 +20,7 @@ public class JoinConstraint implements ToSql {
 			return null;
 		}
 		if (expr != null && colNames != null) {
-			throw new IllegalArgumentException(); // TODO
+			throw new IllegalArgumentException(String.format("ON and USING join constraints are exclusive. You can specify both: %s, %s", expr, colNames)); // TODO toSql
 		}
 		return new JoinConstraint(expr, colNames);
 	}

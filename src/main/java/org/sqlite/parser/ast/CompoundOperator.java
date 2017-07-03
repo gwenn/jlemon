@@ -18,7 +18,7 @@ public enum CompoundOperator implements ToSql {
 		} else if (TokenType.TK_INTERSECT == tt) {
 			return Intersect;
 		}
-		throw new IllegalArgumentException(String.format("%d", tt));
+		throw new IllegalArgumentException(String.format("Unsupported Compound operator: %d", tt));
 	}
 
 	@Override

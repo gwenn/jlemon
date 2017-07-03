@@ -18,7 +18,7 @@ public enum TriggerEventType implements ToSql {
 		} else if (TokenType.TK_UPDATE == tt) {
 			return Update;
 		}
-		throw new IllegalArgumentException(); // TODO
+		throw new IllegalArgumentException(String.format("Unsupported Trigger event type: %d"));
 	}
 
 	@Override
