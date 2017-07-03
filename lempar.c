@@ -879,6 +879,7 @@ public void Parse(
 #endif
 }
 
+  @SuppressWarnings("serial")
   private static class Stack<E> extends ArrayList<E> {
     Stack(int initialCapacity) {
       super(initialCapacity);

@@ -2,6 +2,7 @@ package org.sqlite.parser;
 
 import java.util.Objects;
 
+@SuppressWarnings("serial")
 public class ScanException extends RuntimeException {
 	private final ErrorCode code;
 

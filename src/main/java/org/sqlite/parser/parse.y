@@ -133,9 +133,9 @@ cmd ::= ROLLBACK trans_opt(Y) TO savepoint_opt nm(X). {
 
 ///////////////////// The CREATE TABLE statement ////////////////////////////
 //
-cmd ::= createkw temp(T) TABLE ifnotexists(E) nm(Y) dbnm(Z) create_table_args. {
+cmd ::= createkw temp(T) TABLE ifnotexists(E) nm(Y) dbnm(Z) create_table_args(X). {
   QualifiedName tblName = QualifiedName.from(Y, Z);
-  new CreateTable(T, E, tblName, null);
+  new CreateTable(T, E, tblName, X);
 }
 createkw(A) ::= CREATE(A).
 
