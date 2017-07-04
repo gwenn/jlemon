@@ -867,6 +867,7 @@ public void Parse(
     }
   }while( yymajor!=YYNOCODE && yystack.size() > 1 );
 #ifndef NDEBUG
+    if (logger.isDebugEnabled()) {
     int i;
     char cDiv = '[';
     StringBuilder msg = new StringBuilder("Return. Stack=");
@@ -876,6 +877,7 @@ public void Parse(
     }
     msg.append(']');
     logger.debug(msg.toString());
+    }
 #endif
 }
 
