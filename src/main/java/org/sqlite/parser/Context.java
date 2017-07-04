@@ -20,6 +20,9 @@ public class Context {
 		this.constraintName = constraintName;
 	}
 
+	/**
+	 * This routine is called after a single SQL statement has been parsed.
+	 */
 	public void sqlite3FinishCoding() {
 		done = true;
 	}

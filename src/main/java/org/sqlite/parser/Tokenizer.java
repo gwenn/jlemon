@@ -450,17 +450,17 @@ class Tokenizer extends Scanner {
 		if (i < end) {
 			// Must not be empty (Ox is invalid)
 			if (i == start) {
-					throw new ScanException(ErrorCode.BadNumber);
+					throw new ScanException(ErrorCode.MalformedHexInteger);
 			}
 			if (isIdentifierStart(data[i])) {
-				throw new ScanException(ErrorCode.BadNumber);
+				throw new ScanException(ErrorCode.MalformedHexInteger);
 			}
 			advance(i);
 			return TK_INTEGER;
 		} else if (atEOF) {
 			// Must not be empty (Ox is invalid)
 			if (i == start) {
-					throw new ScanException(ErrorCode.BadNumber);
+					throw new ScanException(ErrorCode.MalformedHexInteger);
 			}
 			advance(i);
 			return TK_INTEGER;

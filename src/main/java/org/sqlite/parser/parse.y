@@ -766,7 +766,7 @@ expr(A) ::= expr(A) likeop(OP) expr(Y) ESCAPE expr(E).  [LIKE_KW]  {
 }
 
 expr(A) ::= expr(A) ISNULL|NOTNULL(E).   {A = IsNullExpr.from(A, @E);}
-expr(A) ::= expr(A) NOT NULL. {A = new IsNullExpr(A, NullOperator.Not_Null);}
+expr(A) ::= expr(A) NOT NULL. {A = new NotNullExpr(A);}
 
 %include {
 }

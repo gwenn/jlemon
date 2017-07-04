@@ -17,7 +17,16 @@ public class Token {
 	public String text() {
 		return text;
 	}
+
 	public void append(Token t) {
 		text = text + ' ' + t.text;
+	}
+
+	@Override
+	public String toString() {
+		return "Token{" +
+			"type=" + type +
+			", text='" + text + '\'' +
+			'}';
 	}
 }

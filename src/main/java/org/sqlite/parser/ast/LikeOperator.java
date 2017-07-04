@@ -15,7 +15,7 @@ public enum LikeOperator implements ToSql {
 		if (TokenType.TK_MATCH == token.tokenType()) {
 			return Match;
 		} else if (TokenType.TK_LIKE_KW != token.tokenType()) {
-			throw new IllegalArgumentException(String.format("Unsupported Like operator: %d", token.tokenType()));
+			throw new IllegalArgumentException(String.format("Unsupported Like operator: %s", token));
 		}
 		if ("GLOB".equalsIgnoreCase(token.text())) {
 			return Glob;

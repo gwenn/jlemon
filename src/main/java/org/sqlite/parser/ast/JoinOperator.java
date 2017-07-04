@@ -33,12 +33,12 @@ public class JoinOperator implements ToSql {
 			} else if ("NATURAL".equalsIgnoreCase(a.text())) {
 				return JoinOperator.typedJoin(true, null);
 			}
+			throw new IllegalArgumentException(String.format("Unsupported Join operator: %s", a));
 		} else if ("NATURAL".equalsIgnoreCase(a.text())) {
 			return JoinOperator.typedJoin(true, JoinType.from(b, c));
 		} else {
 			return JoinOperator.typedJoin(false, JoinType.from(b, c));
 		}
-		throw new IllegalArgumentException(String.format("Unsupported Join operator: %s, %s, %s", a, b, c)); // TODO
 	}
 
 	@Override
