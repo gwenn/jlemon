@@ -37,7 +37,8 @@ public class JoinOperator implements ToSql {
 		} else if ("NATURAL".equalsIgnoreCase(a.text())) {
 			return JoinOperator.typedJoin(true, JoinType.from(b, c));
 		} else {
-			return JoinOperator.typedJoin(false, JoinType.from(b, c));
+			assert c == null;
+			return JoinOperator.typedJoin(false, JoinType.from(a, b));
 		}
 	}
 

@@ -9,11 +9,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class Main {
-	public static void main(String[] args) {
+	public static void main__(String[] args) {
 		parse(new StringReader("PRAGMA parser_trace=1;"));
 	}
 
-	public static void main__(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException {
 		Path dir = Paths.get(args[0]);
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.{sql}")) {
 			for (Path path : stream) {
