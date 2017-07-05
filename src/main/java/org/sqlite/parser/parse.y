@@ -397,7 +397,7 @@ select(A) ::= with(W) selectnowith(X) orderby_opt(Z) limit_opt(L). {
 }
 
 selectnowith(A) ::= oneselect(X). {
-  A = new SelectBody(X, new ArrayList<>());
+  A = new SelectBody(X, new java.util.ArrayList<>());
 }
 %ifndef SQLITE_OMIT_COMPOUND_SELECT
 selectnowith(A) ::= selectnowith(A) multiselect_op(Y) oneselect(Z).  {
@@ -417,7 +417,7 @@ oneselect(A) ::= values(A).
 
 %type values {OneSelect}
 values(A) ::= VALUES LP nexprlist(X) RP. {
-  List<List<Expr>> values = new ArrayList<>();
+  List<List<Expr>> values = new java.util.ArrayList<>();
   values.add(X);
   A = new OneSelect(values);
 }

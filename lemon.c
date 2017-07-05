@@ -3583,7 +3583,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
     lhsdirect = 1;
     if( has_destructor(rp->rhs[0],lemp) ){
       append_str(0,0,0,0);
-      append_str("  yy_destructor(%d,yystack.peek(%d).minor);\n", 0,
+      append_str("  yy_destructor(%d,yystack[yyidx+%d].minor);\n", 0,
                  rp->rhs[0]->index,1-rp->nrhs);
       rp->codePrefix = Strsafe(append_str(0,0,0,0));
       rp->noCode = 0;
@@ -3617,7 +3617,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
     }
   }
   if( lhsdirect ){
-    sprintf(zLhs, "yystack.peek(%d).minor.yy%d",1-rp->nrhs,rp->lhs->dtnum);
+    sprintf(zLhs, "yystack(yyidx+%d).minor.yy%d",1-rp->nrhs,rp->lhs->dtnum);
   }else{
     rc = 1;
     sprintf(zLhs, "yylhsminor.yy%d",rp->lhs->dtnum);
@@ -3654,7 +3654,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
             }else if( cp!=rp->code && cp[-1]=='@' ){
               /* If the argument is of the form @X then substituted
               ** the token number of X, not the value of X */
-              append_str("yystack.peek(%d).major",-1,i-rp->nrhs+1,0);
+              append_str("yystack[yyidx+%d].major",-1,i-rp->nrhs+1,0);
             }else{
               struct symbol *sp = rp->rhs[i];
               int dtnum;
@@ -3663,7 +3663,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
               }else{
                 dtnum = sp->dtnum;
               }
-              append_str("yystack.peek(%d).minor.yy%d()",0,i-rp->nrhs+1, dtnum);
+              append_str("yystack[yyidx+%d].minor.yy%d()",0,i-rp->nrhs+1, dtnum);
             }
             cp = xp;
             used[i] = 1;
@@ -3739,7 +3739,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
         lemp->errorcnt++;
       }
     }else if( i>0 && has_destructor(rp->rhs[i],lemp) ){
-      append_str("  yy_destructor(%d,yystack.peek(%d).minor);\n", 0,
+      append_str("  yy_destructor(%d,yystack[yyidx+%d].minor);\n", 0,
          rp->rhs[i]->index,i-rp->nrhs+1);
     }
   }
@@ -3747,7 +3747,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
   /* If unable to write LHS values directly into the stack, write the
   ** saved LHS value now. */
   if( lhsdirect==0 ){
-    append_str("  yystack.peek(%d).minor.yy%d(", 0, 1-rp->nrhs, rp->lhs->dtnum);
+    append_str("  yystack(yyidx+%d).minor.yy%d(", 0, 1-rp->nrhs, rp->lhs->dtnum);
     append_str(zLhs, 0, 0, 0);
     append_str("());\n", 0, 0, 0);
   }

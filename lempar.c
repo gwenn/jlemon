@@ -32,8 +32,6 @@
 %%
 /**************** End makeheaders token definitions ***************************/
 
-import java.util.ArrayList;
-import java.util.EmptyStackException;
 #ifndef NDEBUG
 import java.lang.StringBuilder;
 import org.slf4j.Logger;
@@ -221,6 +219,7 @@ private static class yyStackEntry {
 /* The state of the parser is completely contained in an instance of
 ** the following structure */
 //  yyStackEntry *yytos;          /* Pointer to top element of the stack */
+  private int yyidx;              /* Index to top element of the stack */
 #ifdef YYTRACKMAXSTACKDEPTH
   private int yyhwm;                    /* High-water mark of the stack */
 #endif
@@ -230,10 +229,10 @@ private static class yyStackEntry {
   private final ParseARG_SDECL                /* A place to hold %extra_argument */
 #if YYSTACKDEPTH<=0
   //int yystksz;                  /* Current side of the stack */
-  private final Stack<yyStackEntry> yystack;        /* The parser's stack */
+  private final yyStackEntry[] yystack;        /* The parser's stack */
   //yyStackEntry yystk0;          /* First stack entry */
 #else
-  private final Stack<yyStackEntry> yystack;  /* The parser's stack */
+  private final yyStackEntry[] yystack;  /* The parser's stack */
 #endif
 
 #ifndef NDEBUG
@@ -284,7 +283,7 @@ private static final String yyRuleName[] = {
 private boolean yyGrowStack(){
 #ifndef NDEBUG
       logger.debug("Stack grows from {} entries.",
-              yystack.size());
+              yystack.length);
 #endif
   return false;
 }
@@ -303,18 +302,19 @@ private boolean yyGrowStack(){
 public yyParser(
   ParseARG_PDECL               /* Optional %extra_argument parameter */
   ) {
+  yyidx = 0;
 #ifdef YYTRACKMAXSTACKDEPTH
   yyhwm = 0;
 #endif
 #if YYSTACKDEPTH<=0
-  yystack = new Stack<>(100);
+  yystack = new yyStackEntry[100];
 #else
-  yystack = new Stack<>(YYSTACKDEPTH);
+  yystack = new yyStackEntry[YYSTACKDEPTH];
 #endif
 #ifndef YYNOERRORRECOVERY
   yyerrcnt = -1;
 #endif
-  yystack.push(new yyStackEntry());
+  yystack[yyidx] = new yyStackEntry();
   ParseARG_STORE;
 }
 
@@ -372,7 +372,9 @@ private void yy_destructor(
 */
 private void yy_pop_parser_stack(){
   yyStackEntry yytos;
-  yytos = yystack.pop();
+  yytos = yystack[yyidx];
+  yystack[yyidx] = null;
+  yyidx--;
 #ifndef NDEBUG
     logger.debug("Popping {}",
       yyTokenName[yytos.major]);
@@ -384,7 +386,7 @@ private void yy_pop_parser_stack(){
 ** Clear all secondary memory allocations from the parser
 */
 public void ParseFinalize(){
-  while( yystack.size() > 1 ) yy_pop_parser_stack();
+  while( yyidx > 0 ) yy_pop_parser_stack();
 }
 
 #ifndef Parse_ENGINEALWAYSONSTACK
@@ -415,7 +417,7 @@ private int yy_find_shift_action(
   YYCODETYPE iLookAhead     /* The look-ahead token */
 ){
   int i;
-  yyStackEntry yytos = yystack.peek();
+  yyStackEntry yytos = yystack[yyidx];
   int stateno = yytos.stateno;
  
   if( stateno>=YY_MIN_REDUCE ) return stateno;
@@ -504,7 +506,7 @@ private void yyStackOverflow(){
 #ifndef NDEBUG
      logger.error("Stack Overflow!");
 #endif
-   while( yystack.size() > 1 ) yy_pop_parser_stack();
+   while( yyidx > 0 ) yy_pop_parser_stack();
    /* Here code is inserted which will execute if the parser
    ** stack every overflows */
 /******** Begin %stack_overflow code ******************************************/
@@ -517,13 +519,14 @@ private void yyStackOverflow(){
 */
 #ifndef NDEBUG
 private void yyTraceShift(int yyNewState){
+    yyStackEntry yytos = yystack[yyidx];
     if( yyNewState<YYNSTATE ){
       logger.debug("Shift '{}', go to state {}",
-         yyTokenName[yystack.peek().major],
+         yyTokenName[yytos.major],
          yyNewState);
     }else{
       logger.debug("Shift '{}'",
-         yyTokenName[yystack.peek().major]);
+         yyTokenName[yytos.major]);
     }
 }
 #else
@@ -538,15 +541,17 @@ private void yy_shift(
   int yyMajor,                  /* The major token to shift in */
   ParseTOKENTYPE yyMinor        /* The minor token to shift in */
 ){
+  yyidx++;
   yyStackEntry yytos = new yyStackEntry();
 #ifdef YYTRACKMAXSTACKDEPTH
-  if( yystack.size()>yyhwm ){
+  if( yyidx>yyhwm ){
     yyhwm++;
-    assert( yyhwm == yystack.size() );
+    assert( yyhwm == yyidx );
   }
 #endif
 #if YYSTACKDEPTH>0 
-  if( yystack.size() >= YYSTACKDEPTH ){
+  if( yyidx >= YYSTACKDEPTH ){
+    yyidx--;
     yyStackOverflow();
     return;
   }
@@ -561,7 +566,7 @@ private void yy_shift(
   if( yyNewState > YY_MAX_SHIFT ){
     yyNewState += YY_MIN_REDUCE - YY_MIN_SHIFTREDUCE;
   }
-  yystack.push(yytos);
+  yystack[yyidx] = yytos;
   yytos.stateno = (YYACTIONTYPE)yyNewState;
   yytos.major = (YYCODETYPE)yyMajor;
   yytos.minor.yy0(yyMinor);
@@ -601,7 +606,7 @@ private void yy_reduce(
   if( yyruleno<yyRuleName.length ){
     yysize = yyRuleInfo[yyruleno].nrhs;
     logger.debug("Reduce [{}], go to state {}.",
-      yyRuleName[yyruleno], yystack.peek(-yysize).stateno);
+      yyRuleName[yyruleno], yystack[yyidx-yysize].stateno);
   }
 #endif /* NDEBUG */
 
@@ -610,13 +615,13 @@ private void yy_reduce(
   ** enough on the stack to push the LHS value */
   if( yyRuleInfo[yyruleno].nrhs==0 ){
 #ifdef YYTRACKMAXSTACKDEPTH
-    if( yystack.size()>yyhwm ){
+    if( yyidx>yyhwm ){
       yyhwm++;
-      assert( yyhwm == yystack.size() );
+      assert( yyhwm == yyidx );
     }
 #endif
 #if YYSTACKDEPTH>0 
-    if( yystack.size() >= YYSTACKDEPTH ){
+    if( yyidx >= YYSTACKDEPTH-1 ){
       yyStackOverflow();
       return;
     }
@@ -647,20 +652,20 @@ private void yy_reduce(
   assert( yyruleno<yyRuleInfo.length );
   yygoto = yyRuleInfo[yyruleno].lhs;
   yysize = yyRuleInfo[yyruleno].nrhs;
-  yyact = yy_find_reduce_action(yystack.peek(-yysize).stateno,(YYCODETYPE)yygoto);
+  yyact = yy_find_reduce_action(yystack[yyidx-yysize].stateno,(YYCODETYPE)yygoto);
   if( yyact <= YY_MAX_SHIFTREDUCE ){
     if( yyact>YY_MAX_SHIFT ){
       yyact += YY_MIN_REDUCE - YY_MIN_SHIFTREDUCE;
     }
 
-    yystack.popN(yysize-1);
-    yymsp = yystack.peek();
+    yyidx -= yysize-1;
+    yymsp = yystack(yyidx);
     yymsp.stateno = (YYACTIONTYPE)yyact;
     yymsp.major = (YYCODETYPE)yygoto;
     yyTraceShift(yyact);
   }else{
     assert( yyact == YY_ACCEPT_ACTION );
-    yystack.popN(yysize);
+    yyidx -= yysize;
     yy_accept();
   }
 }
@@ -674,7 +679,7 @@ private void yy_parse_failed(
 #ifndef NDEBUG
     logger.error("Fail!");
 #endif
-  while( yystack.size() > 1 ) yy_pop_parser_stack();
+  while( yyidx > 0 ) yy_pop_parser_stack();
   /* Here code is inserted which will be executed whenever the
   ** parser fails */
 /************ Begin %parse_failure code ***************************************/
@@ -708,7 +713,7 @@ private void yy_accept(
 #ifndef YYNOERRORRECOVERY
   yyerrcnt = -1;
 #endif
-  assert( yystack.size() == 1 );
+  assert( yyidx == 0 );
   /* Here code is inserted which will be executed whenever the
   ** parser accepts */
 /*********** Begin %parse_accept code *****************************************/
@@ -748,7 +753,7 @@ public void Parse(
   boolean yyerrorhit = false;   /* True if yymajor has invoked an error */
 #endif
 
-  assert( yystack.peek() != null );
+  assert( yystack[yyidx] != null );
 #if !defined(YYERRORSYMBOL) && !defined(YYNOERRORRECOVERY)
   yyendofinput = (yymajor==0);
 #endif
@@ -799,7 +804,7 @@ public void Parse(
       if( yyerrcnt<0 ){
         yy_syntax_error(yymajor,yyminor);
       }
-      yymx = yystack.peek().major;
+      yymx = yystack[yyidx].major;
       if( yymx==YYERRORSYMBOL || yyerrorhit ){
 #ifndef NDEBUG
           logger.debug("Discard input token {}",
@@ -808,15 +813,15 @@ public void Parse(
         yy_destructor((YYCODETYPE)yymajor, yyminorunion);
         yymajor = YYNOCODE;
       }else{
-        while( !yystack.isEmpty()
+        while( yyidx >= 0
             && yymx != YYERRORSYMBOL
             && (yyact = yy_find_reduce_action(
-                        yystack.peek().stateno,
+                        yystack[yyidx].stateno,
                         YYERRORSYMBOL)) >= YY_MIN_REDUCE
         ){
           yy_pop_parser_stack();
         }
-        if( yystack.isEmpty() || yymajor==0 ){
+        if( yyidx < 0 || yymajor==0 ){
           yy_destructor((YYCODETYPE)yymajor, yyminorunion);
           yy_parse_failed();
 #ifndef YYNOERRORRECOVERY
@@ -865,14 +870,14 @@ public void Parse(
       yymajor = YYNOCODE;
 #endif
     }
-  }while( yymajor!=YYNOCODE && yystack.size() > 1 );
+  }while( yymajor!=YYNOCODE && yyidx > 0 );
 #ifndef NDEBUG
     if (logger.isDebugEnabled()) {
     int i;
     char cDiv = '[';
     StringBuilder msg = new StringBuilder("Return. Stack=");
-    for(i=1; i< yystack.size(); i++){
-      msg.append(cDiv).append(yyTokenName[yystack.get(i).major]);
+    for(i=1; i <= yyidx; i++){
+      msg.append(cDiv).append(yyTokenName[yystack[i].major]);
       cDiv = ' ';
     }
     msg.append(']');
@@ -881,35 +886,12 @@ public void Parse(
 #endif
 }
 
-  @SuppressWarnings("serial")
-  private static class Stack<E> extends ArrayList<E> {
-    Stack(int initialCapacity) {
-      super(initialCapacity);
+  private yyStackEntry yystack(int i) {
+    yyStackEntry entry = yystack[i];
+    if (entry == null) {
+      entry = new yyStackEntry();
+      yystack[i] = entry;
     }
-    E push(E item) {
-      add(item);
-      return item;
-    }
-    E pop() {
-      if (isEmpty()) {
-        throw new EmptyStackException();
-      }
-      return remove(size() - 1);
-    }
-    E peek() {
-      if (isEmpty()) {
-        throw new EmptyStackException();
-      }
-      return get(size() - 1);
-    }
-    void popN(int times) {
-      while (times > 0/* && !isEmpty()*/) {
-        pop();
-        times--;
-      }
-    }
-    E peek(int i) {
-      return get(size() - 1 + i);
-    }
+    return entry;
   }
 } /*class Parse*/
