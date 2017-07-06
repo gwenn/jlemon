@@ -283,9 +283,9 @@ ccons(A) ::= PRIMARY KEY sortorder(Z) onconf(R) autoinc(I).
                                  {A = new PrimaryKeyColumnConstraint(context.constraintName(),Z, R, I);}
 ccons(A) ::= UNIQUE onconf(R).      {A = new UniqueColumnConstraint(context.constraintName(),R);}
 ccons(A) ::= CHECK LP expr(X) RP.   {A = new CheckColumnConstraint(context.constraintName(),X);}
-ccons(A) ::= REFERENCES nm(T) eidlist_opt(TA) refargs(R) defer_subclause(D).
-                                 {A = new ForeignKeyColumnConstraint(context.constraintName(),new ForeignKeyClause(T.text(),TA,R), D);}
-//ccons(A) ::= defer_subclause(D).    {A = D;}
+ccons(A) ::= REFERENCES nm(T) eidlist_opt(TA) refargs(R).
+                                 {A = new ForeignKeyColumnConstraint(context.constraintName(),new ForeignKeyClause(T.text(),TA,R));}
+ccons(A) ::= defer_subclause(D).    {A = D;}
 ccons(A) ::= COLLATE ids(C).        {A = new CollateColumnConstraint(context.constraintName(),C.text());}
 
 // The optional AUTOINCREMENT keyword

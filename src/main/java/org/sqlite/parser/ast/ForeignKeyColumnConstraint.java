@@ -6,11 +6,15 @@ import static java.util.Objects.requireNonNull;
 
 public class ForeignKeyColumnConstraint extends ColumnConstraint {
 	public final ForeignKeyClause clause;
-	public final DeferSubclause derefClause;
+	public DeferSubclause derefClause;
 
 	public ForeignKeyColumnConstraint(String name, ForeignKeyClause clause, DeferSubclause derefClause) {
 		super(name);
 		this.clause = requireNonNull(clause);
+		this.derefClause = derefClause;
+	}
+
+	public void setDerefClause(DeferSubclause derefClause) {
 		this.derefClause = derefClause;
 	}
 

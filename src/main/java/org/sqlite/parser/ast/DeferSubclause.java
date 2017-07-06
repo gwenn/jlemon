@@ -2,11 +2,13 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
-public class DeferSubclause implements ToSql {
+// FIXME not really a ColumnConstraint but we need it to parse...
+public class DeferSubclause extends ColumnConstraint {
 	public final boolean deferrable;
 	public final InitDeferredPred initDeferred;
 
 	public DeferSubclause(boolean deferrable, InitDeferredPred initDeferred) {
+		super(null);
 		this.deferrable = deferrable;
 		this.initDeferred = initDeferred;
 	}
