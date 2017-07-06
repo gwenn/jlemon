@@ -65,6 +65,8 @@ Maybe try a code manipulator ([janino](http://janino-compiler.github.io/janino/#
 
 Try to generate an AST by adapting the [SQLite parser](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/parse.y) from C to JAVA.
 Currently, the [SQLite lexer](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/tokenize.c) has been ported (and tested with [these scripts](https://github.com/bkiers/sqlite-parser/tree/master/src/test/resources)).
+The [SQLite parser](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/parse.y) has been ported (and tested with [these scripts](https://github.com/bkiers/sqlite-parser/tree/master/src/test/resources)).
+But the generated AST is not available/tested.
 
 When the parser will be ready, it will be used to fix [DatabaseMetaData](https://github.com/gwenn/sqlite-jna/blob/master/src/main/java/org/sqlite/driver/DbMeta.java) implementation.
 
