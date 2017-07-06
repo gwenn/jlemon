@@ -19,6 +19,14 @@ public class Context {
 	public void constraintName(String constraintName) {
 		this.constraintName = constraintName;
 	}
+	public ColumnConstraint columnConstraintName(String constraintName) {
+		this.constraintName = constraintName;
+		return ColumnConstraint.DUMMY;
+	}
+	public TableConstraint tableConstraintName(String constraintName) {
+		this.constraintName = constraintName;
+		return TableConstraint.DUMMY;
+	}
 
 	/**
 	 * This routine is called after a single SQL statement has been parsed.
