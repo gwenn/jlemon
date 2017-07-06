@@ -46,9 +46,15 @@ public class Main {
 				System.out.printf("Error while lexing %s: %s%n", path, e.getMessage());
 			} catch (ParseException e) {
 				System.out.printf("Error while parsing %s: %s%n", path, e.getMessage());
+			} catch (Throwable t) {
+				System.out.printf("Error while parsing %s: %s%n", path, t.getMessage());
+				t.printStackTrace(System.out);
 			}
 		}
 	}
+
+	private static Token NULL = new Token(0, null);
+	private static Token SEMI = new Token(TokenType.TK_SEMI, ";");
 	private static void parse(Reader reader) {
 		Tokenizer lexer = new Tokenizer(reader);
 		// TODO Parse next stmt
@@ -70,9 +76,9 @@ public class Main {
 			** with tokens TK_SEMI and 0, in that order. */
 			if (lastTokenParsed != -1 && lexer.atEndOfFile()) {
 				if (TokenType.TK_SEMI != lastTokenParsed) {
-					parser.sqlite3Parser(TokenType.TK_SEMI, null);
+					parser.sqlite3Parser(TokenType.TK_SEMI, SEMI);
 				}
-				parser.sqlite3Parser(0, null);
+				parser.sqlite3Parser(0, NULL);
 			}
 			parser.sqlite3ParserFinalize();
 			// TODO display cmd
