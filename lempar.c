@@ -281,10 +281,17 @@ private static final String yyRuleName[] = {
 ** of errors.  Return 0 on success.
 */
 private boolean yyGrowStack(){
+  int newSize;
+  yyStackEntry[] pNew;
+
+  newSize = yystack.length * 2 + 100;
+  pNew = new yyStackEntry[newSize];
+  System.arraycopy(yystack, 0, pNew, 0, yystack.length);
 #ifndef NDEBUG
-      logger.debug("Stack grows from {} entries.",
-              yystack.length);
+      logger.debug("Stack grows from {} to {} entries.",
+              yystack.length, newSize);
 #endif
+  yystack = newStack;
   return false;
 }
 #endif
@@ -556,7 +563,7 @@ private void yy_shift(
     return;
   }
 #else
-  if( false ){
+  if( yyidx >= yystack.length ){
     if( yyGrowStack() ){
       yyStackOverflow();
       return;
@@ -626,7 +633,7 @@ private void yy_reduce(
       return;
     }
 #else
-    if( false ){
+    if( yyidx >= yystack.length-1 ){
       if( yyGrowStack() ){
         yyStackOverflow();
         return;
