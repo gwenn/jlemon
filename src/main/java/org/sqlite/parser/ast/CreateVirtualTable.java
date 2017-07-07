@@ -26,7 +26,7 @@ public class CreateVirtualTable implements Stmt {
 			a.append("IF NOT EXISTS ");
 		}
 		tblName.toSql(a);
-		a.append("USING ");
+		a.append(" USING ");
 		doubleQuote(a, moduleName);
 		a.append('(');
 		if (args != null && !args.isEmpty()) {

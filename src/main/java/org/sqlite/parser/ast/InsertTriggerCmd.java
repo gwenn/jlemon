@@ -42,6 +42,7 @@ public class InsertTriggerCmd implements TriggerCmd {
 			commaNames(a, columns);
 			a.append(") ");
 		}
+		a.append(' ');
 		select.toSql(a);
 	}
 }

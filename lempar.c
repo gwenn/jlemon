@@ -896,6 +896,7 @@ public void Parse(
   private yyStackEntry yystack(int i) {
     yyStackEntry entry = yystack[i];
     if (entry == null) {
+      logger.debug("Access to uninitialized stack entry: {} (top: {})", i, yyidx);
       entry = new yyStackEntry();
       yystack[i] = entry;
     }

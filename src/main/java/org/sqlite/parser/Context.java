@@ -5,6 +5,7 @@ import org.sqlite.parser.ast.*;
 public class Context {
 	ExplainKind explain;
 	private String constraintName;
+	Stmt stmt;
 	private boolean done;
 
 	void sqlite3ErrorMsg(String message, Object... args) {

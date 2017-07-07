@@ -47,6 +47,7 @@ public class Insert implements Stmt {
 			commaNames(a, columns);
 			a.append(") ");
 		}
+		a.append(' ');
 		if (select != null) {
 			select.toSql(a);
 		} else {

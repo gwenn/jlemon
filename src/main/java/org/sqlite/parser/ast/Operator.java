@@ -88,7 +88,7 @@ public enum Operator implements ToSql {
 		} else if (Greater == this) {
 			a.append(">");
 		} else if (GreaterEquals == this) {
-			a.append("=>");
+			a.append(">=");
 		} else if (Is == this) {
 			a.append("IS");
 		} else if (IsNot == this) {

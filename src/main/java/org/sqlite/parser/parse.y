@@ -105,7 +105,7 @@ cmdx ::= cmd.           { context.sqlite3FinishCoding(); }
 ///////////////////// Begin and end transactions. ////////////////////////////
 //
 
-cmd ::= BEGIN transtype(Y) trans_opt(X).  {new Begin(Y, X);}
+cmd ::= BEGIN transtype(Y) trans_opt(X).  {context.stmt = new Begin(Y, X);}
 %type trans_opt {String}
 trans_opt(A) ::= .               {A = null;}
 trans_opt(A) ::= TRANSACTION.       {A = null;}
@@ -115,27 +115,27 @@ transtype(A) ::= .             {A = null;}
 transtype(A) ::= DEFERRED(X).  {A = TransactionType.from(@X); /*A-overwrites-X*/}
 transtype(A) ::= IMMEDIATE(X). {A = TransactionType.from(@X); /*A-overwrites-X*/}
 transtype(A) ::= EXCLUSIVE(X). {A = TransactionType.from(@X); /*A-overwrites-X*/}
-cmd ::= COMMIT trans_opt(X).      {new Commit(X);}
-cmd ::= END trans_opt(X).         {new Commit(X);}
-cmd ::= ROLLBACK trans_opt(X).    {new Rollback(X, null);}
+cmd ::= COMMIT trans_opt(X).      {context.stmt = new Commit(X);}
+cmd ::= END trans_opt(X).         {context.stmt = new Commit(X);}
+cmd ::= ROLLBACK trans_opt(X).    {context.stmt = new Rollback(X, null);}
 
 savepoint_opt ::= SAVEPOINT.
 savepoint_opt ::= .
 cmd ::= SAVEPOINT nm(X). {
-  new Savepoint(X.text());
+  context.stmt = new Savepoint(X.text());
 }
 cmd ::= RELEASE savepoint_opt nm(X). {
-  new Release(X.text());
+  context.stmt = new Release(X.text());
 }
 cmd ::= ROLLBACK trans_opt(Y) TO savepoint_opt nm(X). {
-  new Rollback(Y, X.text());
+  context.stmt = new Rollback(Y, X.text());
 }
 
 ///////////////////// The CREATE TABLE statement ////////////////////////////
 //
 cmd ::= createkw temp(T) TABLE ifnotexists(E) nm(Y) dbnm(Z) create_table_args(X). {
   QualifiedName tblName = QualifiedName.from(Y, Z);
-  new CreateTable(T, E, tblName, X);
+  context.stmt = new CreateTable(T, E, tblName, X);
 }
 createkw(A) ::= CREATE(A).
 
@@ -362,7 +362,7 @@ resolvetype(A) ::= REPLACE.                  {A = ResolveType.Replace;}
 ////////////////////////// The DROP TABLE /////////////////////////////////////
 //
 cmd ::= DROP TABLE ifexists(E) fullname(X). {
-  new DropTable(E, X);
+  context.stmt = new DropTable(E, X);
 }
 %type ifexists {boolean}
 ifexists(A) ::= IF EXISTS.   {A = true;}
@@ -374,16 +374,16 @@ ifexists(A) ::= .            {A = false;}
 cmd ::= createkw temp(T) VIEW ifnotexists(E) nm(Y) dbnm(Z) eidlist_opt(C)
           AS select(S). {
   QualifiedName viewName = QualifiedName.from(Y, Z);
-  new CreateView(T, E, viewName, C, S);
+  context.stmt = new CreateView(T, E, viewName, C, S);
 }
 cmd ::= DROP VIEW ifexists(E) fullname(X). {
-  new DropView(E, X);
+  context.stmt = new DropView(E, X);
 }
 %endif  SQLITE_OMIT_VIEW
 
 //////////////////////// The SELECT statement /////////////////////////////////
 //
-cmd ::= select.
+cmd ::= select(S). {context.stmt = S;}
 
 %type select {Select}
 %type selectnowith {SelectBody}
@@ -610,12 +610,12 @@ limit_opt(A) ::= LIMIT expr(X) COMMA expr(Y).
 %ifdef SQLITE_ENABLE_UPDATE_DELETE_LIMIT
 cmd ::= with(C) DELETE FROM fullname(X) indexed_opt(I) where_opt(W) 
         orderby_opt(O) limit_opt(L). {
-  new Delete(C, X, I, W, O, L);
+  context.stmt = new Delete(C, X, I, W, O, L);
 }
 %endif
 %ifndef SQLITE_ENABLE_UPDATE_DELETE_LIMIT
 cmd ::= with(C) DELETE FROM fullname(X) indexed_opt(I) where_opt(W). {
-  new Delete(C, X, I, W, null, null);
+  context.stmt = new Delete(C, X, I, W, null, null);
 }
 %endif
 
@@ -629,13 +629,13 @@ where_opt(A) ::= WHERE expr(X).       {A = X;}
 %ifdef SQLITE_ENABLE_UPDATE_DELETE_LIMIT
 cmd ::= with(C) UPDATE orconf(R) fullname(X) indexed_opt(I) SET setlist(Y)
         where_opt(W) orderby_opt(O) limit_opt(L).  {
-  new Update(C, R, X, I, Y, W, O, L);
+  context.stmt = new Update(C, R, X, I, Y, W, O, L);
 }
 %endif
 %ifndef SQLITE_ENABLE_UPDATE_DELETE_LIMIT
 cmd ::= with(C) UPDATE orconf(R) fullname(X) indexed_opt(I) SET setlist(Y)
         where_opt(W).  {
-  new Update(C, R, X, I, Y, W, null, null);
+  context.stmt = new Update(C, R, X, I, Y, W, null, null);
 }
 %endif
 
@@ -661,11 +661,11 @@ setlist(A) ::= LP idlist(X) RP EQ expr(Y). {
 ////////////////////////// The INSERT command /////////////////////////////////
 //
 cmd ::= with(W) insert_cmd(R) INTO fullname(X) idlist_opt(F) select(S). {
-  new Insert(W, R, X, F, S);
+  context.stmt = new Insert(W, R, X, F, S);
 }
 cmd ::= with(W) insert_cmd(R) INTO fullname(X) idlist_opt(F) DEFAULT VALUES.
 {
-  new Insert(W, R, X, F, null);
+  context.stmt = new Insert(W, R, X, F, null);
 }
 
 %type insert_cmd {ResolveType}
@@ -870,7 +870,7 @@ paren_exprlist(A) ::= LP exprlist(X) RP.  {A = X;}
 cmd ::= createkw uniqueflag(U) INDEX ifnotexists(NE) nm(X) dbnm(D)
         ON nm(Y) LP sortlist(Z) RP where_opt(W). {
   QualifiedName idxName = QualifiedName.from(X, D);
-  new CreateIndex(U, NE, idxName, Y.text(), Z, W);
+  context.stmt = new CreateIndex(U, NE, idxName, Y.text(), Z, W);
 }
 
 %type uniqueflag {boolean}
@@ -917,27 +917,27 @@ collate(C) ::= COLLATE ids(X).   {C = X.text();}
 
 ///////////////////////////// The DROP INDEX command /////////////////////////
 //
-cmd ::= DROP INDEX ifexists(E) fullname(X).   {new DropIndex(E, X);}
+cmd ::= DROP INDEX ifexists(E) fullname(X).   {context.stmt = new DropIndex(E, X);}
 
 ///////////////////////////// The VACUUM command /////////////////////////////
 //
 %ifndef SQLITE_OMIT_VACUUM
 %ifndef SQLITE_OMIT_ATTACH
-cmd ::= VACUUM.                {new Vacuum(null);}
-cmd ::= VACUUM nm(X).          {new Vacuum(X.text());}
+cmd ::= VACUUM.                {context.stmt = new Vacuum(null);}
+cmd ::= VACUUM nm(X).          {context.stmt = new Vacuum(X.text());}
 %endif  SQLITE_OMIT_ATTACH
 %endif  SQLITE_OMIT_VACUUM
 
 ///////////////////////////// The PRAGMA command /////////////////////////////
 //
 %ifndef SQLITE_OMIT_PRAGMA
-cmd ::= PRAGMA nm(X) dbnm(Z).                {Pragma.from(X,Z,null);}
-cmd ::= PRAGMA nm(X) dbnm(Z) EQ nmnum(Y).    {Pragma.from(X,Z,Y.text());}
-cmd ::= PRAGMA nm(X) dbnm(Z) LP nmnum(Y) RP. {Pragma.from(X,Z,Y.text());}
+cmd ::= PRAGMA nm(X) dbnm(Z).                {context.stmt = Pragma.from(X,Z,null);}
+cmd ::= PRAGMA nm(X) dbnm(Z) EQ nmnum(Y).    {context.stmt = Pragma.from(X,Z,Y.text());}
+cmd ::= PRAGMA nm(X) dbnm(Z) LP nmnum(Y) RP. {context.stmt = Pragma.from(X,Z,Y.text());}
 cmd ::= PRAGMA nm(X) dbnm(Z) EQ minus_num(Y). 
-                                             {Pragma.from(X,Z,Y.text());}
+                                             {context.stmt = Pragma.from(X,Z,Y.text());}
 cmd ::= PRAGMA nm(X) dbnm(Z) LP minus_num(Y) RP.
-                                             {Pragma.from(X,Z,Y.text());}
+                                             {context.stmt = Pragma.from(X,Z,Y.text());}
 
 nmnum(A) ::= plus_num(A).
 nmnum(A) ::= nm(A).
@@ -955,6 +955,7 @@ minus_num(A) ::= MINUS number(X).     {A = X;}
 
 cmd ::= createkw trigger_decl(A) BEGIN trigger_cmd_list(S) END. {
   A.commands.addAll(S);
+  context.stmt = A;
 }
 
 %type trigger_decl {CreateTrigger}
@@ -1059,17 +1060,17 @@ raisetype(A) ::= FAIL.      {A = ResolveType.Fail;}
 ////////////////////////  DROP TRIGGER statement //////////////////////////////
 %ifndef SQLITE_OMIT_TRIGGER
 cmd ::= DROP TRIGGER ifexists(NOERR) fullname(X). {
-  new DropTrigger(NOERR,X);
+  context.stmt = new DropTrigger(NOERR,X);
 }
 %endif  !SQLITE_OMIT_TRIGGER
 
 //////////////////////// ATTACH DATABASE file AS name /////////////////////////
 %ifndef SQLITE_OMIT_ATTACH
 cmd ::= ATTACH database_kw_opt expr(F) AS expr(D) key_opt(K). {
-  new Attach(F, D, K);
+  context.stmt = new Attach(F, D, K);
 }
 cmd ::= DETACH database_kw_opt expr(D). {
-  new Detach(D);
+  context.stmt = new Detach(D);
 }
 
 %type key_opt {Expr}
@@ -1082,25 +1083,25 @@ database_kw_opt ::= .
 
 ////////////////////////// REINDEX collation //////////////////////////////////
 %ifndef SQLITE_OMIT_REINDEX
-cmd ::= REINDEX.                {new ReIndex(null);}
-cmd ::= REINDEX nm(X) dbnm(Y).  {new ReIndex(QualifiedName.from(X, Y));}
+cmd ::= REINDEX.                {context.stmt = new ReIndex(null);}
+cmd ::= REINDEX nm(X) dbnm(Y).  {context.stmt = new ReIndex(QualifiedName.from(X, Y));}
 %endif  SQLITE_OMIT_REINDEX
 
 /////////////////////////////////// ANALYZE ///////////////////////////////////
 %ifndef SQLITE_OMIT_ANALYZE
-cmd ::= ANALYZE.                {new Analyze(null);}
-cmd ::= ANALYZE nm(X) dbnm(Y).  {new Analyze(QualifiedName.from(X, Y));}
+cmd ::= ANALYZE.                {context.stmt = new Analyze(null);}
+cmd ::= ANALYZE nm(X) dbnm(Y).  {context.stmt = new Analyze(QualifiedName.from(X, Y));}
 %endif
 
 //////////////////////// ALTER TABLE table ... ////////////////////////////////
 %ifndef SQLITE_OMIT_ALTERTABLE
 cmd ::= ALTER TABLE fullname(X) RENAME TO nm(Z). {
-  new AlterTable(X,Z.text());
+  context.stmt = new AlterTable(X,Z.text());
 }
 cmd ::= ALTER TABLE fullname(X)
         ADD kwcolumn_opt columnname(Y) carglist(C). {
   ColumnDefinition colDefinition = new ColumnDefinition(Y, C);
-  new AlterTable(X, colDefinition);
+  context.stmt = new AlterTable(X, colDefinition);
 }
 kwcolumn_opt ::= .
 kwcolumn_opt ::= COLUMNKW.
@@ -1108,8 +1109,8 @@ kwcolumn_opt ::= COLUMNKW.
 
 //////////////////////// CREATE VIRTUAL TABLE ... /////////////////////////////
 %ifndef SQLITE_OMIT_VIRTUALTABLE
-cmd ::= create_vtab.                       {}
-cmd ::= create_vtab(A) LP vtabarglist(X) RP.  {A.args = X.text();}
+cmd ::= create_vtab(A).                       {context.stmt = A;}
+cmd ::= create_vtab(A) LP vtabarglist(X) RP.  {A.args = X.text(); context.stmt = A;}
 %type create_vtab {CreateVirtualTable}
 create_vtab(A) ::= createkw VIRTUAL TABLE ifnotexists(E)
                 nm(X) dbnm(Y) USING nm(Z). {

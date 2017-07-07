@@ -14,6 +14,6 @@ public class NotNullExpr implements Expr {
 	@Override
 	public void toSql(Appendable a) throws IOException {
 		expr.toSql(a);
-		a.append("NOT NULL");
+		a.append(" NOT NULL");
 	}
 }

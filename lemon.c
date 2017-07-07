@@ -3929,7 +3929,7 @@ void print_stack_union(
   for(i=0; i<arraysize; i++){
     if( types[i]==0 ) continue;
     fprintf(out,"  %s yy%d() {\n",types[i],i+1); lineno++;
-    fprintf(out,"    assert tag == Tag.yy%d;\n",i+1); lineno++;
+    fprintf(out,"    assert tag == Tag.yy%d || tag == null && value == null;\n",i+1); lineno++;
     fprintf(out,"    return (%s) value;\n",types[i]); lineno++;
     fprintf(out,"  }\n"); lineno++;
     fprintf(out,"  void yy%d(%s value) {\n",i+1,types[i]); lineno++;
