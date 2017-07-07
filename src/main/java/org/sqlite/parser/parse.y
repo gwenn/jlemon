@@ -729,7 +729,7 @@ expr(A) ::= id(X) LP STAR RP. {
   A = new FunctionCallStarExpr(X.text());
 }
 term(A) ::= CTIME_KW(OP). {
-  A = new FunctionCallExpr(OP.text(), null, null);
+  A = new CurrentTimeExpr(OP.text());
 }
 
 %include {

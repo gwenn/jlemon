@@ -100,6 +100,7 @@ public class Main {
 					parse(tokenizer, false);
 				} catch (Exception e) {
 					System.out.printf("Error while parsing %s (%d:%d): %s%n", sql, tokenizer.lineno(), tokenizer.column(), e.getMessage());
+					throw e;
 				}
 			}
 		}
