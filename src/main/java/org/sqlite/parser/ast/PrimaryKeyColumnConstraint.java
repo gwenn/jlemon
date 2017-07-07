@@ -23,7 +23,7 @@ public class PrimaryKeyColumnConstraint extends ColumnConstraint {
 			order.toSql(a);
 		}
 		if (conflictClause != null) {
-			a.append(' ');
+			a.append(" ON CONFLICT ");
 			conflictClause.toSql(a);
 		}
 		if (autoIncrement) {

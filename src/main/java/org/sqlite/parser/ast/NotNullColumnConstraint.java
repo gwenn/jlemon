@@ -20,7 +20,7 @@ public class NotNullColumnConstraint extends ColumnConstraint {
 		}
 		a.append("NULL");
 		if (conflictClause != null) {
-			a.append(' ');
+			a.append(" ON CONFLICT ");
 			conflictClause.toSql(a);
 		}
 	}

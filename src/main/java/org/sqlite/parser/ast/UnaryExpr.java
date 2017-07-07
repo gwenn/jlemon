@@ -19,7 +19,9 @@ public class UnaryExpr implements Expr {
 	@Override
 	public void toSql(Appendable a) throws IOException {
 		op.toSql(a);
-		a.append(' ');
+		if (UnaryOperator.Not == op || expr instanceof UnaryExpr) {
+			a.append(' ');
+		}
 		expr.toSql(a);
 	}
 }

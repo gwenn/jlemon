@@ -42,6 +42,7 @@ public class Update implements Stmt {
 		}
 		a.append("UPDATE ");
 		if (orConflict != null) {
+			a.append("OR ");
 			orConflict.toSql(a);
 			a.append(' ');
 		}

@@ -19,7 +19,8 @@ public class CollateExpr implements Expr {
 
 	@Override
 	public void toSql(Appendable a) throws IOException {
-		a.append("COLLATE ");
+		expr.toSql(a);
+		a.append(" COLLATE ");
 		doubleQuote(a, name);
 	}
 }

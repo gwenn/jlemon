@@ -28,6 +28,7 @@ public class UpdateTriggerCmd implements TriggerCmd {
 	public void toSql(Appendable a) throws IOException {
 		a.append("UPDATE ");
 		if (orConflict != null) {
+			a.append("OR ");
 			orConflict.toSql(a);
 			a.append(' ');
 		}

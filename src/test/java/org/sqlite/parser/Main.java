@@ -94,7 +94,7 @@ public class Main {
 			if (check) {
 				String sql = builder.toString();
 				StringReader reader = new StringReader(sql);
-				Tokenizer tokenizer = new Tokenizer(reader)
+				Tokenizer tokenizer = new Tokenizer(reader);
 				try {
 					//lexer.init(reader);
 					parse(tokenizer, false);

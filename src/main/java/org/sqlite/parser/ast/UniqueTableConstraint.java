@@ -26,7 +26,7 @@ public class UniqueTableConstraint extends TableConstraint {
 		comma(a, columns);
 		a.append(')');
 		if (conflictClause != null) {
-			a.append(' ');
+			a.append(" ON CONFLICT ");
 			conflictClause.toSql(a);
 		}
 	}

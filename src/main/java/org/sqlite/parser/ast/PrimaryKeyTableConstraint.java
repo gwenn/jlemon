@@ -32,7 +32,7 @@ public class PrimaryKeyTableConstraint extends TableConstraint {
 		}
 		a.append(')');
 		if (conflictClause != null) {
-			a.append(' ');
+			a.append(" ON CONFLICT ");
 			conflictClause.toSql(a);
 		}
 	}

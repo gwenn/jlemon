@@ -15,7 +15,7 @@ public class UniqueColumnConstraint extends ColumnConstraint {
 		constraintName(a);
 		a.append("UNIQUE");
 		if (conflictClause != null) {
-			a.append(' ');
+			a.append(" ON CONFLICT ");
 			conflictClause.toSql(a);
 		}
 	}

@@ -36,7 +36,7 @@ public class Insert implements Stmt {
 		} else {
 			a.append("INSERT");
 			if (orConflict != null) {
-				a.append(' ');
+				a.append(" OR ");
 				orConflict.toSql(a);
 			}
 		}

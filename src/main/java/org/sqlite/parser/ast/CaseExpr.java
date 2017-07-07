@@ -23,6 +23,7 @@ public class CaseExpr implements Expr {
 	public void toSql(Appendable a) throws IOException {
 		a.append("CASE");
 		if (base != null) {
+			a.append(' ');
 			base.toSql(a);
 		}
 		for (WhenThenPair whenThenPair : whenThenPairs) {
@@ -33,5 +34,6 @@ public class CaseExpr implements Expr {
 			a.append(" ELSE ");
 			elseExpr.toSql(a);
 		}
+		a.append(" END");
 	}
 }

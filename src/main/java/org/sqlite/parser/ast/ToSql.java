@@ -3,6 +3,8 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 import java.util.List;
 
+import org.sqlite.parser.Keyword;
+
 import static org.sqlite.parser.Identifier.isIdentifierStart;
 import static org.sqlite.parser.Identifier.isIdentifierContinue;
 
@@ -23,7 +25,14 @@ public interface ToSql {
 			}
 		}
 		if (isIdentifier) {
-			a.append(name); // TODO identifier must be quoted when they match a keyword...
+			// identifier must be quoted when they match a keyword...
+			if (Keyword.isKeyword(name)) {
+				a.append('`');
+				a.append(name);
+				a.append('`');
+				return;
+			}
+			a.append(name);
 			return;
 		}
 		a.append('"');
