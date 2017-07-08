@@ -55,8 +55,8 @@ public class Main {
 		}
 	}
 
-	private static Token NULL = new Token(0, null);
-	private static Token SEMI = new Token(TokenType.TK_SEMI, ";");
+	private static final Token NULL = new Token(0, null);
+	private static final Token SEMI = new Token(TokenType.TK_SEMI, ";");
 	private static void parse(Tokenizer lexer, boolean check) {
 		while (!lexer.atEndOfFile()) {
 			Context ctx = new Context();

@@ -259,7 +259,7 @@ signed ::= minus_num.
 carglist(A) ::= carglist(A) ccons(X). {A=append(A,X);}
 carglist(A) ::= .                     {A=null;}
 %type ccons {ColumnConstraint}
-ccons(A) ::= CONSTRAINT nm(X).           {A = context.columnConstraintName(X.text());}
+ccons(A) ::= CONSTRAINT nm(X).           {context.constraintName(X.text()); A = null;}
 ccons(A) ::= DEFAULT term(X).            {A = new DefaultColumnConstraint(context.constraintName(),X);}
 ccons(A) ::= DEFAULT LP expr(X) RP.      {A = new DefaultColumnConstraint(context.constraintName(),new ParenthesizedExpr(X));}
 ccons(A) ::= DEFAULT PLUS term(X).       {A = new DefaultColumnConstraint(context.constraintName(),new UnaryExpr(UnaryOperator.Positive, X));}
@@ -329,7 +329,7 @@ conslist(A) ::= tcons(X).                        {A = append(null,X);}
 tconscomma ::= COMMA.            {context.constraintName(null);}
 tconscomma ::= .
 %type tcons {TableConstraint}
-tcons(A) ::= CONSTRAINT nm(X).      {A = context.tableConstraintName(X.text());}
+tcons(A) ::= CONSTRAINT nm(X).      {context.constraintName(X.text()); A = null;}
 tcons(A) ::= PRIMARY KEY LP sortlist(X) autoinc(I) RP onconf(R).
                                  {A = new PrimaryKeyTableConstraint(context.constraintName(),X, I, R);}
 tcons(A) ::= UNIQUE LP sortlist(X) RP onconf(R).
@@ -472,6 +472,7 @@ as(A) ::= .            {A = null;}
 //
 from(A) ::= .                {A = null;}
 from(A) ::= FROM seltablist(X). {
+  X.setComplete(true);
   A = X;
 }
 
