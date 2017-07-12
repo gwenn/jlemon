@@ -60,6 +60,7 @@ As there is no `union` in Java, `yy%d` fields of `YYMINORTYPE` have been replace
 But when translating code (see `translate_code`), the logic used to make the difference between a read access to a `yy%d` field and a write access is fallible.
 
 Maybe try a code manipulator ([janino](http://janino-compiler.github.io/janino/#janino-as-a-code-manipulator)) ?
+Or [javolution Union](http://javolution.org/apidocs/javolution/io/Union.html) ?
 
 ## WIP
 
@@ -76,9 +77,7 @@ When the parser will be ready, it will be used to fix [DatabaseMetaData](https:/
  * java.sql.DatabaseMetaData.getExportedKeys
  * java.sql.DatabaseMetaData.getIndexInfo
 
-## TODO
-
-### Lexer
+## Lexer/Parser
 
   - Keep track of position (line, column).
   - Streamable (stop at the end of statement).

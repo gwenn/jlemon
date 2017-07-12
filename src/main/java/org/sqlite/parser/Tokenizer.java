@@ -32,6 +32,9 @@ class Tokenizer extends Scanner {
 		column = 1;
 		nextColumn = 1;
 		nextLineno = 1;
+
+		tokenStart = 0;
+		tokenEnd = 0;
 	}
 
 	int split(char[] data, int start, int end, boolean atEOF) throws ScanException {
@@ -458,7 +461,7 @@ class Tokenizer extends Scanner {
 		return column;
 	}
 
-	void advance(int n, char[] data) throws ScanException {
+	private void advance(int n, char[] data) throws ScanException {
 		super.advance(n);
 		tokenEnd=n;
 		lineno = nextLineno;

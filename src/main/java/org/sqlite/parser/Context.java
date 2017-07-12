@@ -2,7 +2,7 @@ package org.sqlite.parser;
 
 import org.sqlite.parser.ast.*;
 
-public class Context {
+class Context {
 	ExplainKind explain;
 	private String constraintName;
 	Stmt stmt;
@@ -12,23 +12,23 @@ public class Context {
 		throw new ParseException(message, args);
 	}
 
-	public String constraintName() {
+	String constraintName() {
 		final String constraintName = this.constraintName;
 		this.constraintName = null;
 		return constraintName;
 	}
-	public void constraintName(String constraintName) {
+	void constraintName(String constraintName) {
 		this.constraintName = constraintName;
 	}
 
 	/**
 	 * This routine is called after a single SQL statement has been parsed.
 	 */
-	public void sqlite3FinishCoding() {
+	void sqlite3FinishCoding() {
 		done = true;
 	}
 
-	public boolean done() {
+	boolean done() {
 		return done;
 	}
 }

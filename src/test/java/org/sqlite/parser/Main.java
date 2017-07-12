@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class Main {
+class Main {
 	public static void main__(String[] args) {
 		final StringReader stringReader = new StringReader("PRAGMA parser_trace=1;");
 		parse(new Tokenizer(stringReader), true);

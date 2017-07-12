@@ -30,10 +30,6 @@ abstract class Scanner {
 	}
 
 	/** Reuse this scanner with a new content. */
-	void reset(Reader r) {
-		init(r);
-	}
-
 	void init(Reader r) {
 		this.r = Objects.requireNonNull(r, "null reader");
 		tokenType = 0;
@@ -129,10 +125,6 @@ abstract class Scanner {
 
 	boolean atEndOfFile() {
 		return eof;
-	}
-
-	int length() {
-		return end - start;
 	}
 
 	String subSequence(int start, int end) {

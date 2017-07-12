@@ -30,8 +30,8 @@ public class FromClause implements ToSql {
 		this.joins = joins;
 	}
 
-	public void setComplete(boolean complete) {
-		this.complete = complete;
+	public void setComplete() {
+		this.complete = true;
 	}
 
 	@Override
