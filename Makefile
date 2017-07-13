@@ -24,7 +24,7 @@ BEXE =
 # This is the default Makefile target.  The objects listed here
 # are what get build when you type just "make" with no arguments.
 #
-all: jlemon$(EXE) yyParser.java
+all: jlemon$(EXE) yyParser.java simple
 
 # Rules to build the LEMON compiler generator
 #
