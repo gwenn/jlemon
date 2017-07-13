@@ -6,6 +6,8 @@ that generates Java code.
 
 Files `lemon.c`, `lempar.c` are extracted from SQLite v3.18.0.
 
+[![Build Status](https://secure.travis-ci.org/gwenn/jlemon.png)](http://www.travis-ci.org/gwenn/jlemon)
+
 ## Usage
 
 ```bash
