@@ -288,7 +288,7 @@ private boolean yyGrowStack(){
   pNew = new yyStackEntry[newSize];
   System.arraycopy(yystack, 0, pNew, 0, yystack.length);
 #ifndef NDEBUG
-      logger.debug("Stack grows from {} to {} entries.",
+      logger.trace("Stack grows from {} to {} entries.",
               yystack.length, newSize);
 #endif
   yystack = newStack;
@@ -383,7 +383,7 @@ private void yy_pop_parser_stack(){
   yystack[yyidx] = null;
   yyidx--;
 #ifndef NDEBUG
-    logger.debug("Popping {}",
+    logger.trace("Popping {}",
       yyTokenName[yytos.major]);
 #endif
   yy_destructor(yytos.major, yytos.minor);
@@ -439,7 +439,7 @@ private int yy_find_shift_action(
       if( iLookAhead<yyFallback.length
              && (iFallback = yyFallback[iLookAhead])!=0 ){
 #ifndef NDEBUG
-          logger.debug("FALLBACK {} => {}",
+          logger.trace("FALLBACK {} => {}",
              yyTokenName[iLookAhead], yyTokenName[iFallback]);
 #endif
         assert( yyFallback[iFallback]==0 ); /* Fallback loop must terminate */
@@ -460,7 +460,7 @@ private int yy_find_shift_action(
           yy_lookahead[j]==YYWILDCARD && iLookAhead>0
         ){
 #ifndef NDEBUG
-            logger.debug("WILDCARD {} => {}",
+            logger.trace("WILDCARD {} => {}",
                yyTokenName[iLookAhead],
                yyTokenName[YYWILDCARD]);
 #endif /* NDEBUG */
@@ -528,11 +528,11 @@ private void yyStackOverflow(){
 private void yyTraceShift(int yyNewState){
     yyStackEntry yytos = yystack[yyidx];
     if( yyNewState<YYNSTATE ){
-      logger.debug("Shift '{}', go to state {}",
+      logger.trace("Shift '{}', go to state {}",
          yyTokenName[yytos.major],
          yyNewState);
     }else{
-      logger.debug("Shift '{}'",
+      logger.trace("Shift '{}'",
          yyTokenName[yytos.major]);
     }
 }
@@ -612,7 +612,7 @@ private void yy_reduce(
 #ifndef NDEBUG
   if( yyruleno<yyRuleName.length ){
     yysize = yyRuleInfo[yyruleno].nrhs;
-    logger.debug("Reduce [{}], go to state {}.",
+    logger.trace("Reduce [{}], go to state {}.",
       yyRuleName[yyruleno], yystack[yyidx-yysize].stateno);
   }
 #endif /* NDEBUG */
@@ -715,7 +715,7 @@ private void yy_syntax_error(
 private void yy_accept(
 ){
 #ifndef NDEBUG
-    logger.debug("Accept!");
+    logger.trace("Accept!");
 #endif
 #ifndef YYNOERRORRECOVERY
   yyerrcnt = -1;
@@ -766,7 +766,7 @@ public void Parse(
 #endif
 
 #ifndef NDEBUG
-    logger.debug("Input '{}'",yyTokenName[yymajor]);
+    logger.trace("Input '{}'",yyTokenName[yymajor]);
 #endif
 
   do{
@@ -786,7 +786,7 @@ public void Parse(
       int yymx;
 #endif
 #ifndef NDEBUG
-        logger.debug("Syntax Error!");
+        logger.trace("Syntax Error!");
 #endif
 #ifdef YYERRORSYMBOL
       /* A syntax error has occurred.
@@ -814,7 +814,7 @@ public void Parse(
       yymx = yystack[yyidx].major;
       if( yymx==YYERRORSYMBOL || yyerrorhit ){
 #ifndef NDEBUG
-          logger.debug("Discard input token {}",
+          logger.trace("Discard input token {}",
              yyTokenName[yymajor]);
 #endif
         yy_destructor((YYCODETYPE)yymajor, yyminorunion);
@@ -879,7 +879,7 @@ public void Parse(
     }
   }while( yymajor!=YYNOCODE && yyidx > 0 );
 #ifndef NDEBUG
-    if (logger.isDebugEnabled()) {
+    if (logger.isTraceEnabled()) {
     int i;
     char cDiv = '[';
     StringBuilder msg = new StringBuilder("Return. Stack=");
@@ -888,7 +888,7 @@ public void Parse(
       cDiv = ' ';
     }
     msg.append(']');
-    logger.debug(msg.toString());
+    logger.trace(msg.toString());
     }
 #endif
 }
@@ -896,7 +896,7 @@ public void Parse(
   private yyStackEntry yystack(int i) {
     yyStackEntry entry = yystack[i];
     if (entry == null) {
-      logger.debug("Access to uninitialized stack entry: {} (top: {})", i, yyidx);
+      logger.trace("Access to uninitialized stack entry: {} (top: {})", i, yyidx);
       entry = new yyStackEntry();
       yystack[i] = entry;
     }

@@ -40,7 +40,7 @@ class Main {
 		}
 	}
 
-	private static void parse_(Path path) throws IOException {
+	private static void parse(Path path) throws IOException {
 		//System.out.println(path);
 		try (Reader reader = Files.newBufferedReader(path)) {
 			final Tokenizer lexer = new Tokenizer(reader);
@@ -56,7 +56,7 @@ class Main {
 			}
 		}
 	}
-	private static void parse(Path path) throws IOException {
+	private static void parse_(Path path) throws IOException {
 		try (Reader reader = Files.newBufferedReader(path)) {
 			final Tokenizer lexer = new Tokenizer(reader);
 			try {
