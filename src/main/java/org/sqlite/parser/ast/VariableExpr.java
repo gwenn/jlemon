@@ -16,6 +16,16 @@ public class VariableExpr implements Expr {
 
 	@Override
 	public void toSql(Appendable a) throws IOException {
+		if (variable.isEmpty()) {
+			a.append('?');
+			return;
+		}
+		final char c = variable.charAt(0);
+		if (c == '$' || c == '@' || c == '#' || c == ':') {
+			a.append(variable);
+			return;
+		}
+		a.append('?');
 		a.append(variable);
 	}
 }
