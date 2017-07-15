@@ -2,6 +2,7 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
@@ -24,5 +25,19 @@ public class ColumnDefinition implements ToSql {
 				constraint.toSql(a);
 			}
 		}
+	}
+
+	public Optional<Boolean> isAnAliasForRowId() {
+		final boolean integer = Optional.ofNullable(nameAndType.colType)
+				.map(type -> type.name.equalsIgnoreCase("INTEGER") && type.size == null)
+				.orElse(Boolean.FALSE);
+		if (!integer) {
+			return Optional.of(Boolean.FALSE);
+		}
+		return constraints.stream()
+				.filter(PrimaryKeyColumnConstraint.class::isInstance)
+				.map(c -> ((PrimaryKeyColumnConstraint)c).order)
+				.map(order -> order == null || SortOrder.Asc == order)
+				.findAny();
 	}
 }

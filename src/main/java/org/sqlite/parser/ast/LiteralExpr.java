@@ -11,6 +11,8 @@ import static org.sqlite.parser.ast.ToSql.singleQuote;
  * literal-value
  */
 public class LiteralExpr implements Expr {
+	public static Expr NULL = new LiteralExpr("NULL", LiteralType.Keyword);
+	public static Expr EMPTY_STRING = new LiteralExpr("", LiteralType.String);
 	public final String value;
 	public final LiteralType type;
 
@@ -19,6 +21,12 @@ public class LiteralExpr implements Expr {
 		return new LiteralExpr(t.text(), type);
 	}
 
+	public static LiteralExpr integer(int value) {
+		return new LiteralExpr(String.valueOf(value), LiteralType.Integer);
+	}
+	public static LiteralExpr string(String value) {
+		return new LiteralExpr(value, LiteralType.String);
+	}
 	public LiteralExpr(String value, LiteralType type) {
 		this.value = requireNonNull(value);
 		this.type = requireNonNull(type);

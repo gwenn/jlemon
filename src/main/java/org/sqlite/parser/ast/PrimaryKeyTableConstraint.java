@@ -36,4 +36,15 @@ public class PrimaryKeyTableConstraint extends TableConstraint {
 			conflictClause.toSql(a);
 		}
 	}
+
+	public boolean isOnlyOn(String columnName) {
+		if (columns.size() > 1) {
+			return false;
+		}
+		final Expr expr = columns.get(0).name;
+		if (expr instanceof IdExpr) {
+			return ((IdExpr) expr).name.equalsIgnoreCase(columnName);
+		}
+		return false;
+	}
 }
