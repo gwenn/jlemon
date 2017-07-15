@@ -1,6 +1,7 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
+import java.sql.DatabaseMetaData;
 
 public class NotNullColumnConstraint extends ColumnConstraint {
 	public final boolean nullable;
@@ -22,6 +23,17 @@ public class NotNullColumnConstraint extends ColumnConstraint {
 		if (conflictClause != null) {
 			a.append(" ON CONFLICT ");
 			conflictClause.toSql(a);
+		}
+	}
+
+	/**
+	 * @return {@link DatabaseMetaData#columnNullable} or {@link DatabaseMetaData#columnNoNulls}
+	 */
+	public int getNullable() {
+		if (nullable) {
+			return DatabaseMetaData.columnNullable;
+		} else {
+			return DatabaseMetaData.columnNoNulls;
 		}
 	}
 }

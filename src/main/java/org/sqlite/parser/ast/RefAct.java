@@ -1,6 +1,7 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
+import java.sql.DatabaseMetaData;
 
 public enum RefAct implements ToSql {
 	SetNull,
@@ -22,5 +23,23 @@ public enum RefAct implements ToSql {
 		} else if (NoAction == this) {
 			a.append("NO ACTION");
 		}
+	}
+
+	/**
+	 * @return {@kink DatabaseMetaData#importedKeyNoAction}, ...
+	 */
+	public int getRule() {
+		if (SetNull == this) {
+			return DatabaseMetaData.importedKeySetNull;
+		} else if (SetDefault == this) {
+			return DatabaseMetaData.importedKeySetDefault;
+		} else if (Cascade == this) {
+			return DatabaseMetaData.importedKeyCascade;
+		} else if (Restrict == this) {
+			return DatabaseMetaData.importedKeyRestrict;
+		} else if (NoAction == this) {
+			return DatabaseMetaData.importedKeyNoAction;
+		}
+		throw new AssertionError();
 	}
 }
