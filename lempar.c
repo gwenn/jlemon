@@ -896,9 +896,13 @@ public void Parse(
   private yyStackEntry yystack(int i) {
     yyStackEntry entry = yystack[i];
     if (entry == null) {
-      logger.trace("Access to uninitialized stack entry: {} (top: {})", i, yyidx);
-      entry = new yyStackEntry();
-      yystack[i] = entry;
+      if (i == yyidx || i == yyidx+1) {
+        entry = new yyStackEntry();
+        yystack[i] = entry;
+      } else {
+        logger.error("Access to uninitialized stack entry: {} (top: {})", i, yyidx);
+        throw new IndexOutOfBoundsException(String.format("Access to uninitialized stack entry: %d (top: %d)", i, yyidx));
+      }
     }
     return entry;
   }
