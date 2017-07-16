@@ -27,7 +27,7 @@ public class Type implements ToSql {
 	}
 
 	/**
-	 * @return {@link java.sql.Types.*}
+	 * @return {@link java.sql.Types}.*
 	 */
 	public int getDataType() {
 		if (name.isEmpty()) {

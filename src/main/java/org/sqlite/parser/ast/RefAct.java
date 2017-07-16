@@ -26,7 +26,7 @@ public enum RefAct implements ToSql {
 	}
 
 	/**
-	 * @return {@kink DatabaseMetaData#importedKeyNoAction}, ...
+	 * @return {@link DatabaseMetaData.importedKeyNoAction}, ...
 	 */
 	public int getRule() {
 		if (SetNull == this) {

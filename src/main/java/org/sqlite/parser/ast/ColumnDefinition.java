@@ -36,9 +36,9 @@ public class ColumnDefinition implements ToSql {
 		}
 		return constraints.stream()
 				.filter(PrimaryKeyColumnConstraint.class::isInstance)
-				.findAny()
 				.map(c -> ((PrimaryKeyColumnConstraint) c).order)
-				.map(order -> order == null || SortOrder.Asc == order);
+				.map(order -> order == null || SortOrder.Asc == order)
+				.findAny();
 	}
 
 	/**

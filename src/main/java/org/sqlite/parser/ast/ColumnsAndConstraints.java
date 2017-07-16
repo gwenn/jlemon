@@ -71,10 +71,12 @@ public class ColumnsAndConstraints implements CreateTableBody {
 		}
 		return findColumnDefinition(columnName)
 				.findFirst()
-				.map(cd -> cd.isAnAliasForRowId())
+				.map(ColumnDefinition::isAnAliasForRowId)
 				.orElse(findPrimaryKeyTableConstraint(columnName)
-						.map(pktc -> pktc.columns.get(0).order)
-						.map(order -> order == null || SortOrder.Asc == order))
+						.map(pktc -> {
+							SortOrder order = pktc.columns.get(0).order;
+							return order == null || SortOrder.Asc == order;
+						}))
 				.orElse(Boolean.FALSE);
 	}
 }

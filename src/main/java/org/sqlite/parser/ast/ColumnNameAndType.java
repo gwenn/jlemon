@@ -32,7 +32,7 @@ public class ColumnNameAndType implements ToSql {
 	}
 
 	/**
-	 * @return {@link java.sql.Types.*}
+	 * @return {@link java.sql.Types}.*
 	 */
 	public int getDataType() {
 		if (colType == null) {
