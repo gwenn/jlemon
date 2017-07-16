@@ -2,11 +2,13 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 import java.sql.DatabaseMetaData;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.Set;
+
+import org.sqlite.parser.ParseException;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.nullToEmpty;
 
 public class ColumnDefinition implements ToSql {
 	public final ColumnNameAndType nameAndType;
@@ -15,7 +17,18 @@ public class ColumnDefinition implements ToSql {
 	public ColumnDefinition(ColumnNameAndType nameAndType,
 			List<ColumnConstraint> constraints) {
 		this.nameAndType = requireNonNull(nameAndType);
-		this.constraints = constraints == null ? Collections.emptyList() : constraints;
+		this.constraints = nullToEmpty(constraints);
+		if (!this.constraints.isEmpty()) {
+			boolean pk = false;
+			for (ColumnConstraint constraint : constraints) {
+				if (constraint instanceof PrimaryKeyColumnConstraint) {
+					if (pk) {
+						throw new ParseException("Multiple PRIMARY KEY constraints");
+					}
+					pk = true;
+				}
+			}
+		}
 	}
 
 	@Override

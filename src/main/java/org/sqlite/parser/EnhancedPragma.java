@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.sqlite.parser.ast.CaseExpr;
 import org.sqlite.parser.ast.Cmd;
@@ -43,18 +44,10 @@ public class EnhancedPragma {
 	 * @param catalog   Table catalog
 	 * @param tableName Table name
 	 * @param sql       Schema for {@code tableName}
-	 * @return Dynamic select that generates a {@link java.sql.ResultSet} expected by {@link java.sql.DatabaseMetaData#getColumns}
+	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
 	 */
 	public static Select tableInfo(String catalog, String tableName, String sql) throws SQLSyntaxErrorException {
-		Cmd cmd = Parser.parse(sql);
-		assert cmd != null;
-		Stmt stmt = cmd.stmt;
-		assert stmt instanceof CreateTable;
-		CreateTable createTable = (CreateTable) stmt;
-		assert createTable.tblName.name.equalsIgnoreCase(tableName);
-		final CreateTableBody createTableBody = createTable.body;
-		assert createTableBody instanceof ColumnsAndConstraints;
-		ColumnsAndConstraints columnsAndConstraints = (ColumnsAndConstraints) createTableBody;
+		ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(tableName, sql);
 
 		final LiteralExpr cat;
 		if (catalog == null) {
@@ -155,5 +148,74 @@ public class EnhancedPragma {
 		);
 		Select select = new Select(null, body, orderBy, null);
 		return select;
+	}
+
+	/**
+	 * Like {@code PRAGMA catalog.foreign_key_list(tableName)} but enhanced for {@link java.sql.DatabaseMetaData#getImportedKeys}
+	 *
+	 * @param catalog        Tables catalog
+	 * @param tableName      Name of the tablewhere foreign key(s) are declared.
+	 * @param sql            Schema where foreign key(s) are declared.
+	 * @param schemaProvider Given one parent table's name (that a foreign key constraint refers to), returns its schema.
+	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
+	 */
+	public static Select getImportedKeys(String catalog, String tableName, String sql, Function<String, String> schemaProvider) throws SQLSyntaxErrorException {
+		ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(tableName, sql);
+
+		final LiteralExpr cat; // TODO Validate catalog is the same
+		if (catalog == null) {
+			cat = NULL;
+		} else {
+			cat = string(catalog);
+		}
+		final LiteralExpr tbl = string(tableName);
+		final IdExpr colNullable = new IdExpr("colnullable");
+		List<ResultColumn> columns = Arrays.asList(
+				expr(cat, as("PKTABLE_CAT")),
+				expr(NULL, as("PKTABLE_SCHEM")),
+				expr(new IdExpr("pt"), as("PKTABLE_NAME")),
+				expr(new IdExpr("pc"), as("PKCOLUMN_NAME")),
+				expr(cat, as("FKTABLE_CAT")),
+				expr(NULL, as("FKTABLE_SCHEM")),
+				expr(tbl, as("FKTABLE_NAME")),
+				expr(new IdExpr("fc"), as("FKCOLUMN_NAME")),
+				expr(new IdExpr("seq"), as("KEY_SEQ")),
+				expr(integer(DatabaseMetaData.importedKeyNoAction), as("UPDATE_RULE")), // FIXME on_update (6) SET NULL (importedKeySetNull), SET DEFAULT (importedKeySetDefault), CASCADE (importedKeyCascade), RESTRICT (importedKeyRestrict), NO ACTION (importedKeyNoAction)
+				expr(integer(DatabaseMetaData.importedKeyNoAction), as("DELETE_RULE")), // FIXME on_delete (7)
+				expr(new IdExpr("id"), as("FK_NAME")),
+				expr(NULL, as("PK_NAME")), // FIXME
+				expr(integer(DatabaseMetaData.importedKeyNotDeferrable), as("DEFERRABILITY")) // FIXME
+		);
+		OneSelect head = null;
+		List<List<Expr>> tail = new ArrayList<>();
+		// TODO Handle the case where there is no FK
+		final List<CompoundSelect> compounds = Collections.singletonList(
+				new CompoundSelect(CompoundOperator.UnionAll, new OneSelect(tail)));
+		SelectBody subBody = new SelectBody(head, compounds);
+		Select subSelect = new Select(null, subBody, null, null);
+		FromClause from = new FromClause(SelectTable.select(subSelect, null), null);
+		from.setComplete();
+		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
+		SelectBody body = new SelectBody(oneSelect, null);
+		List<SortedColumn> orderBy = Arrays.asList(
+				new SortedColumn(new IdExpr("PKTABLE_CAT"), null),
+				new SortedColumn(new IdExpr("PKTABLE_SCHEM"), null),
+				new SortedColumn(new IdExpr("PKTABLE_NAME"), null),
+				new SortedColumn(new IdExpr("KEY_SEQ"), null)
+		);
+		Select select = new Select(null, body, orderBy, null);
+		return select;
+	}
+
+	private static ColumnsAndConstraints getColumnsAndConstraints(String tableName, String sql) throws SQLSyntaxErrorException {
+		Cmd cmd = Parser.parse(sql);
+		assert cmd != null;
+		Stmt stmt = cmd.stmt;
+		assert stmt instanceof CreateTable;
+		CreateTable createTable = (CreateTable) stmt;
+		assert createTable.tblName.name.equalsIgnoreCase(tableName);
+		final CreateTableBody createTableBody = createTable.body;
+		assert createTableBody instanceof ColumnsAndConstraints;
+		return (ColumnsAndConstraints) createTableBody;
 	}
 }

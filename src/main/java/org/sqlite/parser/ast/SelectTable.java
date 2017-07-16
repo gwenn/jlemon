@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.sqlite.parser.ast.ToSql.comma;
+import static org.sqlite.parser.ast.ToSql.nullToEmpty;
 
 // Sum Type: table vs table call vs select vs sub select
 public class SelectTable implements ToSql {
@@ -20,7 +21,7 @@ public class SelectTable implements ToSql {
 		return new SelectTable(tblName, indexed, null, null, null, as);
 	}
 	public static SelectTable tableCall(QualifiedName tblName, List<Expr> exprs, As as) {
-		return new SelectTable(tblName, null, exprs == null ? Collections.emptyList() : null, null, null, as);
+		return new SelectTable(tblName, null, nullToEmpty(exprs), null, null, as);
 	}
 	public static SelectTable select(Select select, As as) {
 		return new SelectTable(null, null, null, select, null, as);

@@ -14,6 +14,7 @@ public class AlterTable implements Stmt {
 	public AlterTable(QualifiedName tblName,
 			String renameTo) {
 		this.tblName = requireNonNull(tblName);
+		// TODO check renameTo != tblName
 		this.renameTo = requireNonNull(renameTo);
 		this.colDefinition = null;
 	}

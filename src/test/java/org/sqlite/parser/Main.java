@@ -52,7 +52,7 @@ class Main {
 				System.out.printf("Error while parsing %s (%d:%d): %s%n", path, lexer.lineno(), lexer.column(), e.getMessage());
 			} catch (Throwable t) {
 				System.out.printf("Error while parsing %s (%d:%d): %s%n", path, lexer.lineno(), lexer.column(), t.getMessage());
-				//t.printStackTrace(System.out);
+				t.printStackTrace(System.out);
 			}
 		}
 	}

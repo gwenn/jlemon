@@ -1,12 +1,14 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
+import static org.sqlite.parser.ast.ToSql.nullToEmpty;
 import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
 public class ColumnsAndConstraints implements CreateTableBody {
@@ -16,7 +18,7 @@ public class ColumnsAndConstraints implements CreateTableBody {
 
 	public ColumnsAndConstraints(List<ColumnDefinition> columns, List<TableConstraint> constraints, boolean without) {
 		this.columns = requireNotEmpty(columns);
-		this.constraints = constraints;
+		this.constraints = nullToEmpty(constraints);
 		this.without = without;
 	}
 

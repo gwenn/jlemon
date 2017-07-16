@@ -1,6 +1,7 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import org.sqlite.parser.Keyword;
@@ -92,6 +93,12 @@ public interface ToSql {
 		}
 		if (list.isEmpty()) {
 			throw new IllegalArgumentException("empty list");
+		}
+		return list;
+	}
+	static <T> List<T> nullToEmpty(List<T> list) {
+		if (list == null) {
+			return Collections.emptyList();
 		}
 		return list;
 	}
