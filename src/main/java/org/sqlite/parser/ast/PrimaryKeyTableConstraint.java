@@ -42,7 +42,7 @@ public class PrimaryKeyTableConstraint extends TableConstraint {
 			return false;
 		}
 		final Expr expr = columns.get(0).name;
-		if (expr instanceof IdExpr) {
+		if (expr instanceof IdExpr) { // TODO LiteralExpr ?
 			return ((IdExpr) expr).name.equalsIgnoreCase(columnName);
 		}
 		return false;

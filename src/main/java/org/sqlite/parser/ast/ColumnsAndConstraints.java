@@ -88,4 +88,27 @@ public class ColumnsAndConstraints implements CreateTableBody {
 						}))
 				.orElse(Boolean.FALSE);
 	}
+
+	public LiteralExpr getPrimaryKeyColumnName() {
+		for (ColumnDefinition column : columns) {
+			for (ColumnConstraint constraint : column.constraints) {
+				if (constraint instanceof PrimaryKeyColumnConstraint) {
+					return LiteralExpr.string(column.nameAndType.colName);
+				}
+			}
+		}
+		for (TableConstraint constraint : constraints) {
+			if (constraint instanceof PrimaryKeyTableConstraint) {
+				final List<SortedColumn> pkColumns = ((PrimaryKeyTableConstraint) constraint).columns;
+				if (pkColumns.size() > 1) {
+					return LiteralExpr.NULL;
+				}
+				final Expr expr = pkColumns.get(0).name;
+				if (expr instanceof IdExpr) {
+					return LiteralExpr.string(((IdExpr) expr).name);
+				}
+			}
+		}
+		return LiteralExpr.NULL;
+	}
 }
