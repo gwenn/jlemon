@@ -77,14 +77,8 @@ class Main {
 			if (cmd == null) {
 				continue; // empty end
 			}
-			StringBuilder builder = new StringBuilder();
-			try {
-				cmd.toSql(builder);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
 			if (check) {
-				String sql = builder.toString();
+				String sql = cmd.toSql();
 				StringReader reader = new StringReader(sql);
 				Tokenizer tokenizer = new Tokenizer(reader);
 				try {

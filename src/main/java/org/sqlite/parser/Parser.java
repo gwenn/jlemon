@@ -1,5 +1,9 @@
 package org.sqlite.parser;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.sql.SQLSyntaxErrorException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -31,6 +35,24 @@ public class Parser implements Iterable<Cmd> {
 
 	private static final Token NULL = new Token(0, null);
 	private static final Token SEMI = new Token(TokenType.TK_SEMI, ";");
+
+	/**
+	 * @return {@code null} if {@code sql} is empty, otherwise first command/statement.
+	 */
+	public static Cmd parse(String sql) throws SQLSyntaxErrorException {
+		try (Reader reader = new StringReader(sql)) {
+			final Tokenizer lexer = new Tokenizer(reader);
+			try {
+				return parse(lexer);
+			} catch (ScanException e) {
+				throw new SQLSyntaxErrorException(String.format("Error while lexing %s (%d:%d)", sql, lexer.lineno(), lexer.column()), e);
+			} catch (ParseException e) {
+				throw new SQLSyntaxErrorException(String.format("Error while parsing %s (%d:%d)", sql, lexer.lineno(), lexer.column()), e);
+			}
+		} catch (IOException e) {
+			throw new AssertionError("No IOException expected with StringReader", e);
+		}
+	}
 
 	/**
 	 * Parse one command/statement at a time.

@@ -11,6 +11,16 @@ import static org.sqlite.parser.Identifier.isIdentifierContinue;
 public interface ToSql {
 	void toSql(Appendable a) throws IOException;
 
+	default String toSql() {
+		StringBuilder builder = new StringBuilder();
+		try {
+			toSql(builder);
+			return builder.toString();
+		} catch (IOException e) {
+			throw new AssertionError("No IOException expected with StringBuilder", e);
+		}
+	}
+
 	static void doubleQuote(Appendable a, String name) throws IOException {
 		if (name.isEmpty()) {
 			a.append("\"\"");

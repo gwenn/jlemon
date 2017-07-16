@@ -1,6 +1,7 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
+import java.sql.Types;
 
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.doubleQuote;
@@ -21,5 +22,22 @@ public class ColumnNameAndType implements ToSql {
 			a.append(' ');
 			colType.toSql(a);
 		}
+	}
+
+	public LiteralExpr getTypeExpr() {
+		if (colType == null) {
+			return LiteralExpr.EMPTY_STRING;
+		}
+		return LiteralExpr.string(colType.toSql());
+	}
+
+	/**
+	 * @return {@link java.sql.Types.*}
+	 */
+	public int getDataType() {
+		if (colType == null) {
+			return Types.OTHER;
+		}
+		return colType.getDataType();
 	}
 }
