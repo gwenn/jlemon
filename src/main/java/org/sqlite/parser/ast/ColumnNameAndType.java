@@ -40,4 +40,18 @@ public class ColumnNameAndType implements ToSql {
 		}
 		return colType.getDataType();
 	}
+
+	public LiteralExpr getSize() {
+		if (colType == null) {
+			return LiteralExpr.NULL;
+		}
+		return colType.getSize();
+	}
+
+	public LiteralExpr getDecimalDigits() {
+		if (colType == null) {
+			return LiteralExpr.NULL;
+		}
+		return colType.getDecimalDigits();
+	}
 }

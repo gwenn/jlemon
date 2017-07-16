@@ -30,4 +30,15 @@ public class TypeSize implements ToSql {
 			a.append(size2);
 		}
 	}
+
+	public LiteralExpr getSize() {
+		return new LiteralExpr(size1, LiteralType.Integer);
+	}
+
+	public LiteralExpr getDecimalDigits() {
+		if (size2 == null || size2.isEmpty()) {
+			return LiteralExpr.NULL;
+		}
+		return new LiteralExpr(size2, LiteralType.Integer);
+	}
 }

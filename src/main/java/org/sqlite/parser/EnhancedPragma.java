@@ -2,6 +2,7 @@ package org.sqlite.parser;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLSyntaxErrorException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,9 +71,9 @@ public class EnhancedPragma {
 				expr(new IdExpr("cn"), as("COLUMN_NAME")),
 				expr(new IdExpr("ct"), as("DATA_TYPE")), // SQL type from java.sql.Types
 				expr(new IdExpr("tn"), as("TYPE_NAME")),
-				expr(integer(10), as("COLUMN_SIZE")), // FIXME precision or display size
+				expr(new IdExpr("cs"), as("COLUMN_SIZE")),
 				expr(NULL, as("BUFFER_LENGTH")),
-				expr(integer(10), as("DECIMAL_DIGITS")), // FIXME scale or null: the number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
+				expr(new IdExpr("decimalDigits"), as("DECIMAL_DIGITS")),
 				expr(integer(10), as("NUM_PREC_RADIX")), // Radix (typically either 10 or 2)
 				expr(colNullable, as("NULLABLE")),
 				expr(NULL, as("REMARKS")),
@@ -91,8 +92,8 @@ public class EnhancedPragma {
 				expr(NULL, as("SCOPE_SCHEMA")),
 				expr(NULL, as("SCOPE_TABLE")),
 				expr(NULL, as("SOURCE_DATA_TYPE")),
-				expr(EMPTY_STRING, as("IS_AUTOINCREMENT")),  // TODO http://sqlite.org/autoinc.html
-				expr(EMPTY_STRING, as("IS_GENERATEDCOLUMN")) // TODO rowid or alias
+				expr(new IdExpr("autoinc"), as("IS_AUTOINCREMENT")),
+				expr(new IdExpr("generated"), as("IS_GENERATEDCOLUMN"))
 		);
 		OneSelect head = null;
 		List<List<Expr>> tail = new ArrayList<>(columnsAndConstraints.columns.size() - 1);
@@ -100,29 +101,42 @@ public class EnhancedPragma {
 			ColumnDefinition column = columnsAndConstraints.columns.get(i);
 			final String colName = column.nameAndType.colName;
 			final LiteralExpr colNameExpr = string(colName);
-			final LiteralExpr colType = integer(column.nameAndType.getDataType());
+			final boolean rowIdAlias = columnsAndConstraints.isGeneratedColumn(colName);
+			final LiteralExpr colType = integer(rowIdAlias ? Types.ROWID : column.nameAndType.getDataType());
 			final LiteralExpr declType = column.nameAndType.getTypeExpr();
+			LiteralExpr colSize = column.nameAndType.getSize();
+			LiteralExpr decimalDigits = column.nameAndType.getDecimalDigits();
 			final Integer nullable = column.getNullable()
 					.orElse(columnsAndConstraints.isAnAliasForRowId(colName) ? DatabaseMetaData.columnNoNulls : DatabaseMetaData.columnNullable);
 			final LiteralExpr columnDefault = column.getDefault();
 			final LiteralExpr ordpos = integer(i + 1);
+			final LiteralExpr autoinc = string(columnsAndConstraints.isAutoIncrement(colName) ? "YES" : rowIdAlias ? "" : "NO");
+			final LiteralExpr generated = string(rowIdAlias ? "YES" : "NO");
 			if (i == 0) {
 				head = new OneSelect(null, Arrays.asList(
 						expr(colNameExpr, as("cn")),
 						expr(colType, as("ct")),
 						expr(declType, as("tn")),
+						expr(colSize, as("cs")),
+						expr(decimalDigits, as("decimalDigits")),
 						expr(integer(nullable), as("colnullable")),
 						expr(columnDefault, as("cdflt")),
-						expr(ordpos, as("ordpos"))
+						expr(ordpos, as("ordpos")),
+						expr(autoinc, as("autoinc")),
+						expr(generated, as("generated"))
 				), null, null, null);
 			} else {
 				tail.add(Arrays.asList(
 						colNameExpr,
 						colType,
 						declType,
+						colSize,
+						decimalDigits,
 						integer(nullable),
 						columnDefault,
-						ordpos
+						ordpos,
+						autoinc,
+						generated
 				));
 			}
 		}

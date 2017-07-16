@@ -34,13 +34,16 @@ public class ColumnsAndConstraints implements CreateTableBody {
 		}
 	}
 
+	/**
+	 * <a href="http://sqlite.org/autoinc.html">SQLite Autoincrement</a>
+	 */
 	public boolean isAutoIncrement(String columnName) {
 		return findPrimaryKeyColumnConstraint(columnName)
 				.map(pkcc -> pkcc.autoIncrement)
 				.findFirst().orElse(
 						findPrimaryKeyTableConstraint(columnName)
 								.map(pktc -> pktc.autoIncrement)
-								.orElse(false));
+								.orElse(isAnAliasForRowId(columnName)));
 	}
 
 	private Stream<PrimaryKeyColumnConstraint> findPrimaryKeyColumnConstraint(String columnName) {
@@ -65,6 +68,10 @@ public class ColumnsAndConstraints implements CreateTableBody {
 	public boolean isGeneratedColumn(String columnName) {
 		return isAnAliasForRowId(columnName);
 	}
+
+	/**
+	 * <a href="http://sqlite.org/lang_createtable.html#rowid">ROWIDs and the INTEGER PRIMARY KEY</a>
+	 */
 	public boolean isAnAliasForRowId(String columnName) {
 		if (without) {
 			return false;

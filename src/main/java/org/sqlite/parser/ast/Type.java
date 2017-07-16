@@ -46,4 +46,18 @@ public class Type implements ToSql {
 			return Types.NUMERIC;
 		}
 	}
+
+	public LiteralExpr getSize() {
+		if (size == null) {
+			return LiteralExpr.NULL;
+		}
+		return size.getSize();
+	}
+
+	public LiteralExpr getDecimalDigits() {
+		if (size == null) {
+			return LiteralExpr.NULL;
+		}
+		return size.getDecimalDigits();
+	}
 }
