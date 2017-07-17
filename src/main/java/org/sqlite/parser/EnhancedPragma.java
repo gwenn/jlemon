@@ -11,6 +11,7 @@ import java.util.function.Function;
 
 import org.sqlite.parser.ast.CaseExpr;
 import org.sqlite.parser.ast.Cmd;
+import org.sqlite.parser.ast.ColumnConstraint;
 import org.sqlite.parser.ast.ColumnDefinition;
 import org.sqlite.parser.ast.ColumnsAndConstraints;
 import org.sqlite.parser.ast.CompoundOperator;
@@ -18,8 +19,11 @@ import org.sqlite.parser.ast.CompoundSelect;
 import org.sqlite.parser.ast.CreateTable;
 import org.sqlite.parser.ast.CreateTableBody;
 import org.sqlite.parser.ast.Expr;
+import org.sqlite.parser.ast.ForeignKeyColumnConstraint;
+import org.sqlite.parser.ast.ForeignKeyTableConstraint;
 import org.sqlite.parser.ast.FromClause;
 import org.sqlite.parser.ast.IdExpr;
+import org.sqlite.parser.ast.IndexedColumn;
 import org.sqlite.parser.ast.LiteralExpr;
 import org.sqlite.parser.ast.OneSelect;
 import org.sqlite.parser.ast.ResultColumn;
@@ -28,6 +32,7 @@ import org.sqlite.parser.ast.SelectBody;
 import org.sqlite.parser.ast.SelectTable;
 import org.sqlite.parser.ast.SortedColumn;
 import org.sqlite.parser.ast.Stmt;
+import org.sqlite.parser.ast.TableConstraint;
 import org.sqlite.parser.ast.WhenThenPair;
 
 import static org.sqlite.parser.ast.As.as;
@@ -169,7 +174,6 @@ public class EnhancedPragma {
 			cat = string(catalog);
 		}
 		final LiteralExpr tbl = string(tableName);
-		final IdExpr colNullable = new IdExpr("colnullable");
 		List<ResultColumn> columns = Arrays.asList(
 				expr(cat, as("PKTABLE_CAT")),
 				expr(NULL, as("PKTABLE_SCHEM")),
@@ -180,14 +184,66 @@ public class EnhancedPragma {
 				expr(tbl, as("FKTABLE_NAME")),
 				expr(new IdExpr("fc"), as("FKCOLUMN_NAME")),
 				expr(new IdExpr("seq"), as("KEY_SEQ")),
-				expr(integer(DatabaseMetaData.importedKeyNoAction), as("UPDATE_RULE")), // FIXME on_update (6) SET NULL (importedKeySetNull), SET DEFAULT (importedKeySetDefault), CASCADE (importedKeyCascade), RESTRICT (importedKeyRestrict), NO ACTION (importedKeyNoAction)
-				expr(integer(DatabaseMetaData.importedKeyNoAction), as("DELETE_RULE")), // FIXME on_delete (7)
+				expr(new IdExpr("updateRule"), as("UPDATE_RULE")),
+				expr(new IdExpr("deleteRule"), as("DELETE_RULE")),
 				expr(new IdExpr("id"), as("FK_NAME")),
 				expr(NULL, as("PK_NAME")), // FIXME
-				expr(integer(DatabaseMetaData.importedKeyNotDeferrable), as("DEFERRABILITY")) // FIXME
+				expr(new IdExpr("deferrability"), as("DEFERRABILITY"))
 		);
 		OneSelect head = null;
 		List<List<Expr>> tail = new ArrayList<>();
+		for (ColumnDefinition column : columnsAndConstraints.columns) {
+			for (ColumnConstraint constraint : column.constraints) {
+				if (!(constraint instanceof ForeignKeyColumnConstraint)) {
+					continue;
+				}
+				ForeignKeyColumnConstraint fcc = (ForeignKeyColumnConstraint) constraint;
+				LiteralExpr pt = string(fcc.clause.tblName);
+				String colName = column.nameAndType.colName;
+				LiteralExpr fc = string(colName);
+				LiteralExpr updateRule = fcc.clause.getUpdateRule();
+				LiteralExpr deleteRule = fcc.clause.getDeleteRule();
+				LiteralExpr fkName = fcc.name == null ? NULL : string(fcc.name); // FIXME generate one when not set
+				LiteralExpr deferrability = integer(fcc.getDeferrability());
+				List<IndexedColumn> pics = fcc.clause.columns;
+				if (pics == null || pics.isEmpty()) {
+					// implicit primary key
+					// TODO
+				} else {
+					assert pics.size() == 1;
+					IndexedColumn pic = pics.get(0);
+					LiteralExpr pc = string(pic.colName);
+					LiteralExpr seq = integer(1);
+					head = append(head, tail, pt, pc, fc, seq, updateRule, deleteRule, fkName, deferrability);
+				}
+			}
+		}
+		for (TableConstraint constraint : columnsAndConstraints.constraints) {
+			if (!(constraint instanceof ForeignKeyTableConstraint)) {
+				continue;
+			}
+			ForeignKeyTableConstraint ftc = (ForeignKeyTableConstraint) constraint;
+			LiteralExpr updateRule = ftc.clause.getUpdateRule();
+			LiteralExpr deleteRule = ftc.clause.getDeleteRule();
+			LiteralExpr fkName = ftc.name == null ? NULL : string(ftc.name); // FIXME generate one when not set
+			LiteralExpr deferrability = integer(ftc.getDeferrability());
+			LiteralExpr pt = string(ftc.clause.tblName);
+			List<IndexedColumn> fics = ftc.columns;
+			List<IndexedColumn> pics = ftc.clause.columns;
+			for (int i = 0; i < fics.size(); i++) {
+				IndexedColumn fic = fics.get(i);
+				LiteralExpr fc = string(fic.colName);
+				if (pics == null || pics.isEmpty()) {
+					// implicit primary key
+					// TODO
+				} else {
+					IndexedColumn pic = pics.get(i);
+					LiteralExpr pc = string(pic.colName);
+					LiteralExpr seq = integer(i+1);
+					head = append(head, tail, pt, pc, fc, seq, updateRule, deleteRule, fkName, deferrability);
+				}
+			}
+		}
 		// TODO Handle the case where there is no FK
 		final List<CompoundSelect> compounds = Collections.singletonList(
 				new CompoundSelect(CompoundOperator.UnionAll, new OneSelect(tail)));
@@ -206,6 +262,34 @@ public class EnhancedPragma {
 		Select select = new Select(null, body, orderBy, null);
 		return select;
 	}
+
+	private static OneSelect append(OneSelect head, List<List<Expr>> tail, LiteralExpr pt, LiteralExpr pc, LiteralExpr fc, LiteralExpr seq, LiteralExpr updateRule, LiteralExpr deleteRule, LiteralExpr fkName, LiteralExpr deferrability) {
+		if (head == null) {
+			head = new OneSelect(null, Arrays.asList(
+					expr(pt, as("pt")),
+					expr(pc, as("pc")),
+					expr(fc, as("fc")),
+					expr(seq, as("seq")),
+					expr(updateRule, as("updateRule")),
+					expr(deleteRule, as("deleteRule")),
+					expr(fkName, as("id")),
+					expr(deferrability, as("deferrability"))
+			), null, null, null);
+		} else {
+			tail.add(Arrays.asList(
+					pt,
+					pc,
+					fc,
+					seq,
+					updateRule,
+					deleteRule,
+					fkName,
+					deferrability
+			));
+		}
+		return head;
+	}
+
 
 	private static ColumnsAndConstraints getColumnsAndConstraints(String tableName, String sql) throws SQLSyntaxErrorException {
 		Cmd cmd = Parser.parse(sql);

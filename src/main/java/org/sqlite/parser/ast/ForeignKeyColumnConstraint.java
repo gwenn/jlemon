@@ -1,8 +1,12 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
+import java.sql.DatabaseMetaData;
+
+import org.sqlite.parser.ParseException;
 
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class ForeignKeyColumnConstraint extends ColumnConstraint {
 	public final ForeignKeyClause clause;
@@ -12,6 +16,9 @@ public class ForeignKeyColumnConstraint extends ColumnConstraint {
 		super(name);
 		this.clause = requireNonNull(clause);
 		this.derefClause = derefClause;
+		if (isNotEmpty(clause.columns) && clause.columns.size() != 1) {
+			throw new ParseException(String.format("Inconsistent FOREIGN KEY column constraint with %d reference(s)", clause.columns.size()));
+		}
 	}
 
 	public void setDerefClause(DeferSubclause derefClause) {
@@ -27,5 +34,15 @@ public class ForeignKeyColumnConstraint extends ColumnConstraint {
 			a.append(' ');
 			derefClause.toSql(a);
 		}
+	}
+
+	/**
+	 * @return {@link DatabaseMetaData#importedKeyNotDeferrable}, ...
+	 */
+	public int getDeferrability() {
+		if (derefClause == null) {
+			return DatabaseMetaData.importedKeyNotDeferrable;
+		}
+		return derefClause.getDeferrability();
 	}
 }

@@ -1,10 +1,14 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
+import java.sql.DatabaseMetaData;
 import java.util.List;
+
+import org.sqlite.parser.ParseException;
 
 import static java.util.Objects.requireNonNull;
 
+import static org.sqlite.parser.ast.ToSql.*;
 import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
@@ -21,6 +25,9 @@ public class ForeignKeyTableConstraint extends TableConstraint {
 		this.columns = requireNotEmpty(columns);
 		this.clause = requireNonNull(clause);
 		this.derefClause = derefClause;
+		if (isNotEmpty(clause.columns) && columns.size() != clause.columns.size()) {
+			throw new ParseException(String.format("Inconsistent FOREIGN KEY table constraint with %d column(s) but %d reference(s)", columns.size(), clause.columns.size()));
+		}
 	}
 
 	@Override
@@ -36,5 +43,15 @@ public class ForeignKeyTableConstraint extends TableConstraint {
 			a.append(' ');
 			derefClause.toSql(a);
 		}
+	}
+
+	/**
+	 * @return {@link DatabaseMetaData#importedKeyNotDeferrable}, ...
+	 */
+	public int getDeferrability() {
+		if (derefClause == null) {
+			return DatabaseMetaData.importedKeyNotDeferrable;
+		}
+		return derefClause.getDeferrability();
 	}
 }

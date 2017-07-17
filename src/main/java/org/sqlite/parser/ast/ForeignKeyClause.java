@@ -1,8 +1,10 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
+import java.sql.DatabaseMetaData;
 import java.util.List;
 
+import static org.sqlite.parser.ast.LiteralExpr.integer;
 import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.doubleQuote;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
@@ -32,5 +34,29 @@ public class ForeignKeyClause implements ToSql {
 				arg.toSql(a);
 			}
 		}
+	}
+
+	public LiteralExpr getUpdateRule() {
+		if (isNotEmpty(args)) {
+			for (RefArg arg : args) {
+				if (arg instanceof OnUpdateRefArg) {
+					RefAct refAct = ((OnUpdateRefArg) arg).refAct;
+					return integer(refAct.getRule());
+				}
+			}
+		}
+		return integer(DatabaseMetaData.importedKeyNoAction);
+	}
+
+	public LiteralExpr getDeleteRule() {
+		if (isNotEmpty(args)) {
+			for (RefArg arg : args) {
+				if (arg instanceof OnDeleteRefArg) {
+					RefAct refAct = ((OnDeleteRefArg) arg).refAct;
+					return integer(refAct.getRule());
+				}
+			}
+		}
+		return integer(DatabaseMetaData.importedKeyNoAction);
 	}
 }
