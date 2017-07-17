@@ -24,6 +24,7 @@ import org.sqlite.parser.ast.ForeignKeyTableConstraint;
 import org.sqlite.parser.ast.FromClause;
 import org.sqlite.parser.ast.IdExpr;
 import org.sqlite.parser.ast.IndexedColumn;
+import org.sqlite.parser.ast.Limit;
 import org.sqlite.parser.ast.LiteralExpr;
 import org.sqlite.parser.ast.OneSelect;
 import org.sqlite.parser.ast.ResultColumn;
@@ -192,18 +193,20 @@ public class EnhancedPragma {
 		);
 		OneSelect head = null;
 		List<List<Expr>> tail = new ArrayList<>();
+		int count = 0;
 		for (ColumnDefinition column : columnsAndConstraints.columns) {
 			for (ColumnConstraint constraint : column.constraints) {
 				if (!(constraint instanceof ForeignKeyColumnConstraint)) {
 					continue;
 				}
+				count++;
 				ForeignKeyColumnConstraint fcc = (ForeignKeyColumnConstraint) constraint;
 				LiteralExpr pt = string(fcc.clause.tblName);
 				String colName = column.nameAndType.colName;
 				LiteralExpr fc = string(colName);
 				LiteralExpr updateRule = fcc.clause.getUpdateRule();
 				LiteralExpr deleteRule = fcc.clause.getDeleteRule();
-				LiteralExpr fkName = fcc.name == null ? NULL : string(fcc.name); // FIXME generate one when not set
+				LiteralExpr fkName = string(fcc.name == null ? generateForeignKeyName(tableName, fcc.clause.tblName, count) : fcc.name);
 				LiteralExpr deferrability = integer(fcc.getDeferrability());
 				List<IndexedColumn> pics = fcc.clause.columns;
 				if (pics == null || pics.isEmpty()) {
@@ -222,10 +225,11 @@ public class EnhancedPragma {
 			if (!(constraint instanceof ForeignKeyTableConstraint)) {
 				continue;
 			}
+			count++;
 			ForeignKeyTableConstraint ftc = (ForeignKeyTableConstraint) constraint;
 			LiteralExpr updateRule = ftc.clause.getUpdateRule();
 			LiteralExpr deleteRule = ftc.clause.getDeleteRule();
-			LiteralExpr fkName = ftc.name == null ? NULL : string(ftc.name); // FIXME generate one when not set
+			LiteralExpr fkName = string(ftc.name == null ? generateForeignKeyName(tableName, ftc.clause.tblName, count) : ftc.name);
 			LiteralExpr deferrability = integer(ftc.getDeferrability());
 			LiteralExpr pt = string(ftc.clause.tblName);
 			List<IndexedColumn> fics = ftc.columns;
@@ -244,11 +248,22 @@ public class EnhancedPragma {
 				}
 			}
 		}
-		// TODO Handle the case where there is no FK
-		final List<CompoundSelect> compounds = Collections.singletonList(
-				new CompoundSelect(CompoundOperator.UnionAll, new OneSelect(tail)));
-		SelectBody subBody = new SelectBody(head, compounds);
-		Select subSelect = new Select(null, subBody, null, null);
+		SelectBody subBody;
+		Limit limit = null;
+		// Handle the case where there is no FK
+		if (head == null) {
+			head = append(head, tail, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			limit = new Limit(integer(0), null);
+		}
+		List<CompoundSelect> compounds;
+		if (tail.isEmpty()) {
+			compounds = null;
+		} else {
+			compounds = Collections.singletonList(
+					new CompoundSelect(CompoundOperator.UnionAll, new OneSelect(tail)));
+		}
+		subBody = new SelectBody(head, compounds);
+		Select subSelect = new Select(null, subBody, null, limit);
 		FromClause from = new FromClause(SelectTable.select(subSelect, null), null);
 		from.setComplete();
 		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
@@ -261,6 +276,10 @@ public class EnhancedPragma {
 		);
 		Select select = new Select(null, body, orderBy, null);
 		return select;
+	}
+
+	private static String generateForeignKeyName(String tableName, String parentTableName, int count) {
+		return tableName + '_' + parentTableName + '_' + count;
 	}
 
 	private static OneSelect append(OneSelect head, List<List<Expr>> tail, LiteralExpr pt, LiteralExpr pc, LiteralExpr fc, LiteralExpr seq, LiteralExpr updateRule, LiteralExpr deleteRule, LiteralExpr fkName, LiteralExpr deferrability) {
@@ -289,7 +308,6 @@ public class EnhancedPragma {
 		}
 		return head;
 	}
-
 
 	private static ColumnsAndConstraints getColumnsAndConstraints(String tableName, String sql) throws SQLSyntaxErrorException {
 		Cmd cmd = Parser.parse(sql);
