@@ -1,7 +1,6 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 import static org.sqlite.parser.ast.ToSql.comma;

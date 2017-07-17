@@ -229,9 +229,10 @@ public class EnhancedPragma {
 			ForeignKeyTableConstraint ftc = (ForeignKeyTableConstraint) constraint;
 			LiteralExpr updateRule = ftc.clause.getUpdateRule();
 			LiteralExpr deleteRule = ftc.clause.getDeleteRule();
-			LiteralExpr fkName = string(ftc.name == null ? generateForeignKeyName(tableName, ftc.clause.tblName, count) : ftc.name);
+			final String parentTableName = ftc.clause.tblName;
+			LiteralExpr fkName = string(ftc.name == null ? generateForeignKeyName(tableName, parentTableName, count) : ftc.name);
 			LiteralExpr deferrability = integer(ftc.getDeferrability());
-			LiteralExpr pt = string(ftc.clause.tblName);
+			LiteralExpr pt = string(parentTableName);
 			List<IndexedColumn> fics = ftc.columns;
 			List<IndexedColumn> pics = ftc.clause.columns;
 			for (int i = 0; i < fics.size(); i++) {
@@ -239,7 +240,8 @@ public class EnhancedPragma {
 				LiteralExpr fc = string(fic.colName);
 				if (pics == null || pics.isEmpty()) {
 					// implicit primary key
-					// TODO
+					final ColumnsAndConstraints parentBody = getColumnsAndConstraints(parentTableName, schemaProvider.apply(parentTableName));
+					//parentBody.getPrimaryKeyColumnName()
 				} else {
 					IndexedColumn pic = pics.get(i);
 					LiteralExpr pc = string(pic.colName);

@@ -6,8 +6,8 @@ import java.util.List;
 
 import org.sqlite.parser.Keyword;
 
-import static org.sqlite.parser.Identifier.isIdentifierStart;
 import static org.sqlite.parser.Identifier.isIdentifierContinue;
+import static org.sqlite.parser.Identifier.isIdentifierStart;
 
 public interface ToSql {
 	void toSql(Appendable a) throws IOException;

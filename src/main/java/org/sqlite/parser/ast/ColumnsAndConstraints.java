@@ -1,10 +1,9 @@
 package org.sqlite.parser.ast;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
+
+import org.sqlite.parser.ParseException;
 
 import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
@@ -15,11 +14,30 @@ public class ColumnsAndConstraints implements CreateTableBody {
 	public final List<ColumnDefinition> columns;
 	public final List<TableConstraint> constraints;
 	public final boolean without;
+	public final PrimaryKeyConstraint primaryKeyConstraint;
 
 	public ColumnsAndConstraints(List<ColumnDefinition> columns, List<TableConstraint> constraints, boolean without) {
 		this.columns = requireNotEmpty(columns);
 		this.constraints = nullToEmpty(constraints);
 		this.without = without;
+		PrimaryKeyConstraint pk = null;
+		for (ColumnDefinition column : columns) {
+			if (column.primaryKeyColumnConstraint != null) {
+				if (pk != null) {
+					throw new ParseException("More than one primary key");
+				}
+				pk = column;
+			}
+		}
+		for (TableConstraint constraint : this.constraints) {
+			if (constraint instanceof PrimaryKeyTableConstraint) {
+				if (pk != null) {
+					throw new ParseException("More than one primary key");
+				}
+				pk = (PrimaryKeyConstraint) constraint;
+			}
+		}
+		primaryKeyConstraint = pk;
 	}
 
 	@Override
@@ -40,31 +58,11 @@ public class ColumnsAndConstraints implements CreateTableBody {
 	 * <a href="http://sqlite.org/autoinc.html">SQLite Autoincrement</a>
 	 */
 	public boolean isAutoIncrement(String columnName) {
-		return findPrimaryKeyColumnConstraint(columnName)
-				.map(pkcc -> pkcc.autoIncrement)
-				.findFirst().orElse(
-						findPrimaryKeyTableConstraint(columnName)
-								.map(pktc -> pktc.autoIncrement)
-								.orElse(isAnAliasForRowId(columnName)));
-	}
-
-	private Stream<PrimaryKeyColumnConstraint> findPrimaryKeyColumnConstraint(String columnName) {
-		return findColumnDefinition(columnName)
-				.flatMap(col -> col.constraints.stream())
-				.filter(PrimaryKeyColumnConstraint.class::isInstance)
-				.map(PrimaryKeyColumnConstraint.class::cast);
-	}
-
-	private Stream<ColumnDefinition> findColumnDefinition(String columnName) {
-		return columns.stream()
-				.filter(col -> col.nameAndType.colName.equalsIgnoreCase(columnName));
-	}
-	private Optional<PrimaryKeyTableConstraint> findPrimaryKeyTableConstraint(String columnName) {
-		return constraints.stream()
-				.filter(PrimaryKeyTableConstraint.class::isInstance)
-				.map(PrimaryKeyTableConstraint.class::cast)
-				.filter(tc -> tc.isOnlyOn(columnName))
-				.findFirst();
+		if (primaryKeyConstraint == null) {
+			return false;
+		}
+		return primaryKeyConstraint.allMatch((pkColName, order) -> pkColName.equalsIgnoreCase(columnName))
+				&& (primaryKeyConstraint.isAutoIncrement() || isAnAliasForRowId(columnName));
 	}
 
 	public boolean isGeneratedColumn(String columnName) {
@@ -75,40 +73,23 @@ public class ColumnsAndConstraints implements CreateTableBody {
 	 * <a href="http://sqlite.org/lang_createtable.html#rowid">ROWIDs and the INTEGER PRIMARY KEY</a>
 	 */
 	public boolean isAnAliasForRowId(String columnName) {
-		if (without) {
+		if (without || primaryKeyConstraint == null) {
 			return false;
 		}
-		return findColumnDefinition(columnName)
-				.findFirst()
-				.map(ColumnDefinition::isAnAliasForRowId)
-				.orElse(findPrimaryKeyTableConstraint(columnName)
-						.map(pktc -> {
-							SortOrder order = pktc.columns.get(0).order;
-							return order == null || SortOrder.Asc == order;
-						}))
-				.orElse(Boolean.FALSE);
+		if (!primaryKeyConstraint.allMatch((pkColName, order) -> pkColName.equalsIgnoreCase(columnName) && order == null || SortOrder.Asc == order)) {
+			return false;
+		}
+		Type colType;
+		if (primaryKeyConstraint instanceof ColumnDefinition) {
+			colType = ((ColumnDefinition) primaryKeyConstraint).nameAndType.colType;
+		} else {
+			colType = columns.stream()
+					.filter(c -> columnName.equalsIgnoreCase(c.nameAndType.colName))
+					.map(c -> c.nameAndType.colType)
+					.findAny()
+					.orElseThrow(AssertionError::new);
+		}
+		return colType != null && colType.name.equalsIgnoreCase("INTEGER") && colType.size == null;
 	}
 
-	public LiteralExpr getPrimaryKeyColumnName() {
-		for (ColumnDefinition column : columns) {
-			for (ColumnConstraint constraint : column.constraints) {
-				if (constraint instanceof PrimaryKeyColumnConstraint) {
-					return LiteralExpr.string(column.nameAndType.colName);
-				}
-			}
-		}
-		for (TableConstraint constraint : constraints) {
-			if (constraint instanceof PrimaryKeyTableConstraint) {
-				final List<SortedColumn> pkColumns = ((PrimaryKeyTableConstraint) constraint).columns;
-				if (pkColumns.size() > 1) {
-					return LiteralExpr.NULL;
-				}
-				final Expr expr = pkColumns.get(0).name;
-				if (expr instanceof IdExpr) {
-					return LiteralExpr.string(((IdExpr) expr).name);
-				}
-			}
-		}
-		return LiteralExpr.NULL;
-	}
 }

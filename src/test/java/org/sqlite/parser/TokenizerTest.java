@@ -3,8 +3,6 @@ package org.sqlite.parser;
 import java.io.StringReader;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 public class TokenizerTest {
     @Test
     public void testInsert() {

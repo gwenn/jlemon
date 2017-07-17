@@ -1,6 +1,7 @@
 package org.sqlite.parser;
 
-import org.sqlite.parser.ast.*;
+import org.sqlite.parser.ast.ExplainKind;
+import org.sqlite.parser.ast.Stmt;
 
 class Context {
 	ExplainKind explain;

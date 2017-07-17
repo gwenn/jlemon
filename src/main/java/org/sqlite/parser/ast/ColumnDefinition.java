@@ -2,33 +2,55 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 import java.sql.DatabaseMetaData;
-import java.util.*;
-import java.util.Set;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.BiFunction;
 
 import org.sqlite.parser.ParseException;
 
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.nullToEmpty;
 
-public class ColumnDefinition implements ToSql {
+public class ColumnDefinition implements ToSql, PrimaryKeyConstraint {
 	public final ColumnNameAndType nameAndType;
 	public final List<ColumnConstraint> constraints;
+	public final PrimaryKeyColumnConstraint primaryKeyColumnConstraint;
 
 	public ColumnDefinition(ColumnNameAndType nameAndType,
 			List<ColumnConstraint> constraints) {
 		this.nameAndType = requireNonNull(nameAndType);
 		this.constraints = nullToEmpty(constraints);
 		if (!this.constraints.isEmpty()) {
-			boolean pk = false;
+			PrimaryKeyColumnConstraint pk = null;
 			for (ColumnConstraint constraint : constraints) {
 				if (constraint instanceof PrimaryKeyColumnConstraint) {
-					if (pk) {
+					if (pk != null) {
 						throw new ParseException("Multiple PRIMARY KEY constraints");
 					}
-					pk = true;
+					pk = (PrimaryKeyColumnConstraint) constraint;
 				}
 			}
+			primaryKeyColumnConstraint = pk;
+		} else {
+			primaryKeyColumnConstraint = null;
 		}
+	}
+
+	@Override
+	public String getPrimaryKeyName() {
+		return primaryKeyColumnConstraint.name;
+	}
+	@Override
+	public boolean allMatch(BiFunction<String, SortOrder, Boolean> columnChecker) {
+		return columnChecker.apply(nameAndType.colName, primaryKeyColumnConstraint.order);
+	}
+	@Override
+	public ResolveType getConflictClause() {
+		return primaryKeyColumnConstraint.conflictClause;
+	}
+	@Override
+	public boolean isAutoIncrement() {
+		return primaryKeyColumnConstraint.autoIncrement;
 	}
 
 	@Override
@@ -38,20 +60,6 @@ public class ColumnDefinition implements ToSql {
 			a.append(' ');
 			constraint.toSql(a);
 		}
-	}
-
-	public Optional<Boolean> isAnAliasForRowId() {
-		final boolean integer = Optional.ofNullable(nameAndType.colType)
-				.map(type -> type.name.equalsIgnoreCase("INTEGER") && type.size == null)
-				.orElse(Boolean.FALSE);
-		if (!integer) {
-			return Optional.of(Boolean.FALSE);
-		}
-		return constraints.stream()
-				.filter(PrimaryKeyColumnConstraint.class::isInstance)
-				.map(c -> ((PrimaryKeyColumnConstraint) c).order)
-				.map(order -> order == null || SortOrder.Asc == order)
-				.findAny();
 	}
 
 	/**

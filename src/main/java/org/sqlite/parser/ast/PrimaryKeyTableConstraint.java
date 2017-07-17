@@ -2,11 +2,12 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
-public class PrimaryKeyTableConstraint extends TableConstraint {
+public class PrimaryKeyTableConstraint extends TableConstraint implements PrimaryKeyConstraint {
 	public final List<SortedColumn> columns;
 	public final boolean autoIncrement;
 	public final ResolveType conflictClause;
@@ -17,8 +18,33 @@ public class PrimaryKeyTableConstraint extends TableConstraint {
 			ResolveType conflictClause) {
 		super(name);
 		this.columns = requireNotEmpty(columns);
+		for (SortedColumn column : columns) {
+			if (!(column.name instanceof IdExpr)) {
+				throw new IllegalArgumentException();
+			}
+		}
 		this.conflictClause = conflictClause;
 		this.autoIncrement = autoIncrement;
+	}
+
+	@Override
+	public String getPrimaryKeyName() {
+		return name;
+	}
+	@Override
+	public boolean allMatch(BiFunction<String, SortOrder, Boolean> columnChecker) {
+		return columns.stream()
+				.map(sc -> columnChecker.apply(((IdExpr) sc.name).name, sc.order))
+				.allMatch(Boolean.TRUE::equals);
+	}
+
+	@Override
+	public boolean isAutoIncrement() {
+		return autoIncrement;
+	}
+	@Override
+	public ResolveType getConflictClause() {
+		return conflictClause;
 	}
 
 	@Override
@@ -35,16 +61,5 @@ public class PrimaryKeyTableConstraint extends TableConstraint {
 			a.append(" ON CONFLICT ");
 			conflictClause.toSql(a);
 		}
-	}
-
-	public boolean isOnlyOn(String columnName) {
-		if (columns.size() > 1) {
-			return false;
-		}
-		final Expr expr = columns.get(0).name;
-		if (expr instanceof IdExpr) { // TODO LiteralExpr ?
-			return ((IdExpr) expr).name.equalsIgnoreCase(columnName);
-		}
-		return false;
 	}
 }
