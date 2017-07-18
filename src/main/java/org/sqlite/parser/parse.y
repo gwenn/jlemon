@@ -167,7 +167,7 @@ table_options(A) ::= WITHOUT nm(X). {
 }
 %type columnlist {List<ColumnDefinition>}
 columnlist(A) ::= columnlist(A) COMMA columnname(X) carglist(Y). {
-  A = append(A, new ColumnDefinition(X,Y));
+  A = append(A, new ColumnDefinition(X,Y)); // TODO check "too many columns on %s"
 }
 columnlist(A) ::= columnname(X) carglist(Y). {
   A = append(null, new ColumnDefinition(X,Y));

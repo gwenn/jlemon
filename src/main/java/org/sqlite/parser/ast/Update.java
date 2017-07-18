@@ -29,6 +29,7 @@ public class Update implements Stmt {
 		this.orConflict = orConflict;
 		this.tblName = requireNonNull(tblName);
 		this.indexed = indexed;
+		// TODO "too many columns in ""set list"
 		this.sets = requireNotEmpty(sets);
 		this.whereClause = whereClause;
 		this.orderBy = orderBy;

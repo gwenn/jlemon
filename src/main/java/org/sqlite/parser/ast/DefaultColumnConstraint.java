@@ -10,6 +10,7 @@ public class DefaultColumnConstraint extends ColumnConstraint {
 	public DefaultColumnConstraint(String name, Expr expr) {
 		super(name);
 		this.expr = requireNonNull(expr);
+		// TODO "default value of column [%s] is not constant"
 	}
 
 	@Override

@@ -20,6 +20,7 @@ public class ColumnsAndConstraints implements CreateTableBody {
 		this.columns = requireNotEmpty(columns);
 		this.constraints = nullToEmpty(constraints);
 		this.without = without;
+		// "table \"%s\" has more than one primary key"
 		PrimaryKeyConstraint pk = null;
 		for (ColumnDefinition column : columns) {
 			if (column.primaryKeyColumnConstraint != null) {
@@ -29,6 +30,8 @@ public class ColumnsAndConstraints implements CreateTableBody {
 				pk = column;
 			}
 		}
+		// TODO "conflicting ON CONFLICT clauses specified"
+		// TODO "unknown column \"%s\" in foreign key definition"
 		for (TableConstraint constraint : this.constraints) {
 			if (constraint instanceof PrimaryKeyTableConstraint) {
 				if (pk != null) {
@@ -38,6 +41,10 @@ public class ColumnsAndConstraints implements CreateTableBody {
 			}
 		}
 		primaryKeyConstraint = pk;
+		// "PRIMARY KEY missing on table %s"
+		if (without && pk == null) {
+			throw new ParseException("PRIMARY KEY missing");
+		}
 	}
 
 	@Override

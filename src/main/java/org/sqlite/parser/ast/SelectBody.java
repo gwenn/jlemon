@@ -13,6 +13,7 @@ public class SelectBody implements ToSql {
 	public SelectBody(OneSelect select, List<CompoundSelect> compounds) {
 		this.select = requireNonNull(select);
 		this.compounds = compounds;
+		// TODO "too many terms in compound SELECT"
 	}
 
 	@Override

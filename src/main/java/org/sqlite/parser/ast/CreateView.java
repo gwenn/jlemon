@@ -24,6 +24,8 @@ public class CreateView implements Stmt {
 		this.viewName = requireNonNull(viewName);
 		this.columns = columns;
 		this.select = requireNonNull(select);
+		// TODO "expected %d columns for '%s' but got %d"
+		// columns.size() vs select.body.size()
 	}
 
 	@Override

@@ -23,6 +23,11 @@ public class AlterTable implements Stmt {
 		this.tblName = requireNonNull(tblName);
 		this.renameTo = null;
 		this.colDefinition = requireNonNull(colDefinition);
+		// TODO "Cannot add a PRIMARY KEY column"
+		// "Cannot add a UNIQUE column"
+		// "Cannot add a REFERENCES column with non-NULL default value"
+		// "Cannot add a NOT NULL column with default value NULL"
+		// "Cannot add a column with non-constant default"
 	}
 
 	@Override

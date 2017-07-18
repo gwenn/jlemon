@@ -24,6 +24,8 @@ public class Insert implements Stmt {
 		this.tblName = requireNonNull(tblName);
 		this.columns = columns;
 		this.select = select;
+		// TODO "%d values for %d columns"
+		// columns.size = select.body.size
 	}
 	@Override
 	public void toSql(Appendable a) throws IOException {

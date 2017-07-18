@@ -13,6 +13,7 @@ public class With implements ToSql {
 	public With(boolean recursive, List<CommonTableExpr> ctes) {
 		this.recursive = recursive;
 		this.ctes = requireNotEmpty(ctes);
+		// TODO "duplicate WITH table name: %s"
 	}
 
 	@Override

@@ -15,6 +15,7 @@ public class ForeignKeyColumnConstraint extends ColumnConstraint implements Fore
 		super(name);
 		this.clause = requireNonNull(clause);
 		this.derefClause = derefClause;
+		// "foreign key on %s should reference only one column of table %T"
 		if (isNotEmpty(clause.columns) && clause.columns.size() != 1) {
 			throw new ParseException(String.format("Inconsistent FOREIGN KEY column constraint with %d reference(s)", clause.columns.size()));
 		}

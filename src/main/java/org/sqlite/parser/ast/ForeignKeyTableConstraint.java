@@ -23,6 +23,7 @@ public class ForeignKeyTableConstraint extends TableConstraint implements Foreig
 		this.columns = requireNotEmpty(columns);
 		this.clause = requireNonNull(clause);
 		this.derefClause = derefClause;
+		// "number of columns in foreign key does not match the number of columns in the referenced table"
 		if (isNotEmpty(clause.columns) && columns.size() != clause.columns.size()) {
 			throw new ParseException(String.format("Inconsistent FOREIGN KEY table constraint with %d column(s) but %d reference(s)", columns.size(), clause.columns.size()));
 		}

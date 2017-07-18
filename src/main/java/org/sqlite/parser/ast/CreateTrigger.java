@@ -27,6 +27,7 @@ public class CreateTrigger implements Stmt {
 			Expr whenClause) {
 		this.temporary = temporary;
 		this.ifNotExists = ifNotExists;
+		// TODO "temporary trigger may not have qualified name"
 		this.triggerName = requireNonNull(triggerName);
 		this.time = time;
 		this.event = requireNonNull(event);

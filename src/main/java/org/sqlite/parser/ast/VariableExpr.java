@@ -12,6 +12,8 @@ public class VariableExpr implements Expr {
 
 	public VariableExpr(String variable) {
 		this.variable = requireNonNull(variable);
+		// TODO "variable number must be between ?1 and ?%d"
+		// TODO "too many SQL variables"
 	}
 
 	@Override

@@ -25,6 +25,8 @@ public class JoinOperator implements ToSql {
 	}
 
 	public static JoinOperator from(Token a, Token b, Token c) {
+		// TODO "unknown or unsupported join type: %T %T%s%T"
+		// TODO "RIGHT and FULL OUTER JOINs are not currently supported"
 		if (TokenType.TK_COMMA == a.tokenType()) {
 			return JoinOperator.comma();
 		} else if (b == null && c == null) {
