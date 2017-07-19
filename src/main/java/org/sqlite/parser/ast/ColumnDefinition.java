@@ -37,6 +37,19 @@ public class ColumnDefinition implements ToSql, PrimaryKeyConstraint {
 	}
 
 	@Override
+	public int getNumberOfColumns() {
+		return 1;
+	}
+
+	@Override
+	public String getColumnName(int index) {
+		if (index != 0) {
+			throw new IndexOutOfBoundsException(String.format("Index: %d, Size: 1", index));
+		}
+		return nameAndType.colName;
+	}
+
+	@Override
 	public String getPrimaryKeyName() {
 		return primaryKeyColumnConstraint.name;
 	}

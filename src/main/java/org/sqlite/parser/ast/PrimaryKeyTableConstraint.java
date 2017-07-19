@@ -28,6 +28,16 @@ public class PrimaryKeyTableConstraint extends TableConstraint implements Primar
 	}
 
 	@Override
+	public int getNumberOfColumns() {
+		return columns.size();
+	}
+
+	@Override
+	public String getColumnName(int index) {
+		return ((IdExpr) columns.get(index).name).name;
+	}
+
+	@Override
 	public String getPrimaryKeyName() {
 		return name;
 	}

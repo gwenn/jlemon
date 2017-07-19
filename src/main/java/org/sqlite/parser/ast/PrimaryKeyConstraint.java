@@ -7,6 +7,8 @@ import java.util.function.BiFunction;
  * this interface (not {@link PrimaryKeyColumnConstraint}).
  */
 public interface PrimaryKeyConstraint {
+	int getNumberOfColumns();
+	String getColumnName(int index);
 	String getPrimaryKeyName();
 	boolean allMatch(BiFunction<String, SortOrder, Boolean> columnChecker);
 	ResolveType getConflictClause();

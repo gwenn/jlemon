@@ -25,6 +25,11 @@ public class LiteralExpr implements Expr {
 		return new LiteralExpr(String.valueOf(value), LiteralType.Integer);
 	}
 	public static LiteralExpr string(String value) {
+		if (value == null) {
+			return NULL;
+		} if (value.isEmpty()) {
+			return EMPTY_STRING;
+		}
 		return new LiteralExpr(value, LiteralType.String);
 	}
 	public LiteralExpr(String value, LiteralType type) {
