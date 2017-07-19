@@ -4,14 +4,13 @@ import java.io.IOException;
 import java.sql.DatabaseMetaData;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 import org.sqlite.parser.ParseException;
 
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.nullToEmpty;
 
-public class ColumnDefinition implements ToSql, PrimaryKeyConstraint {
+public class ColumnDefinition implements ToSql {
 	public final ColumnNameAndType nameAndType;
 	public final List<ColumnConstraint> constraints;
 	public final PrimaryKeyColumnConstraint primaryKeyColumnConstraint;
@@ -34,36 +33,6 @@ public class ColumnDefinition implements ToSql, PrimaryKeyConstraint {
 		} else {
 			primaryKeyColumnConstraint = null;
 		}
-	}
-
-	@Override
-	public int getNumberOfColumns() {
-		return 1;
-	}
-
-	@Override
-	public String getColumnName(int index) {
-		if (index != 0) {
-			throw new IndexOutOfBoundsException(String.format("Index: %d, Size: 1", index));
-		}
-		return nameAndType.colName;
-	}
-
-	@Override
-	public String getPrimaryKeyName() {
-		return primaryKeyColumnConstraint.name;
-	}
-	@Override
-	public boolean allMatch(BiFunction<String, SortOrder, Boolean> columnChecker) {
-		return columnChecker.apply(nameAndType.colName, primaryKeyColumnConstraint.order);
-	}
-	@Override
-	public ResolveType getConflictClause() {
-		return primaryKeyColumnConstraint.conflictClause;
-	}
-	@Override
-	public boolean isAutoIncrement() {
-		return primaryKeyColumnConstraint.autoIncrement;
 	}
 
 	@Override

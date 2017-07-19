@@ -3,7 +3,7 @@ package org.sqlite.parser.ast;
 import java.util.function.BiFunction;
 
 /**
- * We need the column name(s) so only {@link ColumnDefinition} and {@link PrimaryKeyTableConstraint} implement
+ * We need the column name(s) so only {@link PrimaryKeyTableConstraint} implements
  * this interface (not {@link PrimaryKeyColumnConstraint}).
  */
 public interface PrimaryKeyConstraint {

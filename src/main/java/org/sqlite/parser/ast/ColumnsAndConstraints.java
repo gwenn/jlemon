@@ -2,6 +2,7 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import org.sqlite.parser.ParseException;
 
@@ -27,7 +28,35 @@ public class ColumnsAndConstraints implements CreateTableBody {
 				if (pk != null) {
 					throw new ParseException("More than one primary key");
 				}
-				pk = column;
+				pk = new PrimaryKeyConstraint() {
+					@Override
+					public int getNumberOfColumns() {
+						return 1;
+					}
+					@Override
+					public String getColumnName(int index) {
+						if (index != 0) {
+							throw new IndexOutOfBoundsException(String.format("Index: %d, Size: 1", index));
+						}
+						return column.nameAndType.colName;
+					}
+					@Override
+					public String getPrimaryKeyName() {
+						return column.primaryKeyColumnConstraint.name;
+					}
+					@Override
+					public boolean allMatch(BiFunction<String, SortOrder, Boolean> columnChecker) {
+						return columnChecker.apply(column.nameAndType.colName, column.primaryKeyColumnConstraint.order);
+					}
+					@Override
+					public ResolveType getConflictClause() {
+						return column.primaryKeyColumnConstraint.conflictClause;
+					}
+					@Override
+					public boolean isAutoIncrement() {
+						return column.primaryKeyColumnConstraint.autoIncrement;
+					}
+				};
 			}
 		}
 		// TODO "conflicting ON CONFLICT clauses specified"

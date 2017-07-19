@@ -1,6 +1,7 @@
 package org.sqlite.parser;
 
 import java.io.StringReader;
+
 import org.junit.Test;
 
 public class TokenizerTest {

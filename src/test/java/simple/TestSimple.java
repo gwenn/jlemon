@@ -3,7 +3,10 @@ package simple;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static simple.TokenType.*;
+import static simple.TokenType.DIVIDE;
+import static simple.TokenType.INTEGER;
+import static simple.TokenType.PLUS;
+import static simple.TokenType.TIMES;
 
 public class TestSimple {
     @Test
