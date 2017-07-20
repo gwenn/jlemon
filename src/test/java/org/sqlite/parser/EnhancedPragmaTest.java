@@ -1,5 +1,6 @@
 package org.sqlite.parser;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,25 +66,28 @@ public class EnhancedPragmaTest {
 
 	@Test
 	public void foreign_key_list() throws Exception {
-		final String sql = CONTRACT_SCHEMA;
-		Select select = EnhancedPragma.getImportedKeys(null, "contract", sql, null);
+		Map<String, String> schemaByTableName = new HashMap<>();
+		schemaByTableName.put("client", CLIENT_SCHEMA);
+		schemaByTableName.put("member", MEMBER_SCHEMA);
+		schemaByTableName.put("contract", CONTRACT_SCHEMA);
+		Select select = EnhancedPragma.getImportedKeys(null, "contract", new DummySchemaProvider(schemaByTableName));
 		final String importedKeys = select.toSql();
 		Parser.parse(importedKeys);
 	}
 
 	@Test
 	public void no_foreign_key_list() throws Exception {
-		final String sql = CLIENT_SCHEMA;
-		Select select = EnhancedPragma.getImportedKeys(null, "client", sql, null);
+		Map<String, String> schemaByTableName = Collections.singletonMap("client", CLIENT_SCHEMA);
+		Select select = EnhancedPragma.getImportedKeys(null, "client", new DummySchemaProvider(schemaByTableName));
 		final String importedKeys = select.toSql();
 		Parser.parse(importedKeys);
 	}
 
 	@Test
 	public void foreign_key_list_with_implicit_reference_to_primary_key() throws Exception {
-		Map<String, String> schemaProvider = new HashMap<>();
-		schemaProvider.put("client", CLIENT_SCHEMA);
-		schemaProvider.put("member", MEMBER_SCHEMA);
+		Map<String, String> schemaByTableName = new HashMap<>();
+		schemaByTableName.put("client", CLIENT_SCHEMA);
+		schemaByTableName.put("member", MEMBER_SCHEMA);
 		final String sql = "CREATE TABLE contract (\n" +
 				"  id INTEGER PRIMARY KEY NOT NULL,\n" +
 				"  _number TEXT NOT NULL,\n" +
@@ -107,8 +111,33 @@ public class EnhancedPragmaTest {
 				"  FOREIGN KEY (member_id) REFERENCES member,\n" +
 				"  FOREIGN KEY (client_id) REFERENCES client\n" +
 				");";
-		Select select = EnhancedPragma.getImportedKeys(null, "contract", sql, (tableName) -> schemaProvider.get(tableName));
+		schemaByTableName.put("contract", sql);
+		Select select = EnhancedPragma.getImportedKeys(null, "contract", new DummySchemaProvider(schemaByTableName));
 		final String importedKeys = select.toSql();
 		Parser.parse(importedKeys);
+	}
+
+	private static class DummySchemaProvider implements SchemaProvider {
+		private final Map<String, String> schemaByTableName;
+
+		private DummySchemaProvider(Map<String, String> schemaByTableName) {
+			this.schemaByTableName = schemaByTableName;
+		}
+
+		@Override
+		public String getDbName(String dbName, String tableName) {
+			if (dbName == null || dbName.isEmpty()) {
+				return "main";
+			}
+			return dbName;
+		}
+		@Override
+		public String getSchema(String dbName, String tableName) {
+			return schemaByTableName.get(tableName);
+		}
+		@Override
+		public Iterable<String> getTables(String dbName) {
+			throw new UnsupportedOperationException();
+		}
 	}
 }

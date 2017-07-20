@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.DatabaseMetaData;
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.LiteralExpr.integer;
 import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.doubleQuote;
@@ -15,7 +16,7 @@ public class ForeignKeyClause implements ToSql {
 	public final List<RefArg> args;
 
 	public ForeignKeyClause(String tblName, List<IndexedColumn> columns, List<RefArg> args) {
-		this.tblName = tblName;
+		this.tblName = requireNonNull(tblName);
 		this.columns = columns;
 		this.args = args;
 	}

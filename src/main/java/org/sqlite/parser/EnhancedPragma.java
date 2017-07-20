@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 
 import org.sqlite.parser.ast.CaseExpr;
 import org.sqlite.parser.ast.Cmd;
@@ -153,24 +152,46 @@ public class EnhancedPragma {
 	}
 
 	/**
-	 * Like {@code PRAGMA catalog.foreign_key_list(tableName)} but enhanced for {@link java.sql.DatabaseMetaData#getImportedKeys}
+	 * Like {@code PRAGMA catalog.foreign_key_list(tableName)} but enhanced for {@link java.sql.DatabaseMetaData#getCrossReference}
 	 *
-	 * @param catalog        Tables catalog
-	 * @param tableName      Name of the tablewhere foreign key(s) are declared.
-	 * @param sql            Schema where foreign key(s) are declared.
+	 * @param parentCatalog  Parent table catalog
+	 * @param parentTable    Name of the parent table where primary/unique key(s) are declared.
+	 * @param foreignCatalog Child table catalog
+	 * @param foreignTable   Name of the parent table where foreign key(s) are declared.
 	 * @param schemaProvider Given one parent table's name (that a foreign key constraint refers to), returns its schema.
 	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
 	 */
-	public static Select getImportedKeys(String catalog, String tableName, String sql, Function<String, String> schemaProvider) throws SQLSyntaxErrorException {
-		ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(tableName, sql);
+	public static Select getCrossReference(String parentCatalog, String parentTable,
+			String foreignCatalog, String foreignTable, SchemaProvider schemaProvider) throws SQLSyntaxErrorException {
+		return foreign_key_list(parentCatalog, parentTable, foreignCatalog, foreignTable, schemaProvider, true);
+	}
 
-		final LiteralExpr cat = string(catalog); // TODO Validate catalog is the same
-		final LiteralExpr tbl = string(tableName);
+	/**
+	 * Like {@code PRAGMA catalog.foreign_key_list(tableName)} but enhanced for {@link java.sql.DatabaseMetaData#getImportedKeys}
+	 *
+	 * @param catalog        Tables catalog
+	 * @param tableName      Name of the table where foreign key(s) are declared.
+	 * @param schemaProvider Given one parent table's name (that a foreign key constraint refers to), returns its schema.
+	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
+	 */
+	public static Select getImportedKeys(String catalog, String tableName, SchemaProvider schemaProvider) throws SQLSyntaxErrorException {
+		return foreign_key_list(null, null, catalog, tableName, schemaProvider, false);
+	}
+
+	private static Select foreign_key_list(String parentCatalog, String parentTable,
+			String foreignCatalog, String foreignTable,
+			SchemaProvider schemaProvider, boolean cross) throws SQLSyntaxErrorException {
+		foreignCatalog = schemaProvider.getDbName(foreignCatalog, foreignTable);
+		String sql = schemaProvider.getSchema(foreignCatalog, foreignTable);
+		ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(foreignTable, sql);
+
+		final LiteralExpr cat = string(foreignCatalog); // a temporary table can have reference(s) to a main table.
+		final LiteralExpr tbl = string(foreignTable);
 		List<ResultColumn> columns = Arrays.asList(
-				expr(cat, as("PKTABLE_CAT")),
+				expr(new IdExpr("pcat"), as("PKTABLE_CAT")), // parent catalog
 				expr(NULL, as("PKTABLE_SCHEM")),
-				expr(new IdExpr("pt"), as("PKTABLE_NAME")),
-				expr(new IdExpr("pc"), as("PKCOLUMN_NAME")),
+				expr(new IdExpr("pt"), as("PKTABLE_NAME")), // parent table
+				expr(new IdExpr("pc"), as("PKCOLUMN_NAME")), // parent table column
 				expr(cat, as("FKTABLE_CAT")),
 				expr(NULL, as("FKTABLE_SCHEM")),
 				expr(tbl, as("FKTABLE_NAME")),
@@ -179,7 +200,7 @@ public class EnhancedPragma {
 				expr(new IdExpr("updateRule"), as("UPDATE_RULE")),
 				expr(new IdExpr("deleteRule"), as("DELETE_RULE")),
 				expr(new IdExpr("fkName"), as("FK_NAME")),
-				expr(new IdExpr("pkName"), as("PK_NAME")),
+				expr(new IdExpr("pkName"), as("PK_NAME")), // PRIMARY KEY or UNIQUE constraint name
 				expr(new IdExpr("deferrability"), as("DEFERRABILITY"))
 		);
 		OneSelect head = null;
@@ -190,72 +211,77 @@ public class EnhancedPragma {
 				if (!(constraint instanceof ForeignKeyColumnConstraint)) {
 					continue;
 				}
-				count++;
 				ForeignKeyColumnConstraint fcc = (ForeignKeyColumnConstraint) constraint;
 				final String parentTableName = fcc.clause.tblName;
+				final String dbName = schemaProvider.getDbName(foreignCatalog, parentTableName);
+				if (cross && !match(parentCatalog, parentTable, dbName, parentTableName)) {
+					continue;
+				}
+				count++;
+				LiteralExpr pcat = string(dbName);
 				LiteralExpr pt = string(parentTableName);
 				String colName = column.nameAndType.colName;
 				LiteralExpr fc = string(colName);
 				LiteralExpr seq = integer(1);
 				LiteralExpr updateRule = fcc.clause.getUpdateRule();
 				LiteralExpr deleteRule = fcc.clause.getDeleteRule();
-				LiteralExpr fkName = string(fcc.name == null ? generateForeignKeyName(tableName, parentTableName, count) : fcc.name);
-				LiteralExpr pkName = NULL;
+				LiteralExpr fkName = string(fcc.name == null ? generateForeignKeyName(foreignTable, parentTableName, count) : fcc.name);
+				PrimaryKeyConstraint primaryKeyConstraint = getPrimaryKeyConstraint(foreignTable, schemaProvider, foreignCatalog, parentTableName, 1);
+				LiteralExpr pkName = string(primaryKeyConstraint.getPrimaryKeyName());
 				LiteralExpr deferrability = integer(fcc.getDeferrability());
 				List<IndexedColumn> pics = fcc.clause.columns;
 				LiteralExpr pc;
 				if (pics == null || pics.isEmpty()) {
-					PrimaryKeyConstraint primaryKeyConstraint = getPrimaryKeyConstraint(tableName, schemaProvider, parentTableName, 1);
-					pkName = string(primaryKeyConstraint.getPrimaryKeyName());
 					pc = string(primaryKeyConstraint.getColumnName(0));
 				} else {
 					assert pics.size() == 1;
 					IndexedColumn pic = pics.get(0);
 					pc = string(pic.colName);
 				}
-				head = append(head, tail, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
+				head = append(head, tail, pcat, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
 			}
 		}
 		for (TableConstraint constraint : columnsAndConstraints.constraints) {
 			if (!(constraint instanceof ForeignKeyTableConstraint)) {
 				continue;
 			}
-			count++;
 			ForeignKeyTableConstraint ftc = (ForeignKeyTableConstraint) constraint;
+			final String parentTableName = ftc.clause.tblName;
+			final String dbName = schemaProvider.getDbName(foreignCatalog, parentTableName);
+			if (cross && !match(parentCatalog, parentTable, dbName, parentTableName)) {
+				continue;
+			}
+			count++;
 			LiteralExpr updateRule = ftc.clause.getUpdateRule();
 			LiteralExpr deleteRule = ftc.clause.getDeleteRule();
-			final String parentTableName = ftc.clause.tblName;
-			LiteralExpr fkName = string(ftc.name == null ? generateForeignKeyName(tableName, parentTableName, count) : ftc.name);
-			LiteralExpr pkName = NULL;
-			LiteralExpr deferrability = integer(ftc.getDeferrability());
+			LiteralExpr pcat = string(dbName);
 			LiteralExpr pt = string(parentTableName);
+			LiteralExpr fkName = string(ftc.name == null ? generateForeignKeyName(foreignTable, parentTableName, count) : ftc.name);
 			List<IndexedColumn> fics = ftc.columns;
+			PrimaryKeyConstraint primaryKeyConstraint = getPrimaryKeyConstraint(foreignTable, schemaProvider, foreignCatalog, parentTableName, fics.size());
+			LiteralExpr pkName = string(primaryKeyConstraint.getPrimaryKeyName());
+			LiteralExpr deferrability = integer(ftc.getDeferrability());
 			List<IndexedColumn> pics = ftc.clause.columns;
-			PrimaryKeyConstraint primaryKeyConstraint = null;
-			if (pics == null || pics.isEmpty()) {
-				// implicit primary key
-				primaryKeyConstraint = getPrimaryKeyConstraint(tableName, schemaProvider, parentTableName, fics.size());
-				pkName = string(primaryKeyConstraint.getPrimaryKeyName());
-			}
 			for (int i = 0; i < fics.size(); i++) {
 				IndexedColumn fic = fics.get(i);
 				LiteralExpr fc = string(fic.colName);
-				LiteralExpr seq = integer(i+1);
+				LiteralExpr seq = integer(i + 1);
 				LiteralExpr pc;
 				if (pics == null || pics.isEmpty()) {
+					// implicit primary key
 					pc = string(primaryKeyConstraint.getColumnName(i));
 				} else {
 					IndexedColumn pic = pics.get(i);
 					pc = string(pic.colName);
 				}
-				head = append(head, tail, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
+				head = append(head, tail, pcat, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
 			}
 		}
 		SelectBody subBody;
 		Limit limit = null;
 		// Handle the case where there is no FK
 		if (head == null) {
-			head = append(head, tail, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			head = append(head, tail, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 			limit = new Limit(integer(0), null);
 		}
 		List<CompoundSelect> compounds;
@@ -271,24 +297,39 @@ public class EnhancedPragma {
 		from.setComplete();
 		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
 		SelectBody body = new SelectBody(oneSelect, null);
-		List<SortedColumn> orderBy = Arrays.asList(
-				new SortedColumn(new IdExpr("PKTABLE_CAT"), null),
-				new SortedColumn(new IdExpr("PKTABLE_SCHEM"), null),
-				new SortedColumn(new IdExpr("PKTABLE_NAME"), null),
-				new SortedColumn(new IdExpr("KEY_SEQ"), null)
-		);
+		List<SortedColumn> orderBy;
+		if (cross) {
+			orderBy = Arrays.asList(
+					new SortedColumn(new IdExpr("FKTABLE_CAT"), null),
+					new SortedColumn(new IdExpr("FKTABLE_SCHEM"), null),
+					new SortedColumn(new IdExpr("FKTABLE_NAME"), null),
+					new SortedColumn(new IdExpr("KEY_SEQ"), null)
+			);
+		} else {
+			orderBy = Arrays.asList(
+					new SortedColumn(new IdExpr("PKTABLE_CAT"), null),
+					new SortedColumn(new IdExpr("PKTABLE_SCHEM"), null),
+					new SortedColumn(new IdExpr("PKTABLE_NAME"), null),
+					new SortedColumn(new IdExpr("KEY_SEQ"), null)
+			);
+		}
 		Select select = new Select(null, body, orderBy, null);
 		return select;
+	}
+
+	private static boolean match(String parentCatalog, String parentTable, String dbName, String parentTableName) {
+		return parentTableName.equalsIgnoreCase(parentTable) &&
+				(parentCatalog == null || parentCatalog.equalsIgnoreCase(dbName));
 	}
 
 	private static String generateForeignKeyName(String tableName, String parentTableName, int count) {
 		return tableName + '_' + parentTableName + '_' + count;
 	}
 
-	private static PrimaryKeyConstraint getPrimaryKeyConstraint(String tableName, Function<String, String> schemaProvider,
-			String parentTableName, int expectedNumberOfColumns) throws SQLSyntaxErrorException {
+	private static PrimaryKeyConstraint getPrimaryKeyConstraint(String tableName, SchemaProvider schemaProvider,
+			String dbName, String parentTableName, int expectedNumberOfColumns) throws SQLSyntaxErrorException {
 		PrimaryKeyConstraint primaryKeyConstraint;
-		final ColumnsAndConstraints parentBody = getColumnsAndConstraints(parentTableName, schemaProvider.apply(parentTableName));
+		final ColumnsAndConstraints parentBody = getColumnsAndConstraints(parentTableName, schemaProvider.getSchema(dbName, parentTableName));
 		if (parentBody.primaryKeyConstraint == null) {
 			throw new SQLSyntaxErrorException(String.format("No PRIMARY KEY declared in %s referenced by %s", parentTableName, tableName));
 		}
@@ -299,11 +340,12 @@ public class EnhancedPragma {
 		return primaryKeyConstraint;
 	}
 
-	private static OneSelect append(OneSelect head, List<List<Expr>> tail, LiteralExpr pt, LiteralExpr pc,
+	private static OneSelect append(OneSelect head, List<List<Expr>> tail, LiteralExpr pcat, LiteralExpr pt, LiteralExpr pc,
 			LiteralExpr fc, LiteralExpr seq, LiteralExpr updateRule, LiteralExpr deleteRule,
 			LiteralExpr fkName, LiteralExpr pkName, LiteralExpr deferrability) {
 		if (head == null) {
 			head = new OneSelect(null, Arrays.asList(
+					expr(pcat, as("pcat")),
 					expr(pt, as("pt")),
 					expr(pc, as("pc")),
 					expr(fc, as("fc")),
@@ -316,6 +358,7 @@ public class EnhancedPragma {
 			), null, null, null);
 		} else {
 			tail.add(Arrays.asList(
+					pcat,
 					pt,
 					pc,
 					fc,
