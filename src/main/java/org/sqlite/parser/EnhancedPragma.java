@@ -53,16 +53,11 @@ public class EnhancedPragma {
 	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
 	 */
 	public static Select tableInfo(String catalog, String tableName, SchemaProvider schemaProvider) throws SQLSyntaxErrorException {
-		String sql = schemaProvider.getSchema(catalog, tableName);
-		ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(tableName, sql);
-
-		final LiteralExpr cat = string(catalog);
-		final LiteralExpr tbl = string(tableName);
 		final IdExpr colNullable = new IdExpr("colnullable");
 		List<ResultColumn> columns = Arrays.asList(
-				expr(cat, as("TABLE_CAT")),
+				expr(new IdExpr("cat"), as("TABLE_CAT")),
 				expr(NULL, as("TABLE_SCHEM")),
-				expr(tbl, as("TABLE_NAME")),
+				expr(new IdExpr("tbl"), as("TABLE_NAME")),
 				expr(new IdExpr("cn"), as("COLUMN_NAME")),
 				expr(new IdExpr("ct"), as("DATA_TYPE")), // SQL type from java.sql.Types
 				expr(new IdExpr("tn"), as("TYPE_NAME")),
@@ -90,7 +85,12 @@ public class EnhancedPragma {
 				expr(new IdExpr("autoinc"), as("IS_AUTOINCREMENT")),
 				expr(new IdExpr("generated"), as("IS_GENERATEDCOLUMN"))
 		);
+		catalog = schemaProvider.getDbName(catalog, tableName);
+		final LiteralExpr cat = string(catalog);
+		final LiteralExpr tbl = string(tableName);
 		OneSelect head = null;
+		String sql = schemaProvider.getSchema(catalog, tableName);
+		ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(tableName, sql);
 		List<List<Expr>> tail = new ArrayList<>(columnsAndConstraints.columns.size() - 1);
 		for (int i = 0; i < columnsAndConstraints.columns.size(); i++) {
 			ColumnDefinition column = columnsAndConstraints.columns.get(i);
@@ -109,6 +109,8 @@ public class EnhancedPragma {
 			final LiteralExpr generated = string(rowIdAlias ? "YES" : "NO");
 			if (i == 0) {
 				head = new OneSelect(null, Arrays.asList(
+						expr(cat, as("cat")),
+						expr(tbl, as("tbl")),
 						expr(colNameExpr, as("cn")),
 						expr(colType, as("ct")),
 						expr(declType, as("tn")),
@@ -122,6 +124,8 @@ public class EnhancedPragma {
 				), null, null, null);
 			} else {
 				tail.add(Arrays.asList(
+						cat,
+						tbl,
 						colNameExpr,
 						colType,
 						declType,
