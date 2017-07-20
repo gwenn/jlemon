@@ -58,8 +58,8 @@ public class EnhancedPragmaTest {
 
 	@Test
 	public void table_info() throws Exception {
-		final String sql = CONTRACT_SCHEMA;
-		Select select = EnhancedPragma.tableInfo(null, "contract", sql);
+		Map<String, String> schemaByTableName = Collections.singletonMap("contract", CONTRACT_SCHEMA);
+		Select select = EnhancedPragma.tableInfo(null, "contract", new DummySchemaProvider(schemaByTableName));
 		final String tableInfo = select.toSql();
 		Parser.parse(tableInfo);
 	}

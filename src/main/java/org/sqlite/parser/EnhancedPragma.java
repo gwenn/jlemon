@@ -52,7 +52,8 @@ public class EnhancedPragma {
 	 * @param sql       Schema for {@code tableName}
 	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
 	 */
-	public static Select tableInfo(String catalog, String tableName, String sql) throws SQLSyntaxErrorException {
+	public static Select tableInfo(String catalog, String tableName, SchemaProvider schemaProvider) throws SQLSyntaxErrorException {
+		String sql = schemaProvider.getSchema(catalog, tableName);
 		ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(tableName, sql);
 
 		final LiteralExpr cat = string(catalog);
