@@ -2,7 +2,7 @@
 
 A fork of the
 [LEMON parser generator](https://www.sqlite.org/src/doc/trunk/doc/lemon.html)
-that generates Java code.
+that generates Java code and the associated [SQL parser](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/parse.y).
 
 Files `lemon.c`, `lempar.c` are extracted from SQLite v3.18.0.
 
@@ -64,13 +64,13 @@ But when translating code (see `translate_code`), the logic used to make the dif
 Maybe try a code manipulator ([janino](http://janino-compiler.github.io/janino/#janino-as-a-code-manipulator)) ?
 Or [javolution Union](http://javolution.org/apidocs/javolution/io/Union.html) ?
 
-## WIP
+## SQL Parser
 
-Try to generate an AST by adapting the [SQLite parser](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/parse.y) from C to JAVA.
+Generate an AST by adapting the [SQLite parser](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/parse.y) from C to JAVA.
 Currently, the [SQLite lexer](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/tokenize.c) has been ported (and tested with [these scripts](https://github.com/bkiers/sqlite-parser/tree/master/src/test/resources)).
 The [SQLite parser](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/parse.y) has been ported (and tested with [these scripts](https://github.com/bkiers/sqlite-parser/tree/master/src/test/resources)).
 
-When the parser will be ready, it will be used to fix [DatabaseMetaData](https://github.com/gwenn/sqlite-jna/blob/master/src/main/java/org/sqlite/driver/DbMeta.java) implementation.
+The parser is used to fix [DatabaseMetaData](https://github.com/gwenn/sqlite-jna/blob/master/src/main/java/org/sqlite/driver/DbMeta.java) implementation.
 
  * java.sql.DatabaseMetaData.getColumns
  * java.sql.DatabaseMetaData.getBestRowIdentifier
