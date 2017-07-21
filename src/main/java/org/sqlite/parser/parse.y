@@ -115,8 +115,7 @@ transtype(A) ::= .             {A = null;}
 transtype(A) ::= DEFERRED(X).  {A = TransactionType.from(@X); /*A-overwrites-X*/}
 transtype(A) ::= IMMEDIATE(X). {A = TransactionType.from(@X); /*A-overwrites-X*/}
 transtype(A) ::= EXCLUSIVE(X). {A = TransactionType.from(@X); /*A-overwrites-X*/}
-cmd ::= COMMIT trans_opt(X).      {context.stmt = new Commit(X);}
-cmd ::= END trans_opt(X).         {context.stmt = new Commit(X);}
+cmd ::= COMMIT|END trans_opt(X).      {context.stmt = new Commit(X);}
 cmd ::= ROLLBACK trans_opt(X).    {context.stmt = new Rollback(X, null);}
 
 savepoint_opt ::= SAVEPOINT.
@@ -695,7 +694,6 @@ idlist(A) ::= nm(Y).
 expr(A) ::= term(A).
 expr(A) ::= LP expr(X) RP.
             {A=new ParenthesizedExpr(X); /*A-overwrites-B*/}
-term(A) ::= NULL(X).        {A=LiteralExpr.from(X);/*A-overwrites-X*/}
 expr(A) ::= id(X).          {A=new IdExpr(X.text()); /*A-overwrites-X*/}
 expr(A) ::= JOIN_KW(X).     {A=new IdExpr(X.text()); /*A-overwrites-X*/}
 expr(A) ::= nm(X) DOT nm(Y). {
@@ -704,8 +702,8 @@ expr(A) ::= nm(X) DOT nm(Y). {
 expr(A) ::= nm(X) DOT nm(Y) DOT nm(Z). {
   A = new DoublyQualifiedExpr(X.text(),Y.text(),Z.text()); /*A-overwrites-X*/
 }
-term(A) ::= FLOAT|BLOB(X). {A=LiteralExpr.from(X);/*A-overwrites-X*/}
-term(A) ::= STRING(X).     {A=LiteralExpr.from(X);/*A-overwrites-X*/}
+term(A) ::= NULL|FLOAT|BLOB(X). {A=LiteralExpr.from(X);/*A-overwrites-X*/}
+term(A) ::= STRING(X).          {A=LiteralExpr.from(X);/*A-overwrites-X*/}
 term(A) ::= INTEGER(X). {
   A=LiteralExpr.from(X);
 }
