@@ -1,6 +1,7 @@
 package org.sqlite.parser;
 
 import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -47,12 +48,12 @@ public class EnhancedPragma {
 	/**
 	 * Like {@code PRAGMA catalog.table_info(tableName)} but enhanced for {@link java.sql.DatabaseMetaData#getColumns}
 	 *
-	 * @param catalog   Table catalog
-	 * @param tableName Table name
-	 * @param sql       Schema for {@code tableName}
+	 * @param catalog        Table catalog
+	 * @param tableName      Table name
+	 * @param schemaProvider Given one table's name, returns its schema.
 	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
 	 */
-	public static Select tableInfo(String catalog, String tableName, SchemaProvider schemaProvider) throws SQLSyntaxErrorException {
+	public static Select tableInfo(String catalog, String tableName, SchemaProvider schemaProvider) throws SQLException {
 		final IdExpr colNullable = new IdExpr("colnullable");
 		List<ResultColumn> columns = Arrays.asList(
 				expr(new IdExpr("cat"), as("TABLE_CAT")),
@@ -163,11 +164,11 @@ public class EnhancedPragma {
 	 * @param parentTable    Name of the parent table where primary/unique key(s) are declared.
 	 * @param foreignCatalog Child table catalog
 	 * @param foreignTable   Name of the parent table where foreign key(s) are declared.
-	 * @param schemaProvider Given one parent table's name (that a foreign key constraint refers to), returns its schema.
+	 * @param schemaProvider Given one table's name, returns its schema.
 	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
 	 */
 	public static Select getCrossReference(String parentCatalog, String parentTable,
-			String foreignCatalog, String foreignTable, SchemaProvider schemaProvider) throws SQLSyntaxErrorException {
+			String foreignCatalog, String foreignTable, SchemaProvider schemaProvider) throws SQLException {
 		return foreign_key_list(parentCatalog, parentTable, foreignCatalog, foreignTable, schemaProvider, true);
 	}
 
@@ -179,13 +180,13 @@ public class EnhancedPragma {
 	 * @param schemaProvider Given one parent table's name (that a foreign key constraint refers to), returns its schema.
 	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
 	 */
-	public static Select getImportedKeys(String catalog, String tableName, SchemaProvider schemaProvider) throws SQLSyntaxErrorException {
+	public static Select getImportedKeys(String catalog, String tableName, SchemaProvider schemaProvider) throws SQLException {
 		return foreign_key_list(null, null, catalog, tableName, schemaProvider, false);
 	}
 
 	private static Select foreign_key_list(String parentCatalog, String parentTable,
 			String foreignCatalog, String foreignTable,
-			SchemaProvider schemaProvider, boolean cross) throws SQLSyntaxErrorException {
+			SchemaProvider schemaProvider, boolean cross) throws SQLException {
 		foreignCatalog = schemaProvider.getDbName(foreignCatalog, foreignTable);
 		String sql = schemaProvider.getSchema(foreignCatalog, foreignTable);
 		ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(foreignTable, sql);
@@ -231,17 +232,20 @@ public class EnhancedPragma {
 				LiteralExpr updateRule = fcc.clause.getUpdateRule();
 				LiteralExpr deleteRule = fcc.clause.getDeleteRule();
 				LiteralExpr fkName = string(fcc.name == null ? generateForeignKeyName(foreignTable, parentTableName, count) : fcc.name);
-				PrimaryKeyConstraint primaryKeyConstraint = getPrimaryKeyConstraint(foreignTable, schemaProvider, foreignCatalog, parentTableName, 1);
-				LiteralExpr pkName = string(primaryKeyConstraint.getPrimaryKeyName());
+				ColumnsAndConstraints parentBody = getColumnsAndConstraints(parentTableName, schemaProvider.getSchema(foreignCatalog, parentTableName));
+				LiteralExpr pkName;
 				LiteralExpr deferrability = integer(fcc.getDeferrability());
 				List<IndexedColumn> pics = fcc.clause.columns;
 				LiteralExpr pc;
 				if (pics == null || pics.isEmpty()) {
+					PrimaryKeyConstraint primaryKeyConstraint = getPrimaryKeyConstraint(parentBody, foreignTable, parentTableName, 1);
 					pc = string(primaryKeyConstraint.getColumnName(0));
+					pkName = string(primaryKeyConstraint.getPrimaryKeyName());
 				} else {
 					assert pics.size() == 1;
 					IndexedColumn pic = pics.get(0);
 					pc = string(pic.colName);
+					pkName = NULL; // FIXME primary key or unique constraint name
 				}
 				head = append(head, tail, pcat, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
 			}
@@ -263,8 +267,7 @@ public class EnhancedPragma {
 			LiteralExpr pt = string(parentTableName);
 			LiteralExpr fkName = string(ftc.name == null ? generateForeignKeyName(foreignTable, parentTableName, count) : ftc.name);
 			List<IndexedColumn> fics = ftc.columns;
-			PrimaryKeyConstraint primaryKeyConstraint = getPrimaryKeyConstraint(foreignTable, schemaProvider, foreignCatalog, parentTableName, fics.size());
-			LiteralExpr pkName = string(primaryKeyConstraint.getPrimaryKeyName());
+			ColumnsAndConstraints parentBody = getColumnsAndConstraints(parentTableName, schemaProvider.getSchema(foreignCatalog, parentTableName));
 			LiteralExpr deferrability = integer(ftc.getDeferrability());
 			List<IndexedColumn> pics = ftc.clause.columns;
 			for (int i = 0; i < fics.size(); i++) {
@@ -272,12 +275,16 @@ public class EnhancedPragma {
 				LiteralExpr fc = string(fic.colName);
 				LiteralExpr seq = integer(i + 1);
 				LiteralExpr pc;
+				LiteralExpr pkName;
 				if (pics == null || pics.isEmpty()) {
 					// implicit primary key
+					PrimaryKeyConstraint primaryKeyConstraint = getPrimaryKeyConstraint(parentBody, foreignTable, parentTableName, fics.size());
 					pc = string(primaryKeyConstraint.getColumnName(i));
+					pkName = string(primaryKeyConstraint.getPrimaryKeyName());
 				} else {
 					IndexedColumn pic = pics.get(i);
 					pc = string(pic.colName);
+					pkName = NULL; // FIXME primary key or unique constraint name
 				}
 				head = append(head, tail, pcat, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
 			}
@@ -331,10 +338,9 @@ public class EnhancedPragma {
 		return tableName + '_' + parentTableName + '_' + count;
 	}
 
-	private static PrimaryKeyConstraint getPrimaryKeyConstraint(String tableName, SchemaProvider schemaProvider,
-			String dbName, String parentTableName, int expectedNumberOfColumns) throws SQLSyntaxErrorException {
+	private static PrimaryKeyConstraint getPrimaryKeyConstraint(ColumnsAndConstraints parentBody, String tableName,
+			String parentTableName, int expectedNumberOfColumns) throws SQLSyntaxErrorException {
 		PrimaryKeyConstraint primaryKeyConstraint;
-		final ColumnsAndConstraints parentBody = getColumnsAndConstraints(parentTableName, schemaProvider.getSchema(dbName, parentTableName));
 		if (parentBody.primaryKeyConstraint == null) {
 			throw new SQLSyntaxErrorException(String.format("No PRIMARY KEY declared in %s referenced by %s", parentTableName, tableName));
 		}
