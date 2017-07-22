@@ -143,8 +143,7 @@ public class EnhancedPragma {
 		final List<CompoundSelect> compounds = Collections.singletonList(
 				new CompoundSelect(CompoundOperator.UnionAll, new OneSelect(tail)));
 		SelectBody subBody = new SelectBody(head, compounds);
-		Select subSelect = new Select(null, subBody, null, null);
-		FromClause from = new FromClause(SelectTable.select(subSelect, null), null);
+		FromClause from = FromClause.from(subBody);
 		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
 		SelectBody body = new SelectBody(oneSelect, null);
 		List<SortedColumn> orderBy = Arrays.asList(

@@ -13,6 +13,14 @@ public class Select implements Stmt, TriggerCmd {
 	public final List<SortedColumn> orderBy;
 	public final Limit limit;
 
+	public static Select from(OneSelect oneSelect) {
+		return from(new SelectBody(oneSelect, null));
+	}
+
+	public static Select from(SelectBody body) {
+		return new Select(null, body, null, null);
+	}
+
 	public Select(With with,
 			SelectBody body,
 			List<SortedColumn> orderBy,

@@ -135,9 +135,5 @@ public class EnhancedPragmaTest {
 		public String getSchema(String dbName, String tableName) {
 			return schemaByTableName.get(tableName);
 		}
-		@Override
-		public Iterable<String> getTables(String dbName) {
-			throw new UnsupportedOperationException();
-		}
 	}
 }

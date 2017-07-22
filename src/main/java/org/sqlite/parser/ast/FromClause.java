@@ -11,6 +11,13 @@ public class FromClause implements ToSql {
 	public final List<JoinedSelectTable> joins;
 	private transient JoinOperator op;
 
+	public static FromClause from(QualifiedName qualifiedName) {
+		return new FromClause(SelectTable.table(qualifiedName, null, null), null);
+	}
+	public static FromClause from(SelectBody subSelect) {
+		return new FromClause(SelectTable.select(Select.from(subSelect), null), null);
+	}
+
 	public static FromClause from(FromClause from, JoinOperator op) {
 		from.op = op;
 		return from;

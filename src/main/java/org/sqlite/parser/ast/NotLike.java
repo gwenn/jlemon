@@ -5,6 +5,7 @@ import java.io.IOException;
 import static java.util.Objects.requireNonNull;
 
 public class NotLike implements ToSql {
+	public static final NotLike LIKE = new NotLike(false, LikeOperator.Like);
 	public final boolean not;
 	public final LikeOperator op;
 

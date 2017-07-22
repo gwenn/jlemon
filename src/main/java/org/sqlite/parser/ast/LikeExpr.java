@@ -13,6 +13,10 @@ public class LikeExpr implements Expr {
 	public final Expr rhs;
 	public final Expr escape;
 
+	public static LikeExpr like(Expr lhs, Expr rhs) {
+		return new LikeExpr(lhs, NotLike.LIKE, rhs, null);
+	}
+
 	public LikeExpr(Expr lhs, NotLike op, Expr rhs, Expr escape) {
 		this.lhs = requireNonNull(lhs);
 		this.op = requireNonNull(op);
