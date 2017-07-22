@@ -613,7 +613,7 @@ private void yy_reduce(
   if( yyruleno<yyRuleName.length ){
     yysize = yyRuleInfo[yyruleno].nrhs;
     logger.trace("Reduce [{}], go to state {}.",
-      yyRuleName[yyruleno], yystack[yyidx-yysize].stateno);
+      yyRuleName[yyruleno], yystack[yyidx+yysize].stateno);
   }
 #endif /* NDEBUG */
 
@@ -659,21 +659,24 @@ private void yy_reduce(
   assert( yyruleno<yyRuleInfo.length );
   yygoto = yyRuleInfo[yyruleno].lhs;
   yysize = yyRuleInfo[yyruleno].nrhs;
-  yyact = yy_find_reduce_action(yystack[yyidx-yysize].stateno,(YYCODETYPE)yygoto);
-  if( yyact <= YY_MAX_SHIFTREDUCE ){
-    if( yyact>YY_MAX_SHIFT ){
-      yyact += YY_MIN_REDUCE - YY_MIN_SHIFTREDUCE;
-    }
+  yyact = yy_find_reduce_action(yystack[yyidx+yysize].stateno,(YYCODETYPE)yygoto);
 
-    yyidx -= yysize-1;
+  /* There are no SHIFTREDUCE actions on nonterminals because the table
+  ** generator has simplified them to pure REDUCE actions. */
+  assert( !(yyact>YY_MAX_SHIFT && yyact<=YY_MAX_SHIFTREDUCE) );
+
+  /* It is not possible for a REDUCE to be followed by an error */
+  assert( yyact!=YY_ERROR_ACTION );
+
+  if( yyact == YY_ACCEPT_ACTION ){
+    yyidx += yysize;
+    yy_accept();
+  }else{
+    yyidx += yysize+1;
     yymsp = yystack(yyidx);
     yymsp.stateno = (YYACTIONTYPE)yyact;
     yymsp.major = (YYCODETYPE)yygoto;
     yyTraceShift(yyact);
-  }else{
-    assert( yyact == YY_ACCEPT_ACTION );
-    yyidx -= yysize;
-    yy_accept();
   }
 }
 
