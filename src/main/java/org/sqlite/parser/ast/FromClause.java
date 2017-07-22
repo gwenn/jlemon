@@ -10,7 +10,6 @@ public class FromClause implements ToSql {
 	public final SelectTable select;
 	public final List<JoinedSelectTable> joins;
 	private transient JoinOperator op;
-	private boolean complete;
 
 	public static FromClause from(FromClause from, JoinOperator op) {
 		from.op = op;
@@ -30,15 +29,8 @@ public class FromClause implements ToSql {
 		this.joins = joins;
 	}
 
-	public void setComplete() {
-		this.complete = true;
-	}
-
 	@Override
 	public void toSql(Appendable a) throws IOException {
-		if (complete) {
-			a.append("FROM ");
-		}
 		select.toSql(a);
 		if (joins != null) {
 			for (JoinedSelectTable join : joins) {

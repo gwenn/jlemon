@@ -471,7 +471,6 @@ as(A) ::= .            {A = null;}
 //
 from(A) ::= .                {A = null;}
 from(A) ::= FROM seltablist(X). {
-  X.setComplete();
   A = X;
 }
 

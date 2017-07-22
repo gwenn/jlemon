@@ -59,7 +59,7 @@ public class OneSelect implements ToSql {
 		a.append(' ');
 		comma(a, columns);
 		if (from != null) {
-			a.append(' ');
+			a.append(" FROM ");
 			from.toSql(a);
 		}
 		if (whereClause != null) {

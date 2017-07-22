@@ -145,7 +145,6 @@ public class EnhancedPragma {
 		SelectBody subBody = new SelectBody(head, compounds);
 		Select subSelect = new Select(null, subBody, null, null);
 		FromClause from = new FromClause(SelectTable.select(subSelect, null), null);
-		from.setComplete();
 		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
 		SelectBody body = new SelectBody(oneSelect, null);
 		List<SortedColumn> orderBy = Arrays.asList(
@@ -306,7 +305,6 @@ public class EnhancedPragma {
 		subBody = new SelectBody(head, compounds);
 		Select subSelect = new Select(null, subBody, null, limit);
 		FromClause from = new FromClause(SelectTable.select(subSelect, null), null);
-		from.setComplete();
 		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
 		SelectBody body = new SelectBody(oneSelect, null);
 		List<SortedColumn> orderBy;
