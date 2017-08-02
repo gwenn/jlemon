@@ -19,9 +19,7 @@ public class PrimaryKeyTableConstraint extends TableConstraint implements Primar
 		super(name);
 		this.columns = requireNotEmpty(columns);
 		for (SortedColumn column : columns) {
-			if (!(column.name instanceof IdExpr)) {
-				throw new IllegalArgumentException();
-			}
+			getName(column);
 		}
 		this.conflictClause = conflictClause;
 		this.autoIncrement = autoIncrement;
@@ -34,7 +32,7 @@ public class PrimaryKeyTableConstraint extends TableConstraint implements Primar
 
 	@Override
 	public String getColumnName(int index) {
-		return ((IdExpr) columns.get(index).name).name;
+		return getName(columns.get(index));
 	}
 
 	@Override
@@ -44,7 +42,7 @@ public class PrimaryKeyTableConstraint extends TableConstraint implements Primar
 	@Override
 	public boolean allMatch(BiFunction<String, SortOrder, Boolean> columnChecker) {
 		return columns.stream()
-				.map(sc -> columnChecker.apply(((IdExpr) sc.name).name, sc.order))
+				.map(sc -> columnChecker.apply(getName(sc), sc.order))
 				.allMatch(Boolean.TRUE::equals);
 	}
 
@@ -71,5 +69,18 @@ public class PrimaryKeyTableConstraint extends TableConstraint implements Primar
 			a.append(" ON CONFLICT ");
 			conflictClause.toSql(a);
 		}
+	}
+
+	private static String getName(SortedColumn sc) {
+		final Expr expr = sc.name;
+		if (expr instanceof IdExpr) {
+			return ((IdExpr) expr).name;
+		} else if (expr instanceof LiteralExpr) {
+			final LiteralExpr literalExpr = (LiteralExpr) expr;
+			if (literalExpr.type == LiteralType.Keyword || literalExpr.type == LiteralType.String) {
+				return literalExpr.value;
+			}
+		}
+		throw new IllegalArgumentException(String.format("Unsupported column name: %s", expr));
 	}
 }
