@@ -5,6 +5,7 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.comma;
+import static org.sqlite.parser.ast.ToSql.isEmpty;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 public class Select implements Stmt, TriggerCmd {
@@ -29,7 +30,7 @@ public class Select implements Stmt, TriggerCmd {
 		this.body = requireNonNull(body);
 		this.orderBy = orderBy;
 		this.limit = limit;
-		if (body.select.values != null && (isNotEmpty(orderBy) || limit != null)) {
+		if ((body.select.values != null && isEmpty(body.compounds)) && (isNotEmpty(orderBy) || limit != null)) {
 			throw new IllegalArgumentException("ORDER BY or LIMIT clauses cannot be used with VALUES");
 		}
 	}

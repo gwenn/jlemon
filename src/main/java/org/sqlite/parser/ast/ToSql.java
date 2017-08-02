@@ -106,4 +106,8 @@ public interface ToSql {
 	static <T> boolean isNotEmpty(List<T> list) {
 		return list != null && !list.isEmpty();
 	}
+
+	static <T> boolean isEmpty(List<T> list) {
+		return list == null && list.isEmpty();
+	}
 }
