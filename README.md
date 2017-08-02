@@ -66,9 +66,8 @@ Or [javolution Union](http://javolution.org/apidocs/javolution/io/Union.html) ?
 
 ## SQL Parser
 
-Generate an AST by adapting the [SQLite parser](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/parse.y) from C to JAVA.
-Currently, the [SQLite lexer](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/tokenize.c) has been ported (and tested with [these scripts](https://github.com/bkiers/sqlite-parser/tree/master/src/test/resources)).
-The [SQLite parser](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/parse.y) has been ported (and tested with [these scripts](https://github.com/bkiers/sqlite-parser/tree/master/src/test/resources)).
+[SQLite lexer](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/tokenize.c) and [SQLite parser](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/parse.y) have been ported from C to Java.
+The parser generates an AST.
 
 The parser is used to fix [DatabaseMetaData](https://github.com/gwenn/sqlite-jna/blob/master/src/main/java/org/sqlite/driver/DbMeta.java) implementation.
 
@@ -84,3 +83,10 @@ The parser is used to fix [DatabaseMetaData](https://github.com/gwenn/sqlite-jna
   - Keep track of position (line, column).
   - Streamable (stop at the end of statement).
   - Resumable (restart after the end of statement).
+
+## Test
+
+SQL lexer and parser have been tested with the following scripts:
+
+ * https://github.com/bkiers/sqlite-parser/tree/master/src/test/resources
+ * https://github.com/codeschool/sqlite-parser/tree/master/test/sql/official-suite
