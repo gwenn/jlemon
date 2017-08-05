@@ -3,6 +3,8 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 import java.util.List;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.doubleQuote;
@@ -15,6 +17,14 @@ public class FunctionCallExpr implements Expr {
 	public final String name;
 	public final Distinctness distinctness;
 	public final List<Expr> args;
+
+	public static FunctionCallExpr lower(Expr expr) {
+		return new FunctionCallExpr("lower", null, singletonList(expr));
+	}
+
+	public static FunctionCallExpr from(String name, Expr... args) {
+		return new FunctionCallExpr(name, null, asList(args));
+	}
 
 	public FunctionCallExpr(String name,
 			Distinctness distinctness,

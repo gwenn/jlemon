@@ -139,7 +139,7 @@ public class EnhancedPragmaTest {
 		}
 
 		@Override
-		public List<QualifiedName> getExactTableNames(String dbName, String tableNamePattern) throws SQLException {
+		public List<QualifiedName> findTables(String dbName, String tableNamePattern) throws SQLException {
 			return Collections.singletonList(new QualifiedName(getDbName(dbName, tableNamePattern), tableNamePattern));
 		}
 		@Override

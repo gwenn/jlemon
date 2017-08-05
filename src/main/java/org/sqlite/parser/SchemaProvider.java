@@ -12,7 +12,7 @@ public interface SchemaProvider {
 	 * @param dbName           May be null to search in all databases, empty to search in {@code "temp"} and {@code "main"}.
 	 * @param tableNamePattern LIKE pattern. May be null or empty to retrieve all tables.
 	 */
-	List<QualifiedName> getExactTableNames(String dbName, String tableNamePattern) throws SQLException;
+	List<QualifiedName> findTables(String dbName, String tableNamePattern) throws SQLException;
 
 	/**
 	 * Find the database containing this table.

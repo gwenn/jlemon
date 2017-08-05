@@ -86,7 +86,7 @@ public class EnhancedPragma {
 				expr(new IdExpr("autoinc"), as("IS_AUTOINCREMENT")),
 				expr(new IdExpr("generated"), as("IS_GENERATEDCOLUMN"))
 		);
-		final List<QualifiedName> tbls = schemaProvider.getExactTableNames(catalog, tableNamePattern);
+		final List<QualifiedName> tbls = schemaProvider.findTables(catalog, tableNamePattern);
 		OneSelect head = null;
 		List<List<Expr>> tail = new ArrayList<>();
 		for (QualifiedName tableName : tbls) {
