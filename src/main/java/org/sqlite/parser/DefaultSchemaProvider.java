@@ -29,6 +29,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.FunctionCallExpr.lower;
+import static org.sqlite.parser.ast.LikeExpr.like;
 import static org.sqlite.parser.ast.LiteralExpr.string;
 import static org.sqlite.parser.ast.ResultColumn.expr;
 
@@ -54,7 +55,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
 			}
 		}
 		List<String> dbNames = getDbNames(dbName);
-		tableNamePattern = tableNamePattern == null || tableNamePattern.isEmpty() ? "%" : tableNamePattern;
+		tableNamePattern = tableNamePattern == null ? "%" : tableNamePattern;
 		List<QualifiedName> tbls;
 		if (all) {
 			tbls = new ArrayList<>();
@@ -164,7 +165,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
 		Expr typeEpr = new InListExpr(new IdExpr("type"), false, asList(string("table"), string("view")));
 		Expr nameExpr;
 		if (like) {
-			nameExpr = LikeExpr.like(new IdExpr("name"), new VariableExpr("1"));
+			nameExpr = like(new IdExpr("name"), new VariableExpr("1"));
 		} else {
 			nameExpr = new BinaryExpr(lower(new IdExpr("name")), Operator.Equals, lower(new VariableExpr("1")));
 		}
@@ -177,7 +178,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
 		final LiteralExpr masterExpr = string(sqlite_master);
 		Expr masterClause;
 		if (like) {
-			masterClause = LikeExpr.like(masterExpr, new VariableExpr("1"));
+			masterClause = like(masterExpr, new VariableExpr("1"));
 		} else {
 			masterClause = new BinaryExpr(masterExpr, Operator.Equals, lower(new VariableExpr("1")));
 		}

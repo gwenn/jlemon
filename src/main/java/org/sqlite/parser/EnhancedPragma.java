@@ -18,12 +18,14 @@ import org.sqlite.parser.ast.CompoundOperator;
 import org.sqlite.parser.ast.CompoundSelect;
 import org.sqlite.parser.ast.CreateTable;
 import org.sqlite.parser.ast.CreateTableBody;
+import org.sqlite.parser.ast.CreateView;
 import org.sqlite.parser.ast.Expr;
 import org.sqlite.parser.ast.ForeignKeyColumnConstraint;
 import org.sqlite.parser.ast.ForeignKeyTableConstraint;
 import org.sqlite.parser.ast.FromClause;
 import org.sqlite.parser.ast.IdExpr;
 import org.sqlite.parser.ast.IndexedColumn;
+import org.sqlite.parser.ast.LikeExpr;
 import org.sqlite.parser.ast.Limit;
 import org.sqlite.parser.ast.LiteralExpr;
 import org.sqlite.parser.ast.OneSelect;
@@ -38,6 +40,7 @@ import org.sqlite.parser.ast.TableConstraint;
 import org.sqlite.parser.ast.WhenThenPair;
 
 import static org.sqlite.parser.ast.As.as;
+import static org.sqlite.parser.ast.LikeExpr.like;
 import static org.sqlite.parser.ast.LiteralExpr.EMPTY_STRING;
 import static org.sqlite.parser.ast.LiteralExpr.NULL;
 import static org.sqlite.parser.ast.LiteralExpr.integer;
@@ -49,17 +52,19 @@ public class EnhancedPragma {
 	 * Like {@code PRAGMA catalog.table_info(tableName)} but enhanced for {@link java.sql.DatabaseMetaData#getColumns}
 	 *
 	 * @param catalog          Table catalog
-	 * @param tableNamePattern LIKE pattern. May be null or empty to retrieve all tables.
+	 * @param tableNamePattern LIKE pattern. May be null to retrieve all tables.
+	 * @param columnNamePattern LIKE pattern. May be null to retrieve all columns.
 	 * @param schemaProvider   Given one table's name, returns its schema.
 	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
 	 */
-	public static Select tableInfo(String catalog, String tableNamePattern, SchemaProvider schemaProvider) throws SQLException {
+	public static Select tableInfo(String catalog, String tableNamePattern, String columnNamePattern, SchemaProvider schemaProvider) throws SQLException {
 		final IdExpr colNullable = new IdExpr("colnullable");
+		final IdExpr columnName = new IdExpr("cn");
 		List<ResultColumn> columns = Arrays.asList(
 				expr(new IdExpr("cat"), as("TABLE_CAT")),
 				expr(NULL, as("TABLE_SCHEM")),
 				expr(new IdExpr("tbl"), as("TABLE_NAME")),
-				expr(new IdExpr("cn"), as("COLUMN_NAME")),
+				expr(columnName, as("COLUMN_NAME")),
 				expr(new IdExpr("ct"), as("DATA_TYPE")), // SQL type from java.sql.Types
 				expr(new IdExpr("tn"), as("TYPE_NAME")),
 				expr(new IdExpr("cs"), as("COLUMN_SIZE")),
@@ -128,7 +133,11 @@ public class EnhancedPragma {
 		SelectBody subBody = new SelectBody(head, compounds);
 		Select subSelect = new Select(null, subBody, null, limit);
 		FromClause from = FromClause.from(subSelect);
-		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
+		Expr whereClause = null;
+		if (columnNamePattern != null) {
+			whereClause = like(columnName, string(columnNamePattern));
+		}
+		OneSelect oneSelect = new OneSelect(null, columns, from, whereClause, null);
 		SelectBody body = new SelectBody(oneSelect, null);
 		List<SortedColumn> orderBy = Arrays.asList(
 				new SortedColumn(new IdExpr("TABLE_SCHEM"), null),
