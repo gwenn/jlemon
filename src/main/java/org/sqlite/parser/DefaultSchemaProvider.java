@@ -10,9 +10,12 @@ import java.util.Collections;
 import java.util.List;
 
 import org.sqlite.parser.ast.BinaryExpr;
+import org.sqlite.parser.ast.CompoundOperator;
+import org.sqlite.parser.ast.CompoundSelect;
 import org.sqlite.parser.ast.Expr;
 import org.sqlite.parser.ast.FromClause;
 import org.sqlite.parser.ast.IdExpr;
+import org.sqlite.parser.ast.InListExpr;
 import org.sqlite.parser.ast.LikeExpr;
 import org.sqlite.parser.ast.LiteralExpr;
 import org.sqlite.parser.ast.NotLike;
@@ -21,10 +24,13 @@ import org.sqlite.parser.ast.Operator;
 import org.sqlite.parser.ast.QualifiedName;
 import org.sqlite.parser.ast.ResultColumn;
 import org.sqlite.parser.ast.Select;
+import org.sqlite.parser.ast.SelectBody;
 import org.sqlite.parser.ast.VariableExpr;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static org.sqlite.parser.ast.LiteralExpr.string;
 import static org.sqlite.parser.ast.ResultColumn.expr;
 
 public class DefaultSchemaProvider implements SchemaProvider {
@@ -35,36 +41,51 @@ public class DefaultSchemaProvider implements SchemaProvider {
 	}
 
 	@Override
-	public String getDbName(String dbName, String tableName) throws SQLException {
-		if ("sqlite_temp_master".equalsIgnoreCase(tableName)) {
-			return "temp";
-		} else if ("sqlite_master".equalsIgnoreCase(tableName)) {
+	public List<QualifiedName> getExactTableNames(String dbName, String tableNamePattern) throws SQLException {
+		if ("sqlite_temp_master".equalsIgnoreCase(tableNamePattern)) {
+			return Collections.singletonList(new QualifiedName("temp", tableNamePattern));
+		} else if ("sqlite_master".equalsIgnoreCase(tableNamePattern)) {
 			if (dbName == null || dbName.isEmpty()) {
-				return "main";
+				return Collections.singletonList(new QualifiedName("main", tableNamePattern));
 			} else {
-				return dbName;
+				return Collections.singletonList(new QualifiedName(dbName, tableNamePattern));
 			}
 		}
-
-		final List<String> dbNames = database_list(dbName);
-		if (dbNames.size() == 1) {
-			return dbNames.get(0);
-		}
-		for (String cat : dbNames) {
-			Select select = sqlite_master(dbName, "name");
+		List<String> dbNames = getDbNames(dbName);
+		tableNamePattern = tableNamePattern == null || tableNamePattern.isEmpty() ? "%" : tableNamePattern;
+		List<QualifiedName> tbls = new ArrayList<>();
+		for (String catalog : dbNames) {
+			Select select = sqlite_master(catalog, "name");
 			try (PreparedStatement ps = conn.prepareStatement(select.toSql())) {
-				ps.setString(1, tableName);
-				try (ResultSet rs = ps.executeQuery()) {
-					if (rs.next()) {
-						return cat;
+				// determine exact table name
+				ps.setString(1, tableNamePattern);
+				try (ResultSet rs = ps.executeQuery()){
+					while (rs.next()) {
+						tbls.add(new QualifiedName(catalog, rs.getString(1)));
 					}
 				}
 			}
 		}
-		return "temp"; // to avoid invalid qualified table name "".tbl
+		return tbls;
 	}
 
-	private List<String> database_list(String dbName) throws SQLException {
+	@Override
+	public String getDbName(String dbName, String tableName) throws SQLException {
+		if (tableName == null) {
+			return "temp"; // to avoid invalid qualified table name "".tbl
+		}
+		final List<QualifiedName> tableNames = getExactTableNames(dbName, tableName);
+		if (tableNames.isEmpty()) {
+			return "temp"; // to avoid invalid qualified table name "".tbl
+		}
+		if (tableNames.size() == 1) {
+			return tableNames.get(0).dbName;
+		}
+		throw new SQLException(String.format("Ambiguous table name: %s, %s", dbName, tableName));
+	}
+
+	@Override
+	public List<String> getDbNames(String dbName) throws SQLException {
 		final List<String> dbNames;
 		if (dbName == null) {
 			dbNames = new ArrayList<>(2);
@@ -81,15 +102,32 @@ public class DefaultSchemaProvider implements SchemaProvider {
 				}
 			}
 		} else if (dbName.isEmpty()) {
-			dbNames = Arrays.asList("temp", "main"); // "temp" first
+			dbNames = asList("temp", "main"); // "temp" first
 		} else {
-			dbNames = Collections.singletonList(dbName);
+			dbNames = singletonList(dbName);
 		}
 		return dbNames;
 	}
 
 	@Override
 	public String getSchema(String dbName, String tableName) throws SQLException {
+		if ("sqlite_temp_master".equalsIgnoreCase(tableName)) {
+			return "CREATE TEMP TABLE sqlite_temp_master (\n" +
+			"  type text,\n" +
+			"  name text,\n" +
+			"  tbl_name text,\n" +
+			"  rootpage integer,\n" +
+			"  sql text\n" +
+			")";
+		} else if ("sqlite_master".equalsIgnoreCase(tableName)) {
+			return "CREATE TABLE sqlite_master (\n" +
+			"  type text,\n" +
+			"  name text,\n" +
+			"  tbl_name text,\n" +
+			"  rootpage integer,\n" +
+			"  sql text\n" +
+			")";
+		}
 		Select select = sqlite_master(dbName, "sql");
 		try (PreparedStatement ps = conn.prepareStatement(select.toSql())) {
 			ps.setString(1, tableName);
@@ -103,17 +141,30 @@ public class DefaultSchemaProvider implements SchemaProvider {
 	}
 
 	private Select sqlite_master(String dbName, String column) {
+		String sqlite_master;
 		QualifiedName qualifiedName;
 		if ("temp".equalsIgnoreCase(dbName)) {
-			qualifiedName = new QualifiedName(null, "sqlite_temp_master");
+			sqlite_master = "sqlite_temp_master";
+			qualifiedName = new QualifiedName(null, sqlite_master);
 		} else {
-			qualifiedName = new QualifiedName(dbName, "sqlite_master");
+			sqlite_master = "sqlite_master";
+			qualifiedName = new QualifiedName(dbName, sqlite_master);
 		}
 		List<ResultColumn> columns = singletonList(expr(new IdExpr(column), null));
 		FromClause from = FromClause.from(qualifiedName);
-		Expr typeEpr = new BinaryExpr(new IdExpr("type"), Operator.Equals, LiteralExpr.string("table")); // TODO Validate: no view
-		Expr nameExpr = LikeExpr.like(new IdExpr("name"), new VariableExpr(""));
+		Expr typeEpr = new InListExpr(new IdExpr("type"), false, asList(string("table"), string("view")));
+		Expr nameExpr = LikeExpr.like(new IdExpr("name"), new VariableExpr("1"));
 		Expr whereClause = new BinaryExpr(typeEpr, Operator.And, nameExpr);
-		return Select.from(new OneSelect(null, columns, from, whereClause, null));
+		// SELECT <column> FROM sqlite_master WHERE type IN ('table','view') AND name LIKE ?1
+		final OneSelect oneSelect = new OneSelect(null, columns, from, whereClause, null);
+		if (!"name".equals(column)) {
+			return Select.from(oneSelect);
+		}
+		final LiteralExpr masterExpr = string(sqlite_master);
+		Expr masterClause = LikeExpr.like(masterExpr, new VariableExpr("1"));
+		// UNION SELECT 'sqlite_master' WHERE 'sqlite_master' LIKE ?1
+		CompoundSelect union = new CompoundSelect(CompoundOperator.Union,
+				new OneSelect(null, singletonList(expr(masterExpr, null)), null, masterClause, null));
+		return Select.from(new SelectBody(oneSelect, singletonList(union)));
 	}
 }

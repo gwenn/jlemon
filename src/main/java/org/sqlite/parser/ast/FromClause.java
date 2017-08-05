@@ -15,7 +15,10 @@ public class FromClause implements ToSql {
 		return new FromClause(SelectTable.table(qualifiedName, null, null), null);
 	}
 	public static FromClause from(SelectBody subSelect) {
-		return new FromClause(SelectTable.select(Select.from(subSelect), null), null);
+		return from(Select.from(subSelect));
+	}
+	public static FromClause from(Select subSelect) {
+		return new FromClause(SelectTable.select(subSelect, null), null);
 	}
 
 	public static FromClause from(FromClause from, JoinOperator op) {

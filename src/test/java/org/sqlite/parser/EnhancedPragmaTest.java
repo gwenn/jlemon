@@ -1,10 +1,13 @@
 package org.sqlite.parser;
 
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+import org.sqlite.parser.ast.QualifiedName;
 import org.sqlite.parser.ast.Select;
 
 public class EnhancedPragmaTest {
@@ -123,7 +126,6 @@ public class EnhancedPragmaTest {
 		private DummySchemaProvider(Map<String, String> schemaByTableName) {
 			this.schemaByTableName = schemaByTableName;
 		}
-
 		@Override
 		public String getDbName(String dbName, String tableName) {
 			if (dbName == null || dbName.isEmpty()) {
@@ -134,6 +136,15 @@ public class EnhancedPragmaTest {
 		@Override
 		public String getSchema(String dbName, String tableName) {
 			return schemaByTableName.get(tableName);
+		}
+
+		@Override
+		public List<QualifiedName> getExactTableNames(String dbName, String tableNamePattern) throws SQLException {
+			return Collections.singletonList(new QualifiedName(getDbName(dbName, tableNamePattern), tableNamePattern));
+		}
+		@Override
+		public List<String> getDbNames(String dbName) throws SQLException {
+			throw new UnsupportedOperationException();
 		}
 	}
 }

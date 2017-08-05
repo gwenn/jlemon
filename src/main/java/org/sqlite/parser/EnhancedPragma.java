@@ -28,6 +28,7 @@ import org.sqlite.parser.ast.Limit;
 import org.sqlite.parser.ast.LiteralExpr;
 import org.sqlite.parser.ast.OneSelect;
 import org.sqlite.parser.ast.PrimaryKeyConstraint;
+import org.sqlite.parser.ast.QualifiedName;
 import org.sqlite.parser.ast.ResultColumn;
 import org.sqlite.parser.ast.Select;
 import org.sqlite.parser.ast.SelectBody;
@@ -49,11 +50,11 @@ public class EnhancedPragma {
 	 * Like {@code PRAGMA catalog.table_info(tableName)} but enhanced for {@link java.sql.DatabaseMetaData#getColumns}
 	 *
 	 * @param catalog        Table catalog
-	 * @param tableName      Table name
+	 * @param tableNamePattern LIKE pattern. May be null or empty to retrieve all tables.
 	 * @param schemaProvider Given one table's name, returns its schema.
 	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
 	 */
-	public static Select tableInfo(String catalog, String tableName, SchemaProvider schemaProvider) throws SQLException {
+	public static Select tableInfo(String catalog, String tableNamePattern, SchemaProvider schemaProvider) throws SQLException {
 		final IdExpr colNullable = new IdExpr("colnullable");
 		List<ResultColumn> columns = Arrays.asList(
 				expr(new IdExpr("cat"), as("TABLE_CAT")),
@@ -86,64 +87,48 @@ public class EnhancedPragma {
 				expr(new IdExpr("autoinc"), as("IS_AUTOINCREMENT")),
 				expr(new IdExpr("generated"), as("IS_GENERATEDCOLUMN"))
 		);
-		catalog = schemaProvider.getDbName(catalog, tableName);
-		final LiteralExpr cat = string(catalog);
-		final LiteralExpr tbl = string(tableName);
+		final List<QualifiedName> tbls = schemaProvider.getExactTableNames(catalog, tableNamePattern);
 		OneSelect head = null;
-		String sql = schemaProvider.getSchema(catalog, tableName);
-		ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(tableName, sql);
-		List<List<Expr>> tail = new ArrayList<>(columnsAndConstraints.columns.size() - 1);
-		for (int i = 0; i < columnsAndConstraints.columns.size(); i++) {
-			ColumnDefinition column = columnsAndConstraints.columns.get(i);
-			final String colName = column.nameAndType.colName;
-			final LiteralExpr colNameExpr = string(colName);
-			final boolean rowIdAlias = columnsAndConstraints.isGeneratedColumn(colName);
-			final LiteralExpr colType = integer(rowIdAlias ? Types.ROWID : column.nameAndType.getDataType());
-			final LiteralExpr declType = column.nameAndType.getTypeExpr();
-			LiteralExpr colSize = column.nameAndType.getSize();
-			LiteralExpr decimalDigits = column.nameAndType.getDecimalDigits();
-			final Integer nullable = column.getNullable()
-					.orElse(columnsAndConstraints.isAnAliasForRowId(colName) ? DatabaseMetaData.columnNoNulls : DatabaseMetaData.columnNullable);
-			final LiteralExpr columnDefault = column.getDefault();
-			final LiteralExpr ordpos = integer(i + 1);
-			final LiteralExpr autoinc = string(columnsAndConstraints.isAutoIncrement(colName) ? "YES" : rowIdAlias ? "" : "NO");
-			final LiteralExpr generated = string(rowIdAlias ? "YES" : "NO");
-			if (i == 0) {
-				head = new OneSelect(null, Arrays.asList(
-						expr(cat, as("cat")),
-						expr(tbl, as("tbl")),
-						expr(colNameExpr, as("cn")),
-						expr(colType, as("ct")),
-						expr(declType, as("tn")),
-						expr(colSize, as("cs")),
-						expr(decimalDigits, as("decimalDigits")),
-						expr(integer(nullable), as("colnullable")),
-						expr(columnDefault, as("cdflt")),
-						expr(ordpos, as("ordpos")),
-						expr(autoinc, as("autoinc")),
-						expr(generated, as("generated"))
-				), null, null, null);
-			} else {
-				tail.add(Arrays.asList(
-						cat,
-						tbl,
-						colNameExpr,
-						colType,
-						declType,
-						colSize,
-						decimalDigits,
-						integer(nullable),
-						columnDefault,
-						ordpos,
-						autoinc,
-						generated
-				));
+		List<List<Expr>> tail = new ArrayList<>();
+		for (QualifiedName tableName : tbls) {
+			final LiteralExpr cat = string(tableName.dbName);
+			final LiteralExpr tbl = string(tableName.name);
+			String sql = schemaProvider.getSchema(tableName.dbName, tableName.name);
+			ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(tableName.name, sql);
+			for (int i = 0; i < columnsAndConstraints.columns.size(); i++) {
+				ColumnDefinition column = columnsAndConstraints.columns.get(i);
+				final String colName = column.nameAndType.colName;
+				final LiteralExpr colNameExpr = string(colName);
+				final boolean rowIdAlias = columnsAndConstraints.isGeneratedColumn(colName);
+				final LiteralExpr colType = integer(rowIdAlias ? Types.ROWID : column.nameAndType.getDataType());
+				final LiteralExpr declType = column.nameAndType.getTypeExpr();
+				LiteralExpr colSize = column.nameAndType.getSize();
+				LiteralExpr decimalDigits = column.nameAndType.getDecimalDigits();
+				final Integer nullable = column.getNullable()
+						.orElse(columnsAndConstraints.isAnAliasForRowId(colName) ? DatabaseMetaData.columnNoNulls : DatabaseMetaData.columnNullable);
+				final LiteralExpr columnDefault = column.getDefault();
+				final LiteralExpr ordpos = integer(i + 1);
+				final LiteralExpr autoinc = string(columnsAndConstraints.isAutoIncrement(colName) ? "YES" : rowIdAlias ? "" : "NO");
+				final LiteralExpr generated = string(rowIdAlias ? "YES" : "NO");
+				head = appendCol(head, tail, cat, tbl, colNameExpr, colType, declType, colSize, decimalDigits, nullable, columnDefault, ordpos, autoinc, generated);
 			}
 		}
-		final List<CompoundSelect> compounds = Collections.singletonList(
-				new CompoundSelect(CompoundOperator.UnionAll, new OneSelect(tail)));
+		Limit limit = null;
+		// Handle the case where there is no FK
+		if (head == null) {
+			head = appendCol(head, tail, NULL, NULL, NULL, NULL, NULL, NULL, NULL, DatabaseMetaData.columnNullableUnknown, NULL, NULL, NULL, NULL);
+			limit = new Limit(integer(0), null);
+		}
+		List<CompoundSelect> compounds;
+		if (tail.isEmpty()) {
+			compounds = null;
+		} else {
+			compounds = Collections.singletonList(
+					new CompoundSelect(CompoundOperator.UnionAll, new OneSelect(tail)));
+		}
 		SelectBody subBody = new SelectBody(head, compounds);
-		FromClause from = FromClause.from(subBody);
+		Select subSelect = new Select(null, subBody, null, limit);
+		FromClause from = FromClause.from(subSelect);
 		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
 		SelectBody body = new SelectBody(oneSelect, null);
 		List<SortedColumn> orderBy = Arrays.asList(
@@ -154,6 +139,55 @@ public class EnhancedPragma {
 		Select select = new Select(null, body, orderBy, null);
 		return select;
 	}
+	private static OneSelect appendCol(OneSelect head, List<List<Expr>> tail,
+			Expr cat,
+			Expr tbl,
+			Expr colNameExpr,
+			Expr colType,
+			Expr declType,
+			Expr colSize,
+			Expr decimalDigits,
+			Integer nullable,
+			Expr columnDefault,
+			Expr ordpos,
+			Expr autoinc,
+			Expr generated) {
+		if (head == null) {
+			head = new OneSelect(null, Arrays.asList(
+					expr(cat, as("cat")),
+					expr(tbl, as("tbl")),
+					expr(colNameExpr, as("cn")),
+					expr(colType, as("ct")),
+					expr(declType, as("tn")),
+					expr(colSize, as("cs")),
+					expr(decimalDigits, as("decimalDigits")),
+					expr(integer(nullable), as("colnullable")),
+					expr(columnDefault, as("cdflt")),
+					expr(ordpos, as("ordpos")),
+					expr(autoinc, as("autoinc")),
+					expr(generated, as("generated"))
+			), null, null, null);
+		} else {
+			tail.add(Arrays.asList(
+					cat,
+					tbl,
+					colNameExpr,
+					colType,
+					declType,
+					colSize,
+					decimalDigits,
+					integer(nullable),
+					columnDefault,
+					ordpos,
+					autoinc,
+					generated
+			));
+		}
+		return head;
+	}
+
+	// TODO getPrimaryKeys: ~ PK_NAME, on table
+	// TODO getExportedKeys: one parent table – find -> all child table
 
 	/**
 	 * Like {@code PRAGMA catalog.foreign_key_list(tableName)} but enhanced for {@link java.sql.DatabaseMetaData#getCrossReference}
@@ -245,7 +279,7 @@ public class EnhancedPragma {
 					pc = string(pic.colName);
 					pkName = NULL; // FIXME primary key or unique constraint name
 				}
-				head = append(head, tail, pcat, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
+				head = appendFK(head, tail, pcat, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
 			}
 		}
 		for (TableConstraint constraint : columnsAndConstraints.constraints) {
@@ -284,14 +318,13 @@ public class EnhancedPragma {
 					pc = string(pic.colName);
 					pkName = NULL; // FIXME primary key or unique constraint name
 				}
-				head = append(head, tail, pcat, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
+				head = appendFK(head, tail, pcat, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
 			}
 		}
-		SelectBody subBody;
 		Limit limit = null;
 		// Handle the case where there is no FK
 		if (head == null) {
-			head = append(head, tail, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			head = appendFK(head, tail, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 			limit = new Limit(integer(0), null);
 		}
 		List<CompoundSelect> compounds;
@@ -301,9 +334,9 @@ public class EnhancedPragma {
 			compounds = Collections.singletonList(
 					new CompoundSelect(CompoundOperator.UnionAll, new OneSelect(tail)));
 		}
-		subBody = new SelectBody(head, compounds);
+		SelectBody subBody = new SelectBody(head, compounds);
 		Select subSelect = new Select(null, subBody, null, limit);
-		FromClause from = new FromClause(SelectTable.select(subSelect, null), null);
+		FromClause from = FromClause.from(subSelect);
 		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
 		SelectBody body = new SelectBody(oneSelect, null);
 		List<SortedColumn> orderBy;
@@ -348,7 +381,7 @@ public class EnhancedPragma {
 		return primaryKeyConstraint;
 	}
 
-	private static OneSelect append(OneSelect head, List<List<Expr>> tail, LiteralExpr pcat, LiteralExpr pt, LiteralExpr pc,
+	private static OneSelect appendFK(OneSelect head, List<List<Expr>> tail, LiteralExpr pcat, LiteralExpr pt, LiteralExpr pc,
 			LiteralExpr fc, LiteralExpr seq, LiteralExpr updateRule, LiteralExpr deleteRule,
 			LiteralExpr fkName, LiteralExpr pkName, LiteralExpr deferrability) {
 		if (head == null) {

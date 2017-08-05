@@ -1,8 +1,19 @@
 package org.sqlite.parser;
 
 import java.sql.SQLException;
+import java.util.List;
+
+import org.sqlite.parser.ast.QualifiedName;
 
 public interface SchemaProvider {
+	/**
+	 * Find all tables matching the specified pattern.
+	 *
+	 * @param dbName May be null to search in all databases, empty to search in {@code "temp"} and {@code "main"}.
+	 * @param tableNamePattern LIKE pattern. May be null or empty to retrieve all tables.
+	 */
+	List<QualifiedName> getExactTableNames(String dbName, String tableNamePattern) throws SQLException;
+
 	/**
 	 * Find the database containing this table.
 	 *
@@ -20,5 +31,9 @@ public interface SchemaProvider {
 	 */
 	String getSchema(String dbName, String tableName) throws SQLException;
 
-	// TODO getCatalogs: PRAGMA database_list
+	/**
+	 * PRAGMA database_list
+	 * @param dbName May be null to search in all databases, empty to search in {@code "temp"} and {@code "main"}.
+	 */
+	List<String> getDbNames(String dbName) throws SQLException;
 }
