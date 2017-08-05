@@ -7,6 +7,7 @@ import static org.sqlite.parser.TokenType.*;
 
 public abstract class Keyword {
 	private final static Map<String, Integer> KEYWORDS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
 	static {
 		KEYWORDS.put("ABORT", TK_ABORT);
 		KEYWORDS.put("ACTION", TK_ACTION);

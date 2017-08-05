@@ -9,7 +9,7 @@ public interface SchemaProvider {
 	/**
 	 * Find all tables matching the specified pattern.
 	 *
-	 * @param dbName May be null to search in all databases, empty to search in {@code "temp"} and {@code "main"}.
+	 * @param dbName           May be null to search in all databases, empty to search in {@code "temp"} and {@code "main"}.
 	 * @param tableNamePattern LIKE pattern. May be null or empty to retrieve all tables.
 	 */
 	List<QualifiedName> getExactTableNames(String dbName, String tableNamePattern) throws SQLException;
@@ -33,6 +33,7 @@ public interface SchemaProvider {
 
 	/**
 	 * PRAGMA database_list
+	 *
 	 * @param dbName May be null to search in all databases, empty to search in {@code "temp"} and {@code "main"}.
 	 */
 	List<String> getDbNames(String dbName) throws SQLException;

@@ -33,7 +33,7 @@ public class FromClause implements ToSql {
 		from.op = null;
 		return from;
 	}
-	
+
 	public FromClause(SelectTable select, List<JoinedSelectTable> joins) {
 		this.select = requireNonNull(select);
 		this.joins = joins;

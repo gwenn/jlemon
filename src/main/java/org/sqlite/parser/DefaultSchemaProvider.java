@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -18,7 +17,6 @@ import org.sqlite.parser.ast.IdExpr;
 import org.sqlite.parser.ast.InListExpr;
 import org.sqlite.parser.ast.LikeExpr;
 import org.sqlite.parser.ast.LiteralExpr;
-import org.sqlite.parser.ast.NotLike;
 import org.sqlite.parser.ast.OneSelect;
 import org.sqlite.parser.ast.Operator;
 import org.sqlite.parser.ast.QualifiedName;
@@ -59,7 +57,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
 			try (PreparedStatement ps = conn.prepareStatement(select.toSql())) {
 				// determine exact table name
 				ps.setString(1, tableNamePattern);
-				try (ResultSet rs = ps.executeQuery()){
+				try (ResultSet rs = ps.executeQuery()) {
 					while (rs.next()) {
 						tbls.add(new QualifiedName(catalog, rs.getString(1)));
 					}
@@ -113,20 +111,20 @@ public class DefaultSchemaProvider implements SchemaProvider {
 	public String getSchema(String dbName, String tableName) throws SQLException {
 		if ("sqlite_temp_master".equalsIgnoreCase(tableName)) {
 			return "CREATE TEMP TABLE sqlite_temp_master (\n" +
-			"  type text,\n" +
-			"  name text,\n" +
-			"  tbl_name text,\n" +
-			"  rootpage integer,\n" +
-			"  sql text\n" +
-			")";
+					"  type text,\n" +
+					"  name text,\n" +
+					"  tbl_name text,\n" +
+					"  rootpage integer,\n" +
+					"  sql text\n" +
+					")";
 		} else if ("sqlite_master".equalsIgnoreCase(tableName)) {
 			return "CREATE TABLE sqlite_master (\n" +
-			"  type text,\n" +
-			"  name text,\n" +
-			"  tbl_name text,\n" +
-			"  rootpage integer,\n" +
-			"  sql text\n" +
-			")";
+					"  type text,\n" +
+					"  name text,\n" +
+					"  tbl_name text,\n" +
+					"  rootpage integer,\n" +
+					"  sql text\n" +
+					")";
 		}
 		Select select = sqlite_master(dbName, "sql");
 		try (PreparedStatement ps = conn.prepareStatement(select.toSql())) {

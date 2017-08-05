@@ -32,7 +32,6 @@ import org.sqlite.parser.ast.QualifiedName;
 import org.sqlite.parser.ast.ResultColumn;
 import org.sqlite.parser.ast.Select;
 import org.sqlite.parser.ast.SelectBody;
-import org.sqlite.parser.ast.SelectTable;
 import org.sqlite.parser.ast.SortedColumn;
 import org.sqlite.parser.ast.Stmt;
 import org.sqlite.parser.ast.TableConstraint;
@@ -49,9 +48,9 @@ public class EnhancedPragma {
 	/**
 	 * Like {@code PRAGMA catalog.table_info(tableName)} but enhanced for {@link java.sql.DatabaseMetaData#getColumns}
 	 *
-	 * @param catalog        Table catalog
+	 * @param catalog          Table catalog
 	 * @param tableNamePattern LIKE pattern. May be null or empty to retrieve all tables.
-	 * @param schemaProvider Given one table's name, returns its schema.
+	 * @param schemaProvider   Given one table's name, returns its schema.
 	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
 	 */
 	public static Select tableInfo(String catalog, String tableNamePattern, SchemaProvider schemaProvider) throws SQLException {

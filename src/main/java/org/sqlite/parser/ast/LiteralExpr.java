@@ -27,7 +27,8 @@ public class LiteralExpr implements Expr {
 	public static LiteralExpr string(String value) {
 		if (value == null) {
 			return NULL;
-		} if (value.isEmpty()) {
+		}
+		if (value.isEmpty()) {
 			return EMPTY_STRING;
 		}
 		return new LiteralExpr(value, LiteralType.String);

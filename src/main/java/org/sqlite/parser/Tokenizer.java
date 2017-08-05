@@ -58,7 +58,7 @@ class Tokenizer extends Scanner {
 					int i;
 					for (i = start + 1; i < end && (c=data[i]) != '\n'; i++) {}
 					if (c == '\n' || atEOF) {
-						advance(i+(atEOF ? 0 : 1), data);
+						advance(i + (atEOF ? 0 : 1), data);
 						return 0;
 					} // else ask more data until '\n'
 				} else {
@@ -69,32 +69,32 @@ class Tokenizer extends Scanner {
 				advance(start, data);
 				return TK_MINUS;
 			} // else ask more data
-		} else if (c == '(')  {
+		} else if (c == '(') {
 			advance(start, data);
 			return TK_LP;
-		} else if (c == ')')  {
+		} else if (c == ')') {
 			advance(start, data);
 			return TK_RP;
-		} else if (c == ';')  {
+		} else if (c == ';') {
 			advance(start, data);
 			return TK_SEMI;
-		} else if (c == '+')  {
+		} else if (c == '+') {
 			advance(start, data);
 			return TK_PLUS;
-		} else if (c == '*')  {
+		} else if (c == '*') {
 			advance(start, data);
 			return TK_STAR;
-		} else if (c == '/')  {
+		} else if (c == '/') {
 			if (start < end) {
 				if (data[start] == '*') {
 					// eat comment
 					int i;
-					for (i = start + 1; i < end && (c != '*' || data[i] != '/');) {
+					for (i = start + 1; i < end && (c != '*' || data[i] != '/'); ) {
 						c = data[i];
 						i++;
 					}
 					if (i < end && data[i] == '/') {
-						advance(i+1, data);
+						advance(i + 1, data);
 						return 0;
 					} else if (atEOF) {
 						throw new ScanException(ErrorCode.UnterminatedBlockComment);
@@ -113,7 +113,7 @@ class Tokenizer extends Scanner {
 		} else if (c == '=') {
 			if (start < end) {
 				if (data[start] == '=') {
-					advance(start+1, data);
+					advance(start + 1, data);
 				} else {
 					advance(start, data);
 				}
@@ -125,13 +125,13 @@ class Tokenizer extends Scanner {
 		} else if (c == '<') {
 			if (start < end) {
 				if (data[start] == '=') {
-					advance(start+1, data);
+					advance(start + 1, data);
 					return TK_LE;
 				} else if (data[start] == '>') {
-					advance(start+1, data);
+					advance(start + 1, data);
 					return TK_NE;
 				} else if (data[start] == '<') {
-					advance(start+1, data);
+					advance(start + 1, data);
 					return TK_LSHIFT;
 				} else {
 					advance(start, data);
@@ -144,10 +144,10 @@ class Tokenizer extends Scanner {
 		} else if (c == '>') {
 			if (start < end) {
 				if (data[start] == '=') {
-					advance(start+1, data);
+					advance(start + 1, data);
 					return TK_GE;
 				} else if (data[start] == '>') {
-					advance(start+1, data);
+					advance(start + 1, data);
 					return TK_RSHIFT;
 				} else {
 					advance(start, data);
@@ -160,7 +160,7 @@ class Tokenizer extends Scanner {
 		} else if (c == '!') {
 			if (start < end) {
 				if (data[start] == '=') {
-					advance(start+1, data);
+					advance(start + 1, data);
 					return TK_NE;
 				} else {
 					throw new ScanException(ErrorCode.ExpectedEqualsSign);
@@ -171,7 +171,7 @@ class Tokenizer extends Scanner {
 		} else if (c == '|') {
 			if (start < end) {
 				if (data[start] == '|') {
-					advance(start+1, data);
+					advance(start + 1, data);
 					return TK_CONCAT;
 				} else {
 					advance(start, data);
@@ -208,8 +208,8 @@ class Tokenizer extends Scanner {
 			}
 			if (i < end || (atEOF && pc == c)) {
 				advance(i, data);
-				tokenStart=start; // do not include the quote in the token
-				tokenEnd=i-1;
+				tokenStart = start; // do not include the quote in the token
+				tokenEnd = i - 1;
 				return c == '\'' ? TK_STRING : TK_ID;
 			} else if (atEOF) {
 				throw new ScanException(ErrorCode.UnterminatedLiteral);
@@ -232,9 +232,9 @@ class Tokenizer extends Scanner {
 			int i;
 			for (i = start; i < end && (c=data[i]) != ']'; i++) {}
 			if (c == ']') {
-				advance(i+1, data);
-				tokenStart=start; // do not include the '['/']' in the token
-				tokenEnd=i;
+				advance(i + 1, data);
+				tokenStart = start; // do not include the '['/']' in the token
+				tokenEnd = i;
 				return TK_ID;
 			} else if (atEOF) {
 				throw new ScanException(ErrorCode.UnterminatedBracket);
@@ -244,7 +244,7 @@ class Tokenizer extends Scanner {
 			for (i = start; i < end && isDigit(data[i]); i++) {}
 			if (i < end || atEOF) {
 				advance(i, data);
-				tokenStart=start; // do not include the '?' in the token
+				tokenStart = start; // do not include the '?' in the token
 				return TK_VARIABLE;
 			} // else ask more data
 		} else if (c == '$' || c == '@' || c == '#' || c == ':') {
@@ -284,10 +284,10 @@ class Tokenizer extends Scanner {
 	 * data[start-1] is a digit
 	 */
 	private int number(char[] data, int start, int end, boolean atEOF) throws ScanException {
-		if (data[start-1] == '0') {
+		if (data[start - 1] == '0') {
 			if (start < end) {
 				if (data[start] == 'x' || data[start] == 'X') {
-					return hexInteger(data, start+1, end, atEOF);
+					return hexInteger(data, start + 1, end, atEOF);
 				}
 			} else if (atEOF) {
 				advance(start, data);
@@ -301,9 +301,9 @@ class Tokenizer extends Scanner {
 		for (i = start; i < end && isDigit(data[i]); i++) {}
 		if (i < end) {
 			if (data[i] == '.') {
-				return fractionalPart(data, i+1, end, atEOF);
+				return fractionalPart(data, i + 1, end, atEOF);
 			} else if (data[i] == 'e' || data[i] == 'E') {
-				return exponentialPart(data, i+1, end, atEOF);
+				return exponentialPart(data, i + 1, end, atEOF);
 			} else if (isIdentifierStart(data[i])) {
 				throw new ScanException(ErrorCode.BadNumber);
 			}
@@ -326,7 +326,7 @@ class Tokenizer extends Scanner {
 		if (i < end) {
 			// Must not be empty (Ox is invalid)
 			if (i == start) {
-					throw new ScanException(ErrorCode.MalformedHexInteger);
+				throw new ScanException(ErrorCode.MalformedHexInteger);
 			}
 			if (isIdentifierStart(data[i])) {
 				throw new ScanException(ErrorCode.MalformedHexInteger);
@@ -336,7 +336,7 @@ class Tokenizer extends Scanner {
 		} else if (atEOF) {
 			// Must not be empty (Ox is invalid)
 			if (i == start) {
-					throw new ScanException(ErrorCode.MalformedHexInteger);
+				throw new ScanException(ErrorCode.MalformedHexInteger);
 			}
 			advance(i, data);
 			return TK_INTEGER;
@@ -357,7 +357,7 @@ class Tokenizer extends Scanner {
 		for (i = start; i < end && isDigit(data[i]); i++) {}
 		if (i < end) {
 			if (data[i] == 'e' || data[i] == 'E') {
-				return exponentialPart(data, i+1, end, atEOF);
+				return exponentialPart(data, i + 1, end, atEOF);
 			} else if (isIdentifierStart(data[i])) {
 				throw new ScanException(ErrorCode.BadNumber);
 			}
@@ -385,7 +385,7 @@ class Tokenizer extends Scanner {
 			if (i < end || atEOF) {
 				// Must not be empty
 				if (i == start) {
-						throw new ScanException(ErrorCode.BadNumber);
+					throw new ScanException(ErrorCode.BadNumber);
 				}
 				if (isIdentifierStart(data[i])) {
 					throw new ScanException(ErrorCode.BadNumber);
@@ -412,9 +412,9 @@ class Tokenizer extends Scanner {
 			if (data[i] != '\'' || n % 2 != 0) {
 				throw new ScanException(ErrorCode.MalformedBlobLiteral);
 			}
-			advance(i+1, data);
-			tokenStart=start+1;
-			tokenEnd=i;
+			advance(i + 1, data);
+			tokenStart = start + 1;
+			tokenEnd = i;
 			return TK_BLOB;
 		} else if (atEOF) {
 			throw new ScanException(ErrorCode.MalformedBlobLiteral);
@@ -432,7 +432,7 @@ class Tokenizer extends Scanner {
 		if (i < end || atEOF) {
 			advance(i, data);
 			// search for a keyword first; if none are found, this is an Id
-			Integer keyword = Keyword.tokenType(new String(data, start-1, i-(start-1)));
+			Integer keyword = Keyword.tokenType(new String(data, start - 1, i - (start - 1)));
 			if (keyword == null) {
 				return TK_ID;
 			}
@@ -463,7 +463,7 @@ class Tokenizer extends Scanner {
 
 	private void advance(int n, char[] data) throws ScanException {
 		super.advance(n);
-		tokenEnd=n;
+		tokenEnd = n;
 		lineno = nextLineno;
 		column = nextColumn;
 		for (int i = tokenStart; i < tokenEnd; i++) {
