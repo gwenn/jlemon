@@ -3620,7 +3620,7 @@ PRIVATE int translate_code(struct lemon *lemp, struct rule *rp){
     lemp->errorcnt++;
   }
 
-  /* Generate destructor code for RHS minor values which are not referenced.
+  /*
   ** Generate error messages for unused labels and duplicate labels.
   */
   for(i=0; i<rp->nrhs; i++){

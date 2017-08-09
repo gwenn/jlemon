@@ -296,14 +296,6 @@ private boolean yyGrowStack(){
 }
 #endif
 
-/* Datatype of the argument to the memory allocated passed as the
-** second argument to ParseAlloc() below.  This can be changed by
-** putting an appropriate #define in the %include section of the input
-** grammar.
-*/
-#ifndef YYMALLOCARGTYPE
-#endif
-
 /* Initialize a new parser that has already been allocated.
 */
 public yyParser(
@@ -325,21 +317,6 @@ public yyParser(
   ParseARG_STORE;
 }
 
-#ifndef Parse_ENGINEALWAYSONSTACK
-/* 
-** This function allocates a new parser.
-** The only argument is a pointer to a function which works like
-** malloc.
-**
-** Inputs:
-** A pointer to the function used to allocate memory.
-**
-** Outputs:
-** A pointer to a parser.  This pointer is used in subsequent calls
-** to Parse and ParseFree.
-*/
-#endif /* Parse_ENGINEALWAYSONSTACK */
-
 /*
 ** Pop the parser's stack once.
 */
@@ -360,17 +337,6 @@ private void yy_pop_parser_stack(){
 public void ParseFinalize(){
   while( yyidx > 0 ) yy_pop_parser_stack();
 }
-
-#ifndef Parse_ENGINEALWAYSONSTACK
-/* 
-** Deallocate and destroy a parser.  Destructors are called for
-** all stack elements before shutting the parser down.
-**
-** If the YYPARSEFREENEVERNULL macro exists (for example because it
-** is defined in a %include section of the input grammar) then it is
-** assumed that the input pointer is never NULL.
-*/
-#endif /* Parse_ENGINEALWAYSONSTACK */
 
 /*
 ** Return the peak depth of the stack for a parser.
