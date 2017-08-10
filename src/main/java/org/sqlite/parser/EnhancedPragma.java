@@ -25,7 +25,6 @@ import org.sqlite.parser.ast.ForeignKeyTableConstraint;
 import org.sqlite.parser.ast.FromClause;
 import org.sqlite.parser.ast.IdExpr;
 import org.sqlite.parser.ast.IndexedColumn;
-import org.sqlite.parser.ast.LikeExpr;
 import org.sqlite.parser.ast.Limit;
 import org.sqlite.parser.ast.LiteralExpr;
 import org.sqlite.parser.ast.OneSelect;

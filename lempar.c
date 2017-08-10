@@ -685,7 +685,6 @@ public void Parse(
   int yymajor,                 /* The major token code number */
   ParseTOKENTYPE yyminor       /* The value for the token */
 ){
-  YYMINORTYPE yyminorunion = new YYMINORTYPE();
   int yyact;   /* The parser action. */
 #if !defined(YYERRORSYMBOL) && !defined(YYNOERRORRECOVERY)
   boolean yyendofinput;     /* True if we are at the end of input */
@@ -715,7 +714,6 @@ public void Parse(
       yy_reduce(yyact-YY_MIN_REDUCE);
     }else{
       assert( yyact == YY_ERROR_ACTION );
-      yyminorunion.yy0(yyminor);
 #ifdef YYERRORSYMBOL
       int yymx;
 #endif

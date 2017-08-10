@@ -15,7 +15,6 @@ import org.sqlite.parser.ast.Expr;
 import org.sqlite.parser.ast.FromClause;
 import org.sqlite.parser.ast.IdExpr;
 import org.sqlite.parser.ast.InListExpr;
-import org.sqlite.parser.ast.LikeExpr;
 import org.sqlite.parser.ast.LiteralExpr;
 import org.sqlite.parser.ast.OneSelect;
 import org.sqlite.parser.ast.Operator;
