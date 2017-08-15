@@ -4323,7 +4323,7 @@ void ReportTable(
     i += translate_code(lemp, rp);
   }
   if( i ){
-    fprintf(out,"        //YYMINORTYPE yylhsminor;\n"); lineno++;
+    //fprintf(out,"        YYMINORTYPE yylhsminor;\n"); lineno++;
   }
   /* First output rules other than the default: rule */
   for(rp=lemp->rule; rp; rp=rp->next){
