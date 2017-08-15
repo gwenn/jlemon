@@ -33,7 +33,7 @@ public class Parser implements Iterable<Cmd> {
 		this.lexer = requireNonNull(lexer);
 	}
 
-	private static final Token NULL = new Token(0, null);
+	private static final Token NULL = new Token((short)0, null);
 	private static final Token SEMI = new Token(TokenType.TK_SEMI, ";");
 
 	/**
@@ -67,7 +67,7 @@ public class Parser implements Iterable<Cmd> {
 		yyParser parser = new yyParser(ctx);
 		int lastTokenParsed = -1;
 		while (lexer.scan()) {
-			int tokenType = lexer.tokenType();
+			short tokenType = lexer.tokenType();
 			String text = lexer.text();
 			Token yyminor = new Token(tokenType, text);
 			parser.sqlite3Parser(tokenType, yyminor);
@@ -85,7 +85,7 @@ public class Parser implements Iterable<Cmd> {
 			if (TokenType.TK_SEMI != lastTokenParsed) {
 				parser.sqlite3Parser(TokenType.TK_SEMI, SEMI);
 			}
-			parser.sqlite3Parser(0, NULL);
+			parser.sqlite3Parser(NULL.tokenType(), NULL);
 		}
 		parser.sqlite3ParserFinalize();
 		assert ctx.stmt != null;

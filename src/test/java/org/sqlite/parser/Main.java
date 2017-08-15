@@ -106,7 +106,7 @@ class Main {
 			Tokenizer lexer = new Tokenizer(reader);
 			try {
 				while (lexer.scan()) {
-					int tokenType = lexer.tokenType();
+					short tokenType = lexer.tokenType();
 					System.out.print(TokenType.toString(tokenType));
 					System.out.print(" : ");
 					String text = lexer.text();

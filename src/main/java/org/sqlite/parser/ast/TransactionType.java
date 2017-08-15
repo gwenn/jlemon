@@ -9,7 +9,7 @@ public enum TransactionType implements ToSql {
 	Immediate,
 	Exclusive;
 
-	public static TransactionType from(int tt) {
+	public static TransactionType from(short tt) {
 		if (TokenType.TK_DEFERRED == tt) {
 			return Deferred;
 		} else if (TokenType.TK_IMMEDIATE == tt) {

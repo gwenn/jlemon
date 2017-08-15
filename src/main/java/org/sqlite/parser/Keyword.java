@@ -6,7 +6,7 @@ import java.util.TreeMap;
 import static org.sqlite.parser.TokenType.*;
 
 public abstract class Keyword {
-	private final static Map<String, Integer> KEYWORDS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+	private final static Map<String, Short> KEYWORDS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
 	static {
 		KEYWORDS.put("ABORT", TK_ABORT);
@@ -135,7 +135,7 @@ public abstract class Keyword {
 		KEYWORDS.put("WITHOUT", TK_WITHOUT);
 	}
 
-	public static Integer tokenType(String id) {
+	public static Short tokenType(String id) {
 		return KEYWORDS.get(id);
 	}
 	public static boolean isKeyword(String id) {

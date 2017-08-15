@@ -10,7 +10,7 @@ public class IsNullExpr implements Expr {
 	public final Expr expr;
 	public final NullOperator op;
 
-	public static IsNullExpr from(Expr expr, int tt) {
+	public static IsNullExpr from(Expr expr, short tt) {
 		if (TokenType.TK_ISNULL == tt) {
 			return new IsNullExpr(expr, NullOperator.IsNull);
 		} else if (TokenType.TK_NOTNULL == tt) {

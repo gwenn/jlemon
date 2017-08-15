@@ -9,7 +9,7 @@ public class TriggerEvent implements ToSql {
 	public final TriggerEventType type;
 	public final List<String> colNames; // only for event = UpdateOf
 
-	public static TriggerEvent from(int tt) {
+	public static TriggerEvent from(short tt) {
 		return new TriggerEvent(TriggerEventType.from(tt), null);
 	}
 

@@ -13,7 +13,7 @@ abstract class Scanner {
 	// Maximum size of a token
 	private final int maxTokenSize;
 	// Last token type returned by split.
-	private int tokenType;
+	private short tokenType;
 	// Buffer used as argument to split.
 	private char[] buf;
 	// First non-processed byte in buf.
@@ -53,7 +53,7 @@ abstract class Scanner {
 	 * @param end greater that {@code start} (or maybe equal at EOF)
 	 * @param atEOF {@code true} at end of file
 	 */
-	abstract int split(char[] data, int start, int end, boolean atEOF) throws ScanException;
+	abstract short split(char[] data, int start, int end, boolean atEOF) throws ScanException;
 
 	/** Advances the Scanner to the next token, which will then be
 	 * available through the {@link #text()} method.
@@ -84,7 +84,7 @@ abstract class Scanner {
 	}
 
 	/** @return The token type returned by {@link #split} function */
-	public int tokenType() {
+	public short tokenType() {
 		return tokenType;
 	}
 

@@ -37,7 +37,7 @@ class Tokenizer extends Scanner {
 		tokenEnd = 0;
 	}
 
-	int split(char[] data, int start, int end, boolean atEOF) throws ScanException {
+	short split(char[] data, int start, int end, boolean atEOF) throws ScanException {
 		if (atEOF && end == start) {
 			return 0;
 		}
@@ -283,7 +283,7 @@ class Tokenizer extends Scanner {
 	 * Decimal or Hexadecimal Integer or Real
 	 * data[start-1] is a digit
 	 */
-	private int number(char[] data, int start, int end, boolean atEOF) throws ScanException {
+	private short number(char[] data, int start, int end, boolean atEOF) throws ScanException {
 		if (data[start - 1] == '0') {
 			if (start < end) {
 				if (data[start] == 'x' || data[start] == 'X') {
@@ -320,7 +320,7 @@ class Tokenizer extends Scanner {
 	 * data[start-2] is a zero
 	 * data[start-1] is a 'x' or a 'X'
 	 */
-	private int hexInteger(char[] data, int start, int end, boolean atEOF) throws ScanException {
+	private short hexInteger(char[] data, int start, int end, boolean atEOF) throws ScanException {
 		int i;
 		for (i = start; i < end && isHexaDigit(data[i]); i++) {}
 		if (i < end) {
@@ -352,7 +352,7 @@ class Tokenizer extends Scanner {
 	 * (data[start-2] is a digit,
 	 * data[start-1] is a dot)
 	 */
-	private int fractionalPart(char[] data, int start, int end, boolean atEOF) throws ScanException {
+	private short fractionalPart(char[] data, int start, int end, boolean atEOF) throws ScanException {
 		int i;
 		for (i = start; i < end && isDigit(data[i]); i++) {}
 		if (i < end) {
@@ -375,7 +375,7 @@ class Tokenizer extends Scanner {
 	 * data[start-2] is a digit,
 	 * data[start-1] is a 'e' or a 'E'
 	 */
-	private int exponentialPart(char[] data, int start, int end, boolean atEOF) throws ScanException {
+	private short exponentialPart(char[] data, int start, int end, boolean atEOF) throws ScanException {
 		if (start < end) {
 			if (data[start] == '+' || data[start] == '-') {
 				start++;
@@ -403,7 +403,7 @@ class Tokenizer extends Scanner {
 	 * data[start-1] is a 'x' or 'X'
 	 * data[start] is a '\''
 	 */
-	private int blobLiteral(char[] data, int start, int end, boolean atEOF) throws ScanException {
+	private short blobLiteral(char[] data, int start, int end, boolean atEOF) throws ScanException {
 		int i, n = 0;
 		for (i = start + 1; i < end && isHexaDigit(data[i]); i++) {
 			n++;
@@ -426,13 +426,13 @@ class Tokenizer extends Scanner {
 	/**
 	 * start-1 is the start of the identifier/keyword.
 	 */
-	private int identifierish(char[] data, int start, int end, boolean atEOF) throws ScanException {
+	private short identifierish(char[] data, int start, int end, boolean atEOF) throws ScanException {
 		int i;
 		for (i = start; i < end && isIdentifierContinue(data[i]); i++) {}
 		if (i < end || atEOF) {
 			advance(i, data);
 			// search for a keyword first; if none are found, this is an Id
-			Integer keyword = Keyword.tokenType(new String(data, start - 1, i - (start - 1)));
+			Short keyword = Keyword.tokenType(new String(data, start - 1, i - (start - 1)));
 			if (keyword == null) {
 				return TK_ID;
 			}

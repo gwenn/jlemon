@@ -333,12 +333,12 @@ public int ParseStackPeak(){
 ** Find the appropriate action for a parser given the terminal
 ** look-ahead token iLookAhead.
 */
-private int yy_find_shift_action(
+private YYACTIONTYPE yy_find_shift_action(
   YYCODETYPE iLookAhead     /* The look-ahead token */
 ){
   int i;
   yyStackEntry yytos = yystack[yyidx];
-  int stateno = yytos.stateno;
+  YYACTIONTYPE stateno = yytos.stateno;
  
   if( stateno>=YY_MIN_REDUCE ) return stateno;
   assert( stateno <= YY_SHIFT_COUNT );
@@ -392,8 +392,8 @@ private int yy_find_shift_action(
 ** Find the appropriate action for a parser given the non-terminal
 ** look-ahead token iLookAhead.
 */
-private static int yy_find_reduce_action(
-  int stateno,              /* Current state number */
+private static YYACTIONTYPE yy_find_reduce_action(
+  YYACTIONTYPE stateno,     /* Current state number */
   YYCODETYPE iLookAhead     /* The look-ahead token */
 ){
   int i;
@@ -438,7 +438,7 @@ private void yyStackOverflow(){
 ** Print tracing information for a SHIFT action
 */
 #ifndef NDEBUG
-private void yyTraceShift(int yyNewState){
+private void yyTraceShift(YYACTIONTYPE yyNewState){
     yyStackEntry yytos = yystack[yyidx];
     if( yyNewState<YYNSTATE ){
       logger.trace("Shift '{}', go to state {}",
@@ -457,8 +457,8 @@ private void yyTraceShift(int yyNewState){
 ** Perform a shift action.
 */
 private void yy_shift(
-  int yyNewState,               /* The new state to shift in */
-  int yyMajor,                  /* The major token to shift in */
+  YYACTIONTYPE yyNewState,      /* The new state to shift in */
+  YYCODETYPE yyMajor,           /* The major token to shift in */
   ParseTOKENTYPE yyMinor        /* The minor token to shift in */
 ){
   yyidx++;
@@ -487,8 +487,8 @@ private void yy_shift(
     yyNewState += YY_MIN_REDUCE - YY_MIN_SHIFTREDUCE;
   }
   yystack[yyidx] = yytos;
-  yytos.stateno = (YYACTIONTYPE)yyNewState;
-  yytos.major = (YYCODETYPE)yyMajor;
+  yytos.stateno = yyNewState;
+  yytos.major = yyMajor;
   yytos.minor.yy0(yyMinor);
   yyTraceShift(yyNewState);
 }
@@ -518,10 +518,10 @@ private static final ruleInfoEntry
 private void yy_reduce(
   int yyruleno        /* Number of the rule by which to reduce */
 ){
-  int yygoto;                     /* The next state */
-  int yyact;                      /* The next action */
+  YYCODETYPE yygoto;              /* The next state */
+  YYACTIONTYPE yyact;             /* The next action */
   yyStackEntry yymsp;             /* The top of the parser's stack */
-  int yysize;                     /* Amount to pop the stack */
+  byte yysize;                     /* Amount to pop the stack */
 #ifndef NDEBUG
   if( yyruleno<yyRuleName.length ){
     yysize = yyRuleInfo[yyruleno].nrhs;
@@ -572,7 +572,7 @@ private void yy_reduce(
   assert( yyruleno<yyRuleInfo.length );
   yygoto = yyRuleInfo[yyruleno].lhs;
   yysize = yyRuleInfo[yyruleno].nrhs;
-  yyact = yy_find_reduce_action(yystack[yyidx+yysize].stateno,(YYCODETYPE)yygoto);
+  yyact = yy_find_reduce_action(yystack[yyidx+yysize].stateno, yygoto);
 
   /* There are no SHIFTREDUCE actions on nonterminals because the table
   ** generator has simplified them to pure REDUCE actions. */
@@ -587,8 +587,8 @@ private void yy_reduce(
   }else{
     yyidx += yysize+1;
     yymsp = yystack(yyidx);
-    yymsp.stateno = (YYACTIONTYPE)yyact;
-    yymsp.major = (YYCODETYPE)yygoto;
+    yymsp.stateno = yyact;
+    yymsp.major = yygoto;
     yyTraceShift(yyact);
   }
 }
@@ -616,7 +616,7 @@ private void yy_parse_failed(
 */
 @SuppressWarnings("unused")
 private void yy_syntax_error(
-  int yymajor,                   /* The major type of the error token */
+  YYCODETYPE yymajor,            /* The major type of the error token */
   ParseTOKENTYPE yyminor         /* The minor type of the error token */
 ){
 #define TOKEN yyminor
@@ -664,10 +664,10 @@ private void yy_accept(
 ** None.
 */
 public void Parse(
-  int yymajor,                 /* The major token code number */
+  YYCODETYPE yymajor,          /* The major token code number */
   ParseTOKENTYPE yyminor       /* The value for the token */
 ){
-  int yyact;   /* The parser action. */
+  YYACTIONTYPE yyact;   /* The parser action. */
 #if !defined(YYERRORSYMBOL) && !defined(YYNOERRORRECOVERY)
   boolean yyendofinput;     /* True if we are at the end of input */
 #endif
@@ -685,7 +685,7 @@ public void Parse(
 #endif
 
   do{
-    yyact = yy_find_shift_action((YYCODETYPE)yymajor);
+    yyact = yy_find_shift_action(yymajor);
     if( yyact <= YY_MAX_SHIFTREDUCE ){
       yy_shift(yyact,yymajor,yyminor);
 #ifndef YYNOERRORRECOVERY

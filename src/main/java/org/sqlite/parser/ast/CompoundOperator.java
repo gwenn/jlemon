@@ -10,7 +10,7 @@ public enum CompoundOperator implements ToSql {
 	Except,
 	Intersect;
 
-	public static CompoundOperator from(int tt) {
+	public static CompoundOperator from(short tt) {
 		if (TokenType.TK_UNION == tt) {
 			return Union;
 		} else if (TokenType.TK_EXCEPT == tt) {

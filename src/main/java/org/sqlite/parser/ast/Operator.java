@@ -26,7 +26,7 @@ public enum Operator implements ToSql {
 	RightShift,
 	Substract;
 
-	public static Operator from(int tt) {
+	public static Operator from(short tt) {
 		if (TokenType.TK_PLUS == tt) {
 			return Add;
 		} else if (TokenType.TK_AND == tt) {

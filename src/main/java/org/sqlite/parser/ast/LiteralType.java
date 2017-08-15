@@ -9,7 +9,7 @@ public enum LiteralType {
 	Keyword, // NULL, CURRENT_DATE, ...
 	String;
 
-	public static LiteralType from(int tt) {
+	public static LiteralType from(short tt) {
 		if (TokenType.TK_STRING == tt) {
 			return String;
 		} else if (TokenType.TK_BLOB == tt) {

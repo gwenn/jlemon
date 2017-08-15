@@ -6,12 +6,12 @@ package simple;
  * And package must be specified manually
  */
 public interface TokenType {
-  int PLUS                           =   1;
-  int MINUS                          =   2;
-  int DIVIDE                         =   3;
-  int TIMES                          =   4;
-  int INTEGER                        =   5;
-  static String toString(int token) {
+  short PLUS                           =   1;
+  short MINUS                          =   2;
+  short DIVIDE                         =   3;
+  short TIMES                          =   4;
+  short INTEGER                        =   5;
+  static String toString(short token) {
     switch(token) {
     case 1  : return "PLUS";
     case 2  : return "MINUS";

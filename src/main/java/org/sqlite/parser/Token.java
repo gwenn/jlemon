@@ -1,16 +1,16 @@
 package org.sqlite.parser;
 
 public class Token {
-	private final int type;
+	private final short type;
 	private String text;
 
-	public Token(int type, String text) {
+	public Token(short type, String text) {
 		this.type = type;
 		this.text = text;
 	}
 
 	/** @return The token type */
-	public int tokenType() {
+	public short tokenType() {
 		return type;
 	}
 	/** @return Text of the token. */

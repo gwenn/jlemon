@@ -10,7 +10,7 @@ public enum TriggerEventType implements ToSql {
 	Update,
 	UpdateOf;
 
-	public static TriggerEventType from(int tt) {
+	public static TriggerEventType from(short tt) {
 		if (TokenType.TK_DELETE == tt) {
 			return Delete;
 		} else if (TokenType.TK_INSERT == tt) {
