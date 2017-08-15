@@ -4033,14 +4033,11 @@ void ReportTable(
     while( i>=1 && (ISALNUM(lemp->arg[i-1]) || lemp->arg[i-1]=='_') ) i--;
     fprintf(out,"#define %sARG_SDECL %s;\n",name,lemp->arg);  lineno++;
     fprintf(out,"#define %sARG_PDECL %s\n",name,lemp->arg);  lineno++;
-    fprintf(out,"#define %sARG_FETCH %s = this.%s\n",
-                 name,lemp->arg,&lemp->arg[i]);  lineno++;
     fprintf(out,"#define %sARG_STORE this.%s = %s\n",
                  name,&lemp->arg[i],&lemp->arg[i]);  lineno++;
   }else{
     fprintf(out,"#define %sARG_SDECL\n",name);  lineno++;
     fprintf(out,"#define %sARG_PDECL\n",name);  lineno++;
-    fprintf(out,"#define %sARG_FETCH\n",name); lineno++;
     fprintf(out,"#define %sARG_STORE\n",name); lineno++;
   }
   if( mhflag ){

@@ -77,7 +77,6 @@ public class yyParser {
 **    ParseARG_SDECL     A static variable declaration for the %extra_argument
 **    ParseARG_PDECL     A parameter declaration for the %extra_argument
 **    ParseARG_STORE     Code to store %extra_argument into yypParser
-**    ParseARG_FETCH     Code to extract %extra_argument from yypParser
 **    YYERRORSYMBOL      is the code number of the error symbol.  If not
 **                       defined, then do no error processing.
 **    YYNSTATE           the combined number of states.
