@@ -238,23 +238,6 @@ private static class yyStackEntry {
 #endif /* NDEBUG */
 
 #ifndef NDEBUG
-/* 
-** Turn parser tracing on by giving a stream to which to write the trace
-** and a prompt to preface each trace message.  Tracing is turned off
-** by making either argument NULL 
-**
-** Inputs:
-** <ul>
-** <li> A FILE* to which trace output should be written.
-**      If NULL, then tracing is turned off.
-** <li> A prefix string written at the beginning of every
-**      line of trace output.  If NULL, then tracing is
-**      turned off.
-** </ul>
-**
-** Outputs:
-** None.
-*/
 #endif /* NDEBUG */
 
 #ifndef NDEBUG

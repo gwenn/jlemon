@@ -363,9 +363,6 @@ cmd ::= select(S). {context.stmt = S;}
 %type selectnowith {SelectBody}
 %type oneselect {OneSelect}
 
-%include {
-}
-
 select(A) ::= with(W) selectnowith(X) orderby_opt(Z) limit_opt(L). {
   A = new Select(W, X, Z, L); /*A-overwrites-W*/
 }
@@ -662,9 +659,6 @@ idlist(A) ::= nm(Y).
 %type expr {Expr}
 %type term {Expr}
 
-%include {
-}
-
 expr(A) ::= term(A).
 expr(A) ::= LP expr(X) RP.
             {A=new ParenthesizedExpr(X); /*A-overwrites-B*/}
@@ -705,9 +699,6 @@ term(A) ::= CTIME_KW(OP). {
   A = new CurrentTimeExpr(OP.text());
 }
 
-%include {
-}
-
 expr(A) ::= LP nexprlist(X) COMMA expr(Y) RP. {
   append(X, Y);
   A = new ParenthesizedExpr(X);
@@ -735,14 +726,8 @@ expr(A) ::= expr(A) likeop(OP) expr(Y) ESCAPE expr(E).  [LIKE_KW]  {
   A = new LikeExpr(A, OP, Y, E);
 }
 
-%include {
-}
-
 expr(A) ::= expr(A) ISNULL|NOTNULL(E).   {A = IsNullExpr.from(A, @E);}
 expr(A) ::= expr(A) NOT NULL. {A = new NotNullExpr(A);}
-
-%include {
-}
 
 //    expr1 IS expr2
 //    expr1 IS NOT expr2
@@ -756,10 +741,6 @@ expr(A) ::= expr(A) IS expr(Y).     {
 expr(A) ::= expr(A) IS NOT expr(Y). {
   A = new BinaryExpr(A, Operator.IsNot, Y);
 }
-
-%include {
-}
-
 
 
 expr(A) ::= NOT expr(X).
@@ -868,9 +849,6 @@ uniqueflag(A) ::= .        {A = false;}
 //
 %type eidlist {List<IndexedColumn>}
 %type eidlist_opt {List<IndexedColumn>}
-
-%include {
-} // end %include
 
 eidlist_opt(A) ::= .                         {A = null;}
 eidlist_opt(A) ::= LP eidlist(X) RP.         {A = X;}
