@@ -4008,7 +4008,7 @@ void ReportTable(
   /* Generate the defines */
   fprintf(out,"#define YYCODETYPE %s\n",
     minimum_size_type(0, lemp->nsymbol+1, &szCodeType)); lineno++;
-  fprintf(out,"private static final int YYNOCODE = %d;\n",lemp->nsymbol+1);  lineno++;
+  fprintf(out,"private static final YYCODETYPE YYNOCODE = %d;\n",lemp->nsymbol+1);  lineno++;
   fprintf(out,"#define YYACTIONTYPE %s\n",
     minimum_size_type(0,lemp->nstate+lemp->nrule*2+5,&szActionType)); lineno++;
   if( lemp->wildcard ){
@@ -4129,17 +4129,17 @@ void ReportTable(
 
   /* Finish rendering the constants now that the action table has
   ** been computed */
-  fprintf(out,"private static final int YYNSTATE =           %d;\n",lemp->nxstate);  lineno++;
+  fprintf(out,"private static final YYACTIONTYPE YYNSTATE =           %d;\n",lemp->nxstate);  lineno++;
   fprintf(out,"#define YYNRULE              %d\n",lemp->nrule);  lineno++;
-  fprintf(out,"private static final int YY_MAX_SHIFT =       %d;\n",lemp->nxstate-1); lineno++;
-  fprintf(out,"private static final int YY_MIN_SHIFTREDUCE = %d;\n",lemp->nstate); lineno++;
+  fprintf(out,"private static final YYACTIONTYPE YY_MAX_SHIFT =       %d;\n",lemp->nxstate-1); lineno++;
+  fprintf(out,"private static final YYACTIONTYPE YY_MIN_SHIFTREDUCE = %d;\n",lemp->nstate); lineno++;
   i = lemp->nstate + lemp->nrule;
-  fprintf(out,"private static final int YY_MAX_SHIFTREDUCE = %d;\n", i-1); lineno++;
-  fprintf(out,"private static final int YY_MIN_REDUCE =      %d;\n", i); lineno++;
+  fprintf(out,"private static final YYACTIONTYPE YY_MAX_SHIFTREDUCE = %d;\n", i-1); lineno++;
+  fprintf(out,"private static final YYACTIONTYPE YY_MIN_REDUCE =      %d;\n", i); lineno++;
   i = lemp->nstate + lemp->nrule*2;
-  fprintf(out,"private static final int YY_MAX_REDUCE =      %d;\n", i-1); lineno++;
-  fprintf(out,"private static final int YY_ERROR_ACTION =    %d;\n", i); lineno++;
-  fprintf(out,"private static final int YY_ACCEPT_ACTION =   %d;\n", i+1); lineno++;
+  fprintf(out,"private static final YYACTIONTYPE YY_MAX_REDUCE =      %d;\n", i-1); lineno++;
+  fprintf(out,"private static final YYACTIONTYPE YY_ERROR_ACTION =    %d;\n", i); lineno++;
+  fprintf(out,"private static final YYACTIONTYPE YY_ACCEPT_ACTION =   %d;\n", i+1); lineno++;
   fprintf(out,"#define YY_NO_ACTION         %d\n", i+2); lineno++;
   tplt_xfer(lemp->name,in,out,&lineno);
 
@@ -4391,6 +4391,7 @@ void ReportTable(
 void ReportHeader(struct lemon *lemp)
 {
   FILE *out;
+  const char *type;
   const char *prefix;
   int i;
 
@@ -4398,12 +4399,12 @@ void ReportHeader(struct lemon *lemp)
   else                    prefix = "";
   out = file_open(lemp,".h","wb");
   if( out ){
-
+    type = minimum_size_type(0, lemp->nsymbol+1, 0);
     fprintf(out,"public interface TokenType {\n");
     for(i=1; i<lemp->nterminal; i++){
-      fprintf(out,"  int %s%-30s = %3d;\n",prefix,lemp->symbols[i]->name,i);
+      fprintf(out,"  %s %s%-30s = %3d;\n",type, prefix,lemp->symbols[i]->name,i);
     }
-    fprintf(out,"  static String toString(int tokenType) {\n");
+    fprintf(out,"  static String toString(%s tokenType) {\n", type);
     fprintf(out,"    switch(tokenType) {\n");
     for(i=1; i<lemp->nterminal; i++){
       fprintf(out,"    case %-3d: return \"%s%s\";\n",i,prefix,lemp->symbols[i]->name);
