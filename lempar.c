@@ -339,7 +339,7 @@ private YYACTIONTYPE yy_find_shift_action(
 ){
   assert(iLookAhead >= 0);
   int i;
-  yyStackEntry yytos = yystack[yyidx];
+  yyStackEntry yytos = yystack(0);
   YYACTIONTYPE stateno = yytos.stateno;
  
   if( stateno>=YY_MIN_REDUCE ) return stateno;
@@ -444,7 +444,7 @@ private void yyStackOverflow(){
 #ifndef NDEBUG
 private void yyTraceShift(YYACTIONTYPE yyNewState){
     assert(yyNewState >= 0);
-    yyStackEntry yytos = yystack[yyidx];
+    yyStackEntry yytos = yystack(0);
     if( yyNewState<YYNSTATE ){
       logger.trace("Shift '{}', go to state {}",
          yyTokenName[yytos.major],
@@ -537,7 +537,7 @@ private void yy_reduce(
   if( yyruleno<yyRuleName.length ){
     yysize = yyRuleInfo[yyruleno].nrhs;
     logger.trace("Reduce [{}], go to state {}.",
-      yyRuleName[yyruleno], yystack[yyidx+yysize].stateno);
+      yyRuleName[yyruleno], yystack(yysize).stateno);
   }
 #endif /* NDEBUG */
 
@@ -564,6 +564,12 @@ private void yy_reduce(
       }
     }
 #endif
+    // yystack is not prefilled with zero value like in C.
+    if (yystack[yyidx] == null) {
+        yystack[yyidx] = new yyStackEntry();
+    } else if (yystack[yyidx+1] == null) {
+        yystack[yyidx+1] = new yyStackEntry();
+    }
   }
 
   YYMINORTYPE yylhsminor = new YYMINORTYPE();
@@ -583,7 +589,7 @@ private void yy_reduce(
   assert( yyruleno<yyRuleInfo.length );
   yygoto = yyRuleInfo[yyruleno].lhs;
   yysize = yyRuleInfo[yyruleno].nrhs;
-  yyact = yy_find_reduce_action(yystack[yyidx+yysize].stateno, yygoto);
+  yyact = yy_find_reduce_action(yystack(yysize).stateno, yygoto);
   assert(yyact >= 0);
 
   /* There are no SHIFTREDUCE actions on nonterminals because the table
@@ -600,7 +606,7 @@ private void yy_reduce(
   }else{
     yyidx += yysize+1;
     assert(yyidx >= 0);
-    yymsp = yystack(yyidx);
+    yymsp = yystack(0);
     assert(yyact >= 0);
     yymsp.stateno = yyact;
     assert(yygoto >= 0);
@@ -691,7 +697,7 @@ public void Parse(
   boolean yyerrorhit = false;   /* True if yymajor has invoked an error */
 #endif
 
-  assert( yystack[yyidx] != null );
+  assert( yystack(0) != null );
 #if !defined(YYERRORSYMBOL) && !defined(YYNOERRORRECOVERY)
   yyendofinput = (yymajor==0);
 #endif
@@ -741,7 +747,7 @@ public void Parse(
       if( yyerrcnt<0 ){
         yy_syntax_error(yymajor,yyminor);
       }
-      yymx = yystack[yyidx].major;
+      yymx = yystack(0).major;
       if( yymx==YYERRORSYMBOL || yyerrorhit ){
 #ifndef NDEBUG
           logger.trace("Discard input token {}",
@@ -752,7 +758,7 @@ public void Parse(
         while( yyidx >= 0
             && yymx != YYERRORSYMBOL
             && (yyact = yy_find_reduce_action(
-                        yystack[yyidx].stateno,
+                        yystack(0).stateno,
                         YYERRORSYMBOL)) >= YY_MIN_REDUCE
         ){
           yy_pop_parser_stack();
@@ -815,17 +821,10 @@ public void Parse(
 #endif
 }
 
+  // Access relative to the top: {@code yystack(0)} = top, {@code yystack(-1)} = top-1, ...
   private yyStackEntry yystack(int i) {
-    yyStackEntry entry = yystack[i];
-    if (entry == null) {
-      if (i == yyidx || i == yyidx+1) {
-        entry = new yyStackEntry();
-        yystack[i] = entry;
-      } else {
-        logger.error("Access to uninitialized stack entry: {} (top: {})", i, yyidx);
-        throw new IndexOutOfBoundsException(String.format("Access to uninitialized stack entry: %d (top: %d)", i, yyidx));
-      }
-    }
+    assert(i <= 1);
+    yyStackEntry entry = yystack[yyidx+i];
     return entry;
   }
 } /*class Parse*/
