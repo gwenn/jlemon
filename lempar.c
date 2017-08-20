@@ -33,7 +33,7 @@
 /**************** End makeheaders token definitions ***************************/
 
 #ifndef NDEBUG
-import java.lang.StringBuilder;
+import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 #endif /* NDEBUG */
@@ -307,6 +307,7 @@ private void yy_pop_parser_stack(){
   yytos = yystack[yyidx];
   yystack[yyidx] = null;
   yyidx--;
+  assert(yyidx >= 0);
 #ifndef NDEBUG
     logger.trace("Popping {}",
       yyTokenName[yytos.major]);
@@ -336,6 +337,7 @@ public int ParseStackPeak(){
 private YYACTIONTYPE yy_find_shift_action(
   YYCODETYPE iLookAhead     /* The look-ahead token */
 ){
+  assert(iLookAhead >= 0);
   int i;
   yyStackEntry yytos = yystack[yyidx];
   YYACTIONTYPE stateno = yytos.stateno;
@@ -396,6 +398,8 @@ private static YYACTIONTYPE yy_find_reduce_action(
   YYACTIONTYPE stateno,     /* Current state number */
   YYCODETYPE iLookAhead     /* The look-ahead token */
 ){
+  assert(iLookAhead >= 0);
+  assert(stateno >= 0);
   int i;
 #ifdef YYERRORSYMBOL
   if( stateno>YY_REDUCE_COUNT ){
@@ -439,6 +443,7 @@ private void yyStackOverflow(){
 */
 #ifndef NDEBUG
 private void yyTraceShift(YYACTIONTYPE yyNewState){
+    assert(yyNewState >= 0);
     yyStackEntry yytos = yystack[yyidx];
     if( yyNewState<YYNSTATE ){
       logger.trace("Shift '{}', go to state {}",
@@ -461,6 +466,8 @@ private void yy_shift(
   YYCODETYPE yyMajor,           /* The major token to shift in */
   ParseTOKENTYPE yyMinor        /* The minor token to shift in */
 ){
+  assert(yyNewState >= 0);
+  assert(yyMajor >= 0);
   yyidx++;
   yyStackEntry yytos = new yyStackEntry();
 #ifdef YYTRACKMAXSTACKDEPTH
@@ -472,6 +479,7 @@ private void yy_shift(
 #if YYSTACKDEPTH>0 
   if( yyidx >= YYSTACKDEPTH ){
     yyidx--;
+    //assert(yyidx >= 0);
     yyStackOverflow();
     return;
   }
@@ -487,7 +495,9 @@ private void yy_shift(
     yyNewState += YY_MIN_REDUCE - YY_MIN_SHIFTREDUCE;
   }
   yystack[yyidx] = yytos;
+  assert(yyNewState >= 0);
   yytos.stateno = yyNewState;
+  assert(yyMajor >= 0);
   yytos.major = yyMajor;
   yytos.minor.yy0(yyMinor);
   yyTraceShift(yyNewState);
@@ -518,6 +528,7 @@ private static final ruleInfoEntry
 private void yy_reduce(
   int yyruleno        /* Number of the rule by which to reduce */
 ){
+  assert(yyruleno >= 0);
   YYCODETYPE yygoto;              /* The next state */
   YYACTIONTYPE yyact;             /* The next action */
   yyStackEntry yymsp;             /* The top of the parser's stack */
@@ -573,6 +584,7 @@ private void yy_reduce(
   yygoto = yyRuleInfo[yyruleno].lhs;
   yysize = yyRuleInfo[yyruleno].nrhs;
   yyact = yy_find_reduce_action(yystack[yyidx+yysize].stateno, yygoto);
+  assert(yyact >= 0);
 
   /* There are no SHIFTREDUCE actions on nonterminals because the table
   ** generator has simplified them to pure REDUCE actions. */
@@ -583,11 +595,15 @@ private void yy_reduce(
 
   if( yyact == YY_ACCEPT_ACTION ){
     yyidx += yysize;
+    assert(yyidx >= 0);
     yy_accept();
   }else{
     yyidx += yysize+1;
+    assert(yyidx >= 0);
     yymsp = yystack(yyidx);
+    assert(yyact >= 0);
     yymsp.stateno = yyact;
+    assert(yygoto >= 0);
     yymsp.major = yygoto;
     yyTraceShift(yyact);
   }
@@ -790,14 +806,10 @@ public void Parse(
   }while( yymajor!=YYNOCODE && yyidx > 0 );
 #ifndef NDEBUG
     if (logger.isTraceEnabled()) {
-    int i;
-    char cDiv = '[';
-    StringBuilder msg = new StringBuilder("Return. Stack=");
-    for(i=1; i <= yyidx; i++){
-      msg.append(cDiv).append(yyTokenName[yystack[i].major]);
-      cDiv = ' ';
+    StringJoiner msg = new StringJoiner(" ", "Return. Stack=[", "]");
+    for(int i=1; i <= yyidx; i++){
+      msg.add(yyTokenName[yystack[i].major]);
     }
-    msg.append(']');
     logger.trace(msg.toString());
     }
 #endif

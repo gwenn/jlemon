@@ -28,17 +28,17 @@ all: jlemon$(EXE) yyParser.java simple
 
 # Rules to build the LEMON compiler generator
 #
-jlemon$(BEXE): $(TOP)/lemon.c $(TOP)/lempar.c
+jlemon$(BEXE): $(TOP)/lemon.c
 	$(BCC) -o $@ $(TOP)/lemon.c
 
 # Rules to build yyParser.java and TokenType.java - the outputs of jlemon.
 #
 TokenType.java: yyParser.java
-yyParser.java: jlemon$(BEXE) $(TOP)/src/main/java/org/sqlite/parser/parse.y
+yyParser.java: jlemon$(BEXE)  $(TOP)/lempar.c $(TOP)/src/main/java/org/sqlite/parser/parse.y
 	./jlemon$(BEXE) -DSQLITE_ENABLE_UPDATE_DELETE_LIMIT $(TOP)/src/main/java/org/sqlite/parser/parse.y
 	cpp -P $(TOP)/src/main/java/org/sqlite/parser/parse.j > $(GEN)/org/sqlite/parser/yyParser.java
 
-simple: jlemon$(BEXE)
+simple: jlemon$(BEXE) $(TOP)/lempar.c $(TOP)/src/test/java/simple/parser.y
 	./jlemon $(TOP)/src/test/java/simple/parser.y
 	cpp -P src/test/java/simple/parser.j > src/test/java/simple/yyParser.java
 
