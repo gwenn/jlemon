@@ -204,7 +204,7 @@ public class EnhancedPragma {
 	 * @param foreignCatalog Child table catalog
 	 * @param foreignTable   Name of the parent table where foreign key(s) are declared.
 	 * @param schemaProvider Given one table's name, returns its schema.
-	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
+	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getCrossReference}
 	 */
 	public static Select getCrossReference(String parentCatalog, String parentTable,
 			String foreignCatalog, String foreignTable, SchemaProvider schemaProvider) throws SQLException {
@@ -217,7 +217,7 @@ public class EnhancedPragma {
 	 * @param catalog        Tables catalog
 	 * @param tableName      Name of the table where foreign key(s) are declared.
 	 * @param schemaProvider Given one parent table's name (that a foreign key constraint refers to), returns its schema.
-	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getColumns}
+	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getImportedKeys}
 	 */
 	public static Select getImportedKeys(String catalog, String tableName, SchemaProvider schemaProvider) throws SQLException {
 		return foreign_key_list(null, null, catalog, tableName, schemaProvider, false);

@@ -69,9 +69,10 @@ Or [javolution Union](http://javolution.org/apidocs/javolution/io/Union.html) ?
 [SQLite lexer](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/tokenize.c) and [SQLite parser](http://www.sqlite.org/src/artifact?ci=trunk&filename=src/parse.y) have been ported from C to Java.
 The parser generates an AST.
 
-The parser is used to fix [DatabaseMetaData](https://github.com/gwenn/sqlite-jna/blob/master/src/main/java/org/sqlite/driver/DbMeta.java) implementation.
+The parser is/will be used to fix [DatabaseMetaData](https://github.com/gwenn/sqlite-jna/blob/master/src/main/java/org/sqlite/driver/DbMeta.java) implementation.
 
  * java.sql.DatabaseMetaData.getColumns
+ * java.sql.DatabaseMetaData.getPrimaryKeys
  * java.sql.DatabaseMetaData.getBestRowIdentifier
  * java.sql.DatabaseMetaData.getCrossReference
  * java.sql.DatabaseMetaData.getImportedKeys
