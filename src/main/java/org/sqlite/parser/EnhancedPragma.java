@@ -193,7 +193,95 @@ public class EnhancedPragma {
 		return head;
 	}
 
-	// TODO getPrimaryKeys: ~ PK_NAME, on table
+	/**
+	 * Like {@code PRAGMA catalog.table_info(tableName)} but enhanced for {@link java.sql.DatabaseMetaData#getPrimaryKeys}
+	 *
+	 * @param catalog        Table catalog
+	 * @param table          Name of the table where primary key(s) are declared.
+	 * @param schemaProvider Given one table's name, returns its schema.
+	 * @return Dynamic select that generates a {@link java.sql.ResultSet} for {@link java.sql.DatabaseMetaData#getPrimaryKeys}
+	 */
+	public static Select getPrimaryKeys(String catalog, String table, SchemaProvider schemaProvider)
+			throws SQLException {
+		catalog = schemaProvider.getDbName(catalog, table);
+		String sql = schemaProvider.getSchema(catalog, table);
+
+		Cmd cmd = Parser.parse(sql);
+		assert cmd != null;
+		PrimaryKeyConstraint primaryKeyConstraint = null;
+		if (cmd.stmt instanceof CreateTable) {
+			CreateTable createTable = (CreateTable) cmd.stmt;
+			assert createTable.tblName.name.equalsIgnoreCase(table);
+			final CreateTableBody createTableBody = createTable.body;
+			if (createTableBody instanceof ColumnsAndConstraints) {
+				primaryKeyConstraint = ((ColumnsAndConstraints) createTableBody).primaryKeyConstraint;
+			} // else CREATE TABLE tbl AS SELECT ...; --> no PK
+		} // else CREATE VIEW ... --> no PK
+
+		final LiteralExpr cat = string(catalog);
+		final LiteralExpr tbl = string(table);
+		List<ResultColumn> columns = Arrays.asList(
+			expr(cat, as("TABLE_CAT")),
+			expr(NULL, as("TABLE_SCHEM")),
+			expr(tbl, as("TABLE_NAME")),
+			expr(new IdExpr("cn"), as("COLUMN_NAME")),
+			expr(new IdExpr("seq"), as("KEY_SEQ")),
+			expr(new IdExpr("pkName"), as("PK_NAME"))
+		);
+		OneSelect head = null;
+		List<List<Expr>> tail = new ArrayList<>();
+		if (primaryKeyConstraint != null) {
+			for (int i = 0; i < primaryKeyConstraint.getNumberOfColumns(); i++) {
+				LiteralExpr cn = string(primaryKeyConstraint.getColumnName(0));
+				LiteralExpr seq = integer(i + 1);
+				LiteralExpr pkName = string(primaryKeyConstraint.getPrimaryKeyName());
+				head = appendPK(head, tail, cn, seq, pkName);
+			}
+		}
+
+		Limit limit = null;
+		// Handle the case where there is no PK
+		if (head == null) {
+			head = appendPK(head, tail, NULL, NULL, NULL);
+			limit = new Limit(LiteralExpr.integer(0), null);
+		}
+		List<CompoundSelect> compounds;
+		if (tail.isEmpty()) {
+			compounds = null;
+		} else {
+			compounds = Collections.singletonList(
+				new CompoundSelect(CompoundOperator.UnionAll, new OneSelect(tail)));
+		}
+		SelectBody subBody = new SelectBody(head, compounds);
+		Select subSelect = new Select(null, subBody, null, limit);
+		FromClause from = FromClause.from(subSelect);
+		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
+		SelectBody body = new SelectBody(oneSelect, null);
+		List<SortedColumn> orderBy = Collections.singletonList(
+			new SortedColumn(new IdExpr("COLUMN_NAME"), null)
+		);
+		Select select = new Select(null, body, orderBy, null);
+		return select;
+	}
+	private static OneSelect appendPK(OneSelect head, List<List<Expr>> tail, LiteralExpr cn,
+									  LiteralExpr seq,
+									  LiteralExpr pkName) {
+		if (head == null) {
+			head = new OneSelect(null, Arrays.asList(
+				expr(cn, as("cn")),
+				expr(seq, as("seq")),
+				expr(pkName, as("pkName"))
+			), null, null, null);
+		} else {
+			tail.add(Arrays.asList(
+				cn,
+				seq,
+				pkName
+			));
+		}
+		return head;
+	}
+
 	// TODO getExportedKeys: one parent table – find -> all child table
 
 	/**
@@ -228,7 +316,21 @@ public class EnhancedPragma {
 			SchemaProvider schemaProvider, boolean cross) throws SQLException {
 		foreignCatalog = schemaProvider.getDbName(foreignCatalog, foreignTable);
 		String sql = schemaProvider.getSchema(foreignCatalog, foreignTable);
-		ColumnsAndConstraints columnsAndConstraints = getColumnsAndConstraints(foreignTable, sql);
+
+		Cmd cmd = Parser.parse(sql);
+		assert cmd != null;
+		List<ColumnDefinition> foreignColumns = Collections.emptyList();
+		List<TableConstraint> foreignConstraints = Collections.emptyList();
+		if (cmd.stmt instanceof CreateTable) {
+			CreateTable createTable = (CreateTable) cmd.stmt;
+			assert createTable.tblName.name.equalsIgnoreCase(foreignTable);
+			final CreateTableBody createTableBody = createTable.body;
+			if (createTableBody instanceof ColumnsAndConstraints) {
+				ColumnsAndConstraints columnsAndConstraints = (ColumnsAndConstraints) createTableBody;
+				foreignColumns = columnsAndConstraints.columns;
+				foreignConstraints = columnsAndConstraints.constraints;
+			} // else CREATE TABLE tbl AS SELECT ...; --> no FK
+		} // else CREATE VIEW ... --> no FK
 
 		final LiteralExpr cat = string(foreignCatalog); // a temporary table can have reference(s) to a main table.
 		final LiteralExpr tbl = string(foreignTable);
@@ -251,7 +353,7 @@ public class EnhancedPragma {
 		OneSelect head = null;
 		List<List<Expr>> tail = new ArrayList<>();
 		int count = 0;
-		for (ColumnDefinition column : columnsAndConstraints.columns) {
+		for (ColumnDefinition column : foreignColumns) {
 			for (ColumnConstraint constraint : column.constraints) {
 				if (!(constraint instanceof ForeignKeyColumnConstraint)) {
 					continue;
@@ -289,7 +391,7 @@ public class EnhancedPragma {
 				head = appendFK(head, tail, pcat, pt, pc, fc, seq, updateRule, deleteRule, fkName, pkName, deferrability);
 			}
 		}
-		for (TableConstraint constraint : columnsAndConstraints.constraints) {
+		for (TableConstraint constraint : foreignConstraints) {
 			if (!(constraint instanceof ForeignKeyTableConstraint)) {
 				continue;
 			}
@@ -425,10 +527,10 @@ public class EnhancedPragma {
 		Cmd cmd = Parser.parse(sql);
 		assert cmd != null;
 		Stmt stmt = cmd.stmt;
-		assert stmt instanceof CreateTable;
+		assert stmt instanceof CreateTable; // TODO CREATE VIEW myv AS SELECT ...;
 		CreateTable createTable = (CreateTable) stmt;
 		assert createTable.tblName.name.equalsIgnoreCase(tableName);
-		final CreateTableBody createTableBody = createTable.body;
+		final CreateTableBody createTableBody = createTable.body; // FIXME CREATE TABLE tbl AS SELECT ...;
 		assert createTableBody instanceof ColumnsAndConstraints;
 		return (ColumnsAndConstraints) createTableBody;
 	}

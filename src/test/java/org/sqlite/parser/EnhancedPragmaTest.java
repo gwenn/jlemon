@@ -59,12 +59,30 @@ public class EnhancedPragmaTest {
 			"  CHECK (end_date IS NULL OR start_date <= end_date)\n" +
 			");";
 
+	private static final String COPY_SCHEMA = "CREATE TABLE copy AS SELECT id, name FROM client";
+
 	@Test
 	public void table_info() throws Exception {
 		Map<String, String> schemaByTableName = Collections.singletonMap("contract", CONTRACT_SCHEMA);
 		Select select = EnhancedPragma.tableInfo(null, "contract", null, new DummySchemaProvider(schemaByTableName));
 		final String tableInfo = select.toSql();
 		Parser.parse(tableInfo);
+	}
+
+	@Test
+	public void primary_key() throws Exception {
+		Map<String, String> schemaByTableName = Collections.singletonMap("contract", CONTRACT_SCHEMA);
+		Select select = EnhancedPragma.getPrimaryKeys(null, "contract", new DummySchemaProvider(schemaByTableName));
+		final String primaryKeys = select.toSql();
+		Parser.parse(primaryKeys);
+	}
+
+	@Test
+	public void no_primary_key_for_copy() throws Exception {
+		Map<String, String> schemaByTableName = Collections.singletonMap("copy", COPY_SCHEMA);
+		Select select = EnhancedPragma.getPrimaryKeys(null, "copy", new DummySchemaProvider(schemaByTableName));
+		final String primaryKeys = select.toSql();
+		Parser.parse(primaryKeys);
 	}
 
 	@Test
@@ -82,6 +100,14 @@ public class EnhancedPragmaTest {
 	public void no_foreign_key_list() throws Exception {
 		Map<String, String> schemaByTableName = Collections.singletonMap("client", CLIENT_SCHEMA);
 		Select select = EnhancedPragma.getImportedKeys(null, "client", new DummySchemaProvider(schemaByTableName));
+		final String importedKeys = select.toSql();
+		Parser.parse(importedKeys);
+	}
+
+	@Test
+	public void no_foreign_key_list_for_copy() throws Exception {
+		Map<String, String> schemaByTableName = Collections.singletonMap("copy", COPY_SCHEMA);
+		Select select = EnhancedPragma.getImportedKeys(null, "copy", new DummySchemaProvider(schemaByTableName));
 		final String importedKeys = select.toSql();
 		Parser.parse(importedKeys);
 	}
