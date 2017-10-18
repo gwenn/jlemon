@@ -232,7 +232,7 @@ public class EnhancedPragma {
 		List<List<Expr>> tail = new ArrayList<>();
 		if (primaryKeyConstraint != null) {
 			for (int i = 0; i < primaryKeyConstraint.getNumberOfColumns(); i++) {
-				LiteralExpr cn = string(primaryKeyConstraint.getColumnName(0));
+				LiteralExpr cn = string(primaryKeyConstraint.getColumnName(i));
 				LiteralExpr seq = integer(i + 1);
 				LiteralExpr pkName = string(primaryKeyConstraint.getPrimaryKeyName());
 				head = appendPK(head, tail, cn, seq, pkName);
