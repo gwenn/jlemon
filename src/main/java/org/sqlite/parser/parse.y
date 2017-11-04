@@ -149,6 +149,36 @@ columnlist(A) ::= columnname(X) carglist(Y). {
 %type columnname {ColumnNameAndType}
 columnname(A) ::= nm(X) typetoken(Y). {A = new ColumnNameAndType(X.text(), Y);}
 
+// Declare some tokens early in order to influence their values, to
+// improve performance and reduce the executable size.  The goal here is
+// to get the "jump" operations in ISNULL through ESCAPE to have numeric
+// values that are early enough so that all jump operations are clustered
+// at the beginning, but also so that the comparison tokens NE through GE
+// are as large as possible so that they are near to FUNCTION, which is a
+// token synthesized by addopcodes.tcl.
+//
+%token ABORT ACTION AFTER ANALYZE ASC ATTACH BEFORE BEGIN BY CASCADE CAST.
+%token CONFLICT DATABASE DEFERRED DESC DETACH EACH END EXCLUSIVE EXPLAIN FAIL.
+%token OR AND NOT IS MATCH LIKE_KW BETWEEN IN ISNULL NOTNULL NE EQ.
+%token GT LE LT GE ESCAPE.
+
+// The following directive causes tokens ABORT, AFTER, ASC, etc. to
+// fallback to ID if they will not parse as their original value.
+// This obviates the need for the "id" nonterminal.
+//
+%fallback ID
+  ABORT ACTION AFTER ANALYZE ASC ATTACH BEFORE BEGIN BY CASCADE CAST COLUMNKW
+  CONFLICT DATABASE DEFERRED DESC DETACH EACH END EXCLUSIVE EXPLAIN FAIL FOR
+  IGNORE IMMEDIATE INITIALLY INSTEAD LIKE_KW MATCH NO PLAN
+  QUERY KEY OF OFFSET PRAGMA RAISE RECURSIVE RELEASE REPLACE RESTRICT ROW
+  ROLLBACK SAVEPOINT TEMP TRIGGER VACUUM VIEW VIRTUAL WITH WITHOUT
+%ifdef SQLITE_OMIT_COMPOUND_SELECT
+  EXCEPT INTERSECT UNION
+%endif SQLITE_OMIT_COMPOUND_SELECT
+  REINDEX RENAME CTIME_KW IF
+  .
+%wildcard ANY.
+
 // Define operator precedence early so that this is the first occurrence
 // of the operator tokens in the grammer.  Keeping the operators together
 // causes them to be assigned integer values that are close together,
@@ -177,23 +207,6 @@ columnname(A) ::= nm(X) typetoken(Y). {A = new ColumnNameAndType(X.text(), Y);}
 // keywords.  Any non-standard keyword can also be an identifier.
 //
 %token_class id  ID|INDEXED.
-
-// The following directive causes tokens ABORT, AFTER, ASC, etc. to
-// fallback to ID if they will not parse as their original value.
-// This obviates the need for the "id" nonterminal.
-//
-%fallback ID
-  ABORT ACTION AFTER ANALYZE ASC ATTACH BEFORE BEGIN BY CASCADE CAST COLUMNKW
-  CONFLICT DATABASE DEFERRED DESC DETACH EACH END EXCLUSIVE EXPLAIN FAIL FOR
-  IGNORE IMMEDIATE INITIALLY INSTEAD LIKE_KW MATCH NO PLAN
-  QUERY KEY OF OFFSET PRAGMA RAISE RECURSIVE RELEASE REPLACE RESTRICT ROW
-  ROLLBACK SAVEPOINT TEMP TRIGGER VACUUM VIEW VIRTUAL WITH WITHOUT
-%ifdef SQLITE_OMIT_COMPOUND_SELECT
-  EXCEPT INTERSECT UNION
-%endif SQLITE_OMIT_COMPOUND_SELECT
-  REINDEX RENAME CTIME_KW IF
-  .
-%wildcard ANY.
 
 
 // And "ids" is an identifer-or-string.
