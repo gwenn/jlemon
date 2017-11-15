@@ -9,13 +9,13 @@ import static org.sqlite.parser.ast.ToSql.singleQuote;
 
 public class Pragma implements Stmt {
 	public final QualifiedName name;
-	public final String value;
+	public final Expr value;
 
-	public static Pragma from(Token x, String y, String value) {
+	public static Pragma from(Token x, String y, Expr value) {
 		return new Pragma(QualifiedName.from(x, y), value);
 	}
 
-	public Pragma(QualifiedName name, String value) {
+	public Pragma(QualifiedName name, Expr value) {
 		this.name = requireNonNull(name);
 		this.value = value;
 	}
@@ -26,7 +26,7 @@ public class Pragma implements Stmt {
 		name.toSql(a);
 		if (value != null) {
 			a.append('(');
-			singleQuote(a, value);
+			value.toSql(a);
 			a.append(')');
 		}
 	}

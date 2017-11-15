@@ -228,14 +228,15 @@ nm(A) ::= JOIN_KW(A).
 typetoken(A) ::= .   {A = null;}
 typetoken(A) ::= typename(X). {A = new Type(X.text(), null);}
 typetoken(A) ::= typename(X) LP signed(Y) RP. {
-  A = new Type(X.text(), TypeSize.maxSize(Y.text()));
+  A = new Type(X.text(), TypeSize.maxSize(Y));
 }
 typetoken(A) ::= typename(X) LP signed(Y) COMMA signed(Z) RP. {
-  A = new Type(X.text(), TypeSize.couple(Y.text(), Z.text()));
+  A = new Type(X.text(), TypeSize.couple(Y, Z));
 }
 %type typename {Token}
 typename(A) ::= ids(A).
 typename(A) ::= typename(A) ids(Y). {A.append(Y);}
+%type signed {Expr}
 signed ::= plus_num.
 signed ::= minus_num.
 
@@ -896,23 +897,26 @@ cmd ::= VACUUM nm(X).          {context.stmt = new Vacuum(X.text());}
 //
 %ifndef SQLITE_OMIT_PRAGMA
 cmd ::= PRAGMA nm(X) dbnm(Z).                {context.stmt = Pragma.from(X,Z,null);}
-cmd ::= PRAGMA nm(X) dbnm(Z) EQ nmnum(Y).    {context.stmt = Pragma.from(X,Z,Y.text());}
-cmd ::= PRAGMA nm(X) dbnm(Z) LP nmnum(Y) RP. {context.stmt = Pragma.from(X,Z,Y.text());}
+cmd ::= PRAGMA nm(X) dbnm(Z) EQ nmnum(Y).    {context.stmt = Pragma.from(X,Z,Y);}
+cmd ::= PRAGMA nm(X) dbnm(Z) LP nmnum(Y) RP. {context.stmt = Pragma.from(X,Z,Y);}
 cmd ::= PRAGMA nm(X) dbnm(Z) EQ minus_num(Y). 
-                                             {context.stmt = Pragma.from(X,Z,Y.text());}
+                                             {context.stmt = Pragma.from(X,Z,Y);}
 cmd ::= PRAGMA nm(X) dbnm(Z) LP minus_num(Y) RP.
-                                             {context.stmt = Pragma.from(X,Z,Y.text());}
+                                             {context.stmt = Pragma.from(X,Z,Y);}
 
+%type nmnum {Expr}
 nmnum(A) ::= plus_num(A).
-nmnum(A) ::= nm(A).
-nmnum(A) ::= ON(A).
-nmnum(A) ::= DELETE(A).
-nmnum(A) ::= DEFAULT(A).
+nmnum(A) ::= nm(X). {A = new IdExpr(X.text());}
+nmnum(A) ::= ON(X). {A = LiteralExpr.from(X);}
+nmnum(A) ::= DELETE(X). {A = LiteralExpr.from(X);}
+nmnum(A) ::= DEFAULT(X). {A = LiteralExpr.from(X);}
 %endif SQLITE_OMIT_PRAGMA
 %token_class number INTEGER|FLOAT.
-plus_num(A) ::= PLUS number(X).       {A = X;}
-plus_num(A) ::= number(A).
-minus_num(A) ::= MINUS number(X).     {A = X;}
+%type plus_num {Expr}
+plus_num(A) ::= PLUS number(X).       {A = new UnaryExpr(UnaryOperator.Positive, LiteralExpr.from(X));}
+plus_num(A) ::= number(X).            {A = LiteralExpr.from(X);}
+%type minus_num {Expr}
+minus_num(A) ::= MINUS number(X).     {A = new UnaryExpr(UnaryOperator.Negative, LiteralExpr.from(X));}
 //////////////////////////// The CREATE TRIGGER command /////////////////////
 
 %ifndef SQLITE_OMIT_TRIGGER

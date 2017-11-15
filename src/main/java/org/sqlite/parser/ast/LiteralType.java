@@ -22,6 +22,12 @@ public enum LiteralType {
 			return Keyword;
 		} else if (TokenType.TK_CTIME_KW == tt) {
 			return Keyword;
+		} else if (TokenType.TK_ON == tt) {
+			return Keyword;
+		} else if (TokenType.TK_DELETE == tt) {
+			return Keyword;
+		} else if (TokenType.TK_DEFAULT == tt) {
+			return Keyword;
 		}
 		throw new IllegalArgumentException(java.lang.String.format("Unsupported Literal type: %s", TokenType.toString(tt)));
 	}

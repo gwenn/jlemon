@@ -47,14 +47,14 @@ public class Type implements ToSql {
 		}
 	}
 
-	public LiteralExpr getSize() {
+	public Expr getSize() {
 		if (size == null) {
 			return LiteralExpr.NULL;
 		}
 		return size.getSize();
 	}
 
-	public LiteralExpr getDecimalDigits() {
+	public Expr getDecimalDigits() {
 		if (size == null) {
 			return LiteralExpr.NULL;
 		}

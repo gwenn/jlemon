@@ -41,14 +41,14 @@ public class ColumnNameAndType implements ToSql {
 		return colType.getDataType();
 	}
 
-	public LiteralExpr getSize() {
+	public Expr getSize() {
 		if (colType == null) {
 			return LiteralExpr.NULL;
 		}
 		return colType.getSize();
 	}
 
-	public LiteralExpr getDecimalDigits() {
+	public Expr getDecimalDigits() {
 		if (colType == null) {
 			return LiteralExpr.NULL;
 		}

@@ -6,39 +6,39 @@ import static java.util.Objects.requireNonNull;
 
 // Sum Type
 public class TypeSize implements ToSql {
-	public final String size1;
-	public final String size2;
+	public final Expr size1;
+	public final Expr size2;
 
-	public static TypeSize maxSize(String max) {
+	public static TypeSize maxSize(Expr max) {
 		return new TypeSize(requireNonNull(max), null);
 	}
-	public static TypeSize couple(String size1, String size2) {
+	public static TypeSize couple(Expr size1, Expr size2) {
 		return new TypeSize(requireNonNull(size1), requireNonNull(size2));
 	}
 
-	private TypeSize(String size1,
-			String size2) {
+	private TypeSize(Expr size1,
+			Expr size2) {
 		this.size1 = size1;
 		this.size2 = size2;
 	}
 
 	@Override
 	public void toSql(Appendable a) throws IOException {
-		a.append(size1); // TODO check content
+		size1.toSql(a);
 		if (size2 != null) {
 			a.append(", ");
-			a.append(size2);
+			size2.toSql(a);
 		}
 	}
 
-	public LiteralExpr getSize() {
-		return new LiteralExpr(size1, LiteralType.Integer);
+	public Expr getSize() {
+		return size1;
 	}
 
-	public LiteralExpr getDecimalDigits() {
-		if (size2 == null || size2.isEmpty()) {
+	public Expr getDecimalDigits() {
+		if (size2 == null) {
 			return LiteralExpr.NULL;
 		}
-		return new LiteralExpr(size2, LiteralType.Integer);
+		return size2;
 	}
 }

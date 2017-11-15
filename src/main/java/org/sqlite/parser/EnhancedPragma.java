@@ -105,8 +105,8 @@ public class EnhancedPragma {
 				final boolean rowIdAlias = columnsAndConstraints.isGeneratedColumn(colName);
 				final LiteralExpr colType = integer(rowIdAlias ? Types.ROWID : column.nameAndType.getDataType());
 				final LiteralExpr declType = column.nameAndType.getTypeExpr();
-				LiteralExpr colSize = column.nameAndType.getSize();
-				LiteralExpr decimalDigits = column.nameAndType.getDecimalDigits();
+				Expr colSize = column.nameAndType.getSize();
+				Expr decimalDigits = column.nameAndType.getDecimalDigits();
 				final Integer nullable = column.getNullable()
 						.orElse(columnsAndConstraints.isAnAliasForRowId(colName) ? DatabaseMetaData.columnNoNulls : DatabaseMetaData.columnNullable);
 				final LiteralExpr columnDefault = column.getDefault();
