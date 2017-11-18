@@ -193,10 +193,12 @@ class Tokenizer extends Scanner {
 		} else if (c == '`' || c == '\'' || c == '"') {
 			int i;
 			char pc = 0;
+			int escapedQuotes = 0;
 			for (i = start; i < end; i++) {
 				if (data[i] == c) {
 					if (pc == c) { // escaped quote
 						pc = 0;
+						escapedQuotes++;
 						continue;
 					}
 				} else {
@@ -208,8 +210,9 @@ class Tokenizer extends Scanner {
 			}
 			if (i < end || (atEOF && pc == c)) {
 				advance(i, data);
+				unescapeQuotes(data, start, i - 1, c, escapedQuotes);
 				tokenStart = start; // do not include the quote in the token
-				tokenEnd = i - 1;
+				tokenEnd = i - 1 - escapedQuotes;
 				return c == '\'' ? TK_STRING : TK_ID;
 			} else if (atEOF) {
 				throw new ScanException(ErrorCode.UnterminatedLiteral);
@@ -481,5 +484,17 @@ class Tokenizer extends Scanner {
 
 	private static boolean isHexaDigit(char c) {
 		return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+	}
+
+	private static void unescapeQuotes(char[] data, int start, int end, char quote, int count) {
+		if (count == 0) {
+			return;
+		}
+		for (int i = start, j = start; i < end; i++, j++) {
+			data[j] = data[i];
+			if (data[i] == quote) {
+				i++;
+			}
+		}
 	}
 }

@@ -4,6 +4,9 @@ import java.io.StringReader;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class TokenizerTest {
 	@Test
 	public void testInsert() {
@@ -13,5 +16,17 @@ public class TokenizerTest {
 			lexer.tokenType();
 			lexer.text();
 		}
+	}
+
+	@Test
+	public void testEscapedQuote() {
+		String sql = "SELECT 'escaped''quote'";
+		Tokenizer lexer = new Tokenizer(new StringReader(sql));
+		assertTrue(lexer.scan());
+		assertEquals(TokenType.TK_SELECT, lexer.tokenType());
+		assertEquals("SELECT", lexer.text());
+		assertTrue(lexer.scan());
+		assertEquals(TokenType.TK_STRING, lexer.tokenType());
+		assertEquals("escaped'quote", lexer.text());
 	}
 }
