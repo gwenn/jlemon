@@ -498,7 +498,6 @@ private void yy_shift(
   yystack[yyidx] = yytos;
   assert(yyNewState >= 0);
   yytos.stateno = yyNewState;
-  assert(yyMajor >= 0);
   yytos.major = yyMajor;
   yytos.minor.yy0(yyMinor);
   yyTraceShift(yyNewState);
@@ -608,7 +607,6 @@ private void yy_reduce(
     yyidx += yysize+1;
     assert(yyidx >= 0);
     yymsp = yystack(0);
-    assert(yyact >= 0);
     yymsp.stateno = yyact;
     assert(yygoto >= 0);
     yymsp.major = yygoto;

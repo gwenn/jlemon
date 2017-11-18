@@ -18,7 +18,6 @@ import org.sqlite.parser.ast.CompoundOperator;
 import org.sqlite.parser.ast.CompoundSelect;
 import org.sqlite.parser.ast.CreateTable;
 import org.sqlite.parser.ast.CreateTableBody;
-import org.sqlite.parser.ast.CreateView;
 import org.sqlite.parser.ast.Expr;
 import org.sqlite.parser.ast.ForeignKeyColumnConstraint;
 import org.sqlite.parser.ast.ForeignKeyTableConstraint;
