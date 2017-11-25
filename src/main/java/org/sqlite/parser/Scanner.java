@@ -99,7 +99,7 @@ abstract class Scanner {
 		}
 		// Is the buffer full? If so, resize.
 		if (end == buf.length) {
-			if (buf.length >= maxTokenSize) {
+			if (buf.length >= maxTokenSize || buf.length > Integer.MAX_VALUE / 2) {
 				throw new ScanException(ErrorCode.TokenTooLong);
 			}
 			int newSize = Math.min(buf.length * 2, maxTokenSize);
@@ -108,7 +108,6 @@ abstract class Scanner {
 			buf = newBuf;
 			end -= start;
 			start = 0;
-			return;
 		}
 		// Finally we can read some input.
 		try {
