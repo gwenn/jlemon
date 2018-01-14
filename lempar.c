@@ -81,14 +81,15 @@ public class yyParser {
 **                       defined, then do no error processing.
 **    YYNSTATE           the combined number of states.
 **    YYNRULE            the number of rules in the grammar
+**    YYNTOKEN           Number of terminal symbols
 **    YY_MAX_SHIFT       Maximum value for shift actions
 **    YY_MIN_SHIFTREDUCE Minimum value for shift-reduce actions
 **    YY_MAX_SHIFTREDUCE Maximum value for shift-reduce actions
-**    YY_MIN_REDUCE      Minimum value for reduce actions
-**    YY_MAX_REDUCE      Maximum value for reduce actions
 **    YY_ERROR_ACTION    The yy_action[] code for syntax error
 **    YY_ACCEPT_ACTION   The yy_action[] code for accept
 **    YY_NO_ACTION       The yy_action[] code for no-op
+**    YY_MIN_REDUCE      Minimum value for reduce actions
+**    YY_MAX_REDUCE      Maximum value for reduce actions
 */
 #ifndef INTERFACE
 # define INTERFACE 1
@@ -124,9 +125,6 @@ public class yyParser {
 **   N between YY_MIN_SHIFTREDUCE       Shift to an arbitrary state then
 **     and YY_MAX_SHIFTREDUCE           reduce by rule N-YY_MIN_SHIFTREDUCE.
 **
-**   N between YY_MIN_REDUCE            Reduce by rule N-YY_MIN_REDUCE
-**     and YY_MAX_REDUCE
-**
 **   N == YY_ERROR_ACTION               A syntax error has occurred.
 **
 **   N == YY_ACCEPT_ACTION              The parser accepts its input.
@@ -134,25 +132,22 @@ public class yyParser {
 **   N == YY_NO_ACTION                  No such action.  Denotes unused
 **                                      slots in the yy_action[] table.
 **
+**   N between YY_MIN_REDUCE            Reduce by rule N-YY_MIN_REDUCE
+**     and YY_MAX_REDUCE
+**
 ** The action table is constructed as a single large table named yy_action[].
 ** Given state S and lookahead X, the action is computed as either:
 **
 **    (A)   N = yy_action[ yy_shift_ofst[S] + X ]
 **    (B)   N = yy_default[S]
 **
-** The (A) formula is preferred.  The B formula is used instead if:
-**    (1)  The yy_shift_ofst[S]+X value is out of range, or
-**    (2)  yy_lookahead[yy_shift_ofst[S]+X] is not equal to X, or
-**    (3)  yy_shift_ofst[S] equal YY_SHIFT_USE_DFLT.
-** (Implementation note: YY_SHIFT_USE_DFLT is chosen so that
-** YY_SHIFT_USE_DFLT+X will be out of range for all possible lookaheads X.
-** Hence only tests (1) and (2) need to be evaluated.)
+** The (A) formula is preferred.  The B formula is used instead if
+** yy_lookahead[yy_shift_ofst[S]+X] is not equal to X.
 **
 ** The formulas above are for computing the action when the lookahead is
 ** a terminal symbol.  If the lookahead is a non-terminal (as occurs after
 ** a reduce action) then the yy_reduce_ofst[] array is used in place of
-** the yy_shift_ofst[] array and YY_REDUCE_USE_DFLT is used in place of
-** YY_SHIFT_USE_DFLT.
+** the yy_shift_ofst[] array.
 **
 ** The following are the tables generated in this section:
 **
@@ -241,13 +236,13 @@ private static class yyStackEntry {
 #ifndef NDEBUG
 #endif /* NDEBUG */
 
-#ifndef NDEBUG
+#if defined(YYCOVERAGE) || !defined(NDEBUG)
 /* For tracing shifts, the names of all terminals and nonterminals
 ** are required.  The following table supplies these names */
 private static final String yyTokenName[] = {
 %%
 };
-#endif /* NDEBUG */
+#endif /* defined(YYCOVERAGE) || !defined(NDEBUG) */
 
 #ifndef NDEBUG
 /* For tracing reduce actions, the names of all rules are required.
@@ -331,6 +326,43 @@ public int ParseStackPeak(){
 }
 #endif
 
+/* This array of booleans keeps track of the parser statement
+** coverage.  The element yycoverage[X][Y] is set when the parser
+** is in state X and has a lookahead token Y.  In a well-tested
+** systems, every element of this matrix should end up being set.
+*/
+#if defined(YYCOVERAGE)
+private static final boolean[YYNSTATE][YYNTOKEN] yycoverage;
+#endif
+
+/*
+** Write into out a description of every state/lookahead combination that
+**
+**   (1)  has not been used by the parser, and
+**   (2)  is not a syntax error.
+**
+** Return the number of missed state/lookahead combinations.
+*/
+#if defined(YYCOVERAGE)
+int ParseCoverage(FILE *out){
+  int stateno, iLookAhead, i;
+  int nMissed = 0;
+  for(stateno=0; stateno<YYNSTATE; stateno++){
+    i = yy_shift_ofst[stateno];
+    for(iLookAhead=0; iLookAhead<YYNTOKEN; iLookAhead++){
+      if( yy_lookahead[i+iLookAhead]!=iLookAhead ) continue;
+      if( yycoverage[stateno][iLookAhead]==0 ) nMissed++;
+      if( out ){
+        fprintf(out,"State %d lookahead %s %s\n", stateno,
+                yyTokenName[iLookAhead],
+                yycoverage[stateno][iLookAhead] ? "ok" : "missed");
+      }
+    }
+  }
+  return nMissed;
+}
+#endif
+
 /*
 ** Find the appropriate action for a parser given the terminal
 ** look-ahead token iLookAhead.
@@ -343,13 +375,18 @@ private YYACTIONTYPE yy_find_shift_action(
   yyStackEntry yytos = yystack(0);
   YYACTIONTYPE stateno = yytos.stateno;
  
-  if( stateno>=YY_MIN_REDUCE ) return stateno;
+  if( stateno>YY_MAX_SHIFT ) return stateno;
   assert( stateno <= YY_SHIFT_COUNT );
+#if defined(YYCOVERAGE)
+  yycoverage[stateno][iLookAhead] = true;
+#endif
   do{
     i = yy_shift_ofst[stateno];
+    assert( i>=0 && i+YYNTOKEN<=yy_lookahead.length );
     assert( iLookAhead!=YYNOCODE );
+    assert( iLookAhead < YYNTOKEN );
     i += iLookAhead;
-    if( i<0 || i>=YY_ACTTAB_COUNT || yy_lookahead[i]!=iLookAhead ){
+    if( yy_lookahead[i]!=iLookAhead ){
 #ifdef YYFALLBACK
       YYCODETYPE iFallback;            /* Fallback token */
       if( iLookAhead<yyFallback.length
@@ -410,7 +447,6 @@ private static YYACTIONTYPE yy_find_reduce_action(
   assert( stateno<=YY_REDUCE_COUNT );
 #endif
   i = yy_reduce_ofst[stateno];
-  assert( i!=YY_REDUCE_USE_DFLT );
   assert( iLookAhead!=YYNOCODE );
   i += iLookAhead;
 #ifdef YYERRORSYMBOL
@@ -443,7 +479,7 @@ private void yyStackOverflow(){
 ** Print tracing information for a SHIFT action
 */
 #ifndef NDEBUG
-private void yyTraceShift(YYACTIONTYPE yyNewState){
+private void yyTraceShift(YYACTIONTYPE yyNewState, String zTag){
     assert(yyNewState >= 0);
     yyStackEntry yytos = yystack(0);
     if( yyNewState<YYNSTATE ){
@@ -451,12 +487,13 @@ private void yyTraceShift(YYACTIONTYPE yyNewState){
          yyTokenName[yytos.major],
          yyNewState);
     }else{
-      logger.trace("Shift '{}'",
-         yyTokenName[yytos.major]);
+      logger.trace("{} '{}', pending reduce %d",
+         zTag, yyTokenName[yytos.major],
+         yyNewState - YY_MIN_REDUCE);
     }
 }
 #else
-# define yyTraceShift(X,Y)
+# define yyTraceShift(X,Y,Z)
 #endif
 
 /*
@@ -500,7 +537,7 @@ private void yy_shift(
   yytos.stateno = yyNewState;
   yytos.major = yyMajor;
   yytos.minor.yy0(yyMinor);
-  yyTraceShift(yyNewState);
+  yyTraceShift(yyNewState, "Shift");
 }
 
 /* The following table contains information about every rule that
@@ -523,10 +560,18 @@ private static final ruleInfoEntry
 /*
 ** Perform a reduce action and the shift that must immediately
 ** follow the reduce.
+**
+** The yyLookahead and yyLookaheadToken parameters provide reduce actions
+** access to the lookahead token (if any).  The yyLookahead will be YYNOCODE
+** if the lookahead token has already been consumed.  As this procedure is
+** only called from one place, optimizing compilers will in-line it, which
+** means that the extra parameters have no performance impact.
 */
 @SuppressWarnings({"UnnecessarySemicolon", "PointlessArithmeticExpression"})
 private void yy_reduce(
-  int yyruleno        /* Number of the rule by which to reduce */
+  int yyruleno,        /* Number of the rule by which to reduce */
+  int yyLookahead,             /* Lookahead token, or YYNOCODE if none */
+  ParseTOKENTYPE yyLookaheadToken  /* Value of the lookahead token */
 ){
   assert(yyruleno >= 0);
   YYCODETYPE yygoto;              /* The next state */
@@ -536,8 +581,13 @@ private void yy_reduce(
 #ifndef NDEBUG
   if( yyruleno<yyRuleName.length ){
     yysize = yyRuleInfo[yyruleno].nrhs;
-    logger.trace("Reduce [{}], go to state {}.",
-      yyRuleName[yyruleno], yystack(yysize).stateno);
+    if( yysize != 0 ){
+    	logger.trace("Reduce {} [{}], go to state {}.",
+      	yyruleno, yyRuleName[yyruleno], yystack(yysize).stateno);
+     } else {
+    	logger.trace("Reduce {} [{}].",
+      	yyruleno, yyRuleName[yyruleno]);
+     }
   }
 #endif /* NDEBUG */
 
@@ -599,19 +649,13 @@ private void yy_reduce(
   /* It is not possible for a REDUCE to be followed by an error */
   assert( yyact!=YY_ERROR_ACTION );
 
-  if( yyact == YY_ACCEPT_ACTION ){
-    yyidx += yysize;
-    assert(yyidx >= 0);
-    yy_accept();
-  }else{
-    yyidx += yysize+1;
-    assert(yyidx >= 0);
-    yymsp = yystack(0);
-    yymsp.stateno = yyact;
-    assert(yygoto >= 0);
-    yymsp.major = yygoto;
-    yyTraceShift(yyact);
-  }
+	yyidx += yysize+1;
+	assert(yyidx >= 0);
+	yymsp = yystack(0);
+	yymsp.stateno = yyact;
+	assert(yygoto >= 0);
+	yymsp.major = yygoto;
+	yyTraceShift(yyact, "... then shift");
 }
 
 /*
@@ -702,19 +746,29 @@ public void Parse(
 #endif
 
 #ifndef NDEBUG
-    logger.trace("Input '{}'",yyTokenName[yymajor]);
+    int stateno = yystack(0).stateno;
+    if( stateno < YY_MIN_REDUCE ){
+	    logger.trace("Input '{}' in state {}",yyTokenName[yymajor],stateno);
+    }else{
+	    logger.trace("Input '{}' with pending reduce {}",
+	    				yyTokenName[yymajor],stateno-YY_MIN_REDUCE);
+    }
 #endif
 
   do{
     yyact = yy_find_shift_action(yymajor);
-    if( yyact <= YY_MAX_SHIFTREDUCE ){
+    if( yyact >= YY_MIN_REDUCE ){
+      yy_reduce(yyact-YY_MIN_REDUCE,yymajor,yyminor);
+    }else if( yyact <= YY_MAX_SHIFTREDUCE ){
       yy_shift(yyact,yymajor,yyminor);
 #ifndef YYNOERRORRECOVERY
       yyerrcnt--;
 #endif
       yymajor = YYNOCODE;
-    }else if( yyact <= YY_MAX_REDUCE ){
-      yy_reduce(yyact-YY_MIN_REDUCE);
+    }else if( yyact==YY_ACCEPT_ACTION ){
+      yyidx--;
+      yy_accept();
+      return;
     }else{
       assert( yyact == YY_ERROR_ACTION );
 #ifdef YYERRORSYMBOL
