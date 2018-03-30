@@ -6,6 +6,9 @@ import org.sqlite.parser.TokenType;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Represents an {@code ISNULL}/{@code IS NULL} or a {@code NOTNULL} expression.
+ */
 public class IsNullExpr implements Expr {
 	public final Expr expr;
 	public final NullOperator op;

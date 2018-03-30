@@ -5,7 +5,8 @@ import java.io.IOException;
 import static java.util.Objects.requireNonNull;
 
 /**
- * expr [NOT] IN (select-stmt)
+ * Represents an {@code IN} expression with the right-hand side being a {@code SELECT} statement.
+ * <pre>{@code expr [NOT] IN (select-stmt)}</pre>
  */
 public class InSelectExpr implements Expr {
 	public final Expr lhs;

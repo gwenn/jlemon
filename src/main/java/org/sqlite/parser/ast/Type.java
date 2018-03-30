@@ -6,6 +6,9 @@ import java.sql.Types;
 import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.doubleQuote;
 
+/**
+ * The AST node corresponding to a column or value type.
+ */
 public class Type implements ToSql {
 	public final String name;
 	public final TypeSize size;

@@ -5,6 +5,15 @@ import java.util.List;
 
 import static org.sqlite.parser.ast.ToSql.doubleQuote;
 
+/**
+ * An instance of the following structure describes the event of a
+ * TRIGGER.  {@link #type} is the event type, one of TK_UPDATE, TK_INSERT,
+ * TK_DELETE, or TK_INSTEAD.  If the event is of the form
+ * <pre>{@code
+ *      UPDATE OF (a,b,c)
+ * }</pre>
+ * Then the {@link #colNames} records the list "a,b,c".
+ */
 public class TriggerEvent implements ToSql {
 	public final TriggerEventType type;
 	public final List<String> colNames; // only for event = UpdateOf

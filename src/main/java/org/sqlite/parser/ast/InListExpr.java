@@ -8,7 +8,8 @@ import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 /**
- * expr [NOT] IN (expr[,expr]*)
+ * Represents an {@code IN} expression with the right-hand side being a list of subexpressions.
+ * <pre>{@code expr [NOT] IN (expr[,expr]*)}</pre>
  */
 public class InListExpr implements Expr {
 	public final Expr lhs;

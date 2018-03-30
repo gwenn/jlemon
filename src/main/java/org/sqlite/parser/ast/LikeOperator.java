@@ -5,6 +5,9 @@ import java.io.IOException;
 import org.sqlite.parser.Token;
 import org.sqlite.parser.TokenType;
 
+/**
+ * The AST node corresponding to a textual comparison operator in an expression.
+ */
 public enum LikeOperator implements ToSql {
 	Glob,
 	Like,

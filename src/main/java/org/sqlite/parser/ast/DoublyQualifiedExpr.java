@@ -6,7 +6,8 @@ import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.doubleQuote;
 
 /**
- * schema-name.table-name.column-name
+ * Represents a column-name expression, optionally qualified by a table name and further by a database name.
+ * <pre>{@code schema-name.table-name.column-name}</pre>
  */
 public class DoublyQualifiedExpr implements Expr {
 	public final String dbName;

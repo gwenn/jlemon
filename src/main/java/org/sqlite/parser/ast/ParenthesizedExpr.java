@@ -8,6 +8,9 @@ import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.comma;
 import static org.sqlite.parser.ast.ToSql.requireNotEmpty;
 
+/**
+ * Represents a parenthesized subexpression.
+ */
 public class ParenthesizedExpr implements Expr {
 	public final List<Expr> exprs;
 

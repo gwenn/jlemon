@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * The AST node corresponding to each {@code WHEN}-{@code THEN} pair of subexpressions in a {@code CASE} expression.
+ */
 public class WhenThenPair implements ToSql {
 	public final Expr when;
 	public final Expr then;

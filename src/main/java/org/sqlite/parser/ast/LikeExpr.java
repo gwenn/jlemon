@@ -5,12 +5,14 @@ import java.io.IOException;
 import static java.util.Objects.requireNonNull;
 
 /**
- * expr [NOT] LIKE|GLOB|REGEXP|MATCH expr ESCAPE expr
+ * Represents a textual comparison expression.
+ * <pre>{@code expr [NOT] LIKE|GLOB|REGEXP|MATCH expr ESCAPE expr}</pre>
  */
 public class LikeExpr implements Expr {
 	public final Expr lhs;
 	public final NotLike op;
 	public final Expr rhs;
+	// The AST node corresponding to the {@code ESCAPE} subclause of a textual comparison expression.
 	public final Expr escape;
 
 	public static LikeExpr like(Expr lhs, Expr rhs) {

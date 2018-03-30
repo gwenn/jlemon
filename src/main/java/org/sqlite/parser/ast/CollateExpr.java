@@ -6,7 +6,8 @@ import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.doubleQuote;
 
 /**
- * expr COLLATE collation-name
+ * Represents a {@code COLLATE} expression.
+ * <pre>{@code expr COLLATE collation-name}</pre>
  */
 public class CollateExpr implements Expr {
 	public final Expr expr;

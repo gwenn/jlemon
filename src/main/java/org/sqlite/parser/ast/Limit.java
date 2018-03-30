@@ -4,6 +4,10 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * An instance of this structure holds information about the
+ * LIMIT clause of a SELECT statement.
+ */
 public class Limit implements ToSql {
 	public final Expr expr;
 	public final Expr offset;

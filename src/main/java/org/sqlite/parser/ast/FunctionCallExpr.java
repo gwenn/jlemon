@@ -11,7 +11,8 @@ import static org.sqlite.parser.ast.ToSql.doubleQuote;
 import static org.sqlite.parser.ast.ToSql.isNotEmpty;
 
 /**
- * function-name([DISTINCT] [expr][, expr]*)
+ * Represents a call to a built-in function.
+ * <pre>{@code function-name([DISTINCT] [expr][, expr]*)}</pre>
  */
 public class FunctionCallExpr implements Expr {
 	public final String name;

@@ -3,11 +3,11 @@ package org.sqlite.parser.ast;
 import org.sqlite.parser.TokenType;
 
 public enum LiteralType {
-	Blob,
-	Float,
-	Integer,
+	Blob, // Represents a literal blob (binary large object) expression.
+	Float, // Represents a literal floating-point expression.
+	Integer, // Represents a literal integer expression.
 	Keyword, // NULL, CURRENT_DATE, ...
-	String;
+	String; // Represents a literal string expression.
 
 	public static LiteralType from(short tt) {
 		if (TokenType.TK_STRING == tt) {

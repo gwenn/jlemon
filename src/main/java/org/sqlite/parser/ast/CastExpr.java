@@ -5,7 +5,8 @@ import java.io.IOException;
 import static java.util.Objects.requireNonNull;
 
 /**
- * CAST(expr AS type-name)
+ * Represents a type-cast expression.
+ * <pre>{@code CAST(expr AS type-name)}</pre>
  */
 public class CastExpr implements Expr {
 	public final Expr expr;

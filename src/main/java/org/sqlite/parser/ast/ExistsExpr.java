@@ -5,7 +5,8 @@ import java.io.IOException;
 import static java.util.Objects.requireNonNull;
 
 /**
- * [NOT] EXISTS (select-stmt)
+ * Represents a subquery {@code SELECT} expression with the {@code EXISTS} qualifier.
+ * <pre>{@code [NOT] EXISTS (select-stmt)}</pre>
  */
 public class ExistsExpr implements Expr {
 	public final Select subquery;

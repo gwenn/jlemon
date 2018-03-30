@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Represents a {@code NOT NULL} expression.
+ */
 public class NotNullExpr implements Expr {
 	public final Expr expr;
 

@@ -5,7 +5,8 @@ import java.io.IOException;
 import static java.util.Objects.requireNonNull;
 
 /**
- * expr [NOT] BETWEEN expr AND expr
+ * Represents a {@code BETWEEN} expression.
+ * <pre>{@code expr [NOT] BETWEEN expr AND expr}</pre>
  */
 public class BetweenExpr implements Expr {
 	public final Expr lhs;

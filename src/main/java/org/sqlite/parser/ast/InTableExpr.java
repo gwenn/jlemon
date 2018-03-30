@@ -7,8 +7,9 @@ import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.comma;
 
 /**
- * expr [NOT] IN (schema-name.table-name)
- * expr [NOT] IN (schema-name.table-function(expr[, expr]*))
+ * Represents an @IN@ expression with the right-hand side being a table name, optionally qualified by a database name.
+ * <pre>{@code expr [NOT] IN (schema-name.table-name)
+ * expr [NOT] IN (schema-name.table-function(expr[, expr]*))}</pre>
  */
 public class InTableExpr implements Expr {
 	public final Expr lhs;

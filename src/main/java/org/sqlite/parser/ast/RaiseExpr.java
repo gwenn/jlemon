@@ -6,6 +6,7 @@ import static java.util.Objects.requireNonNull;
 import static org.sqlite.parser.ast.ToSql.singleQuote;
 
 /**
+ * Represents a {@code RAISE} expression.
  * raise-function
  */
 public class RaiseExpr implements Expr {

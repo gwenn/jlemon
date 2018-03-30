@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * The AST node corresponding to an optional size annotation on a column or value type.
+ */
 // Sum Type
 public class TypeSize implements ToSql {
 	public final Expr size1;
@@ -16,6 +19,7 @@ public class TypeSize implements ToSql {
 		return new TypeSize(requireNonNull(size1), requireNonNull(size2));
 	}
 
+	// TODO only numeric exprs expected
 	private TypeSize(Expr size1,
 			Expr size2) {
 		this.size1 = size1;

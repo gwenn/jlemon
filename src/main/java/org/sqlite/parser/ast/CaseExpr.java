@@ -4,11 +4,14 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * CASE [expr] [WHEN expr THEN expr]* [ELSE expr] END
+ * Represents a {@code CASE} expression.
+ * <pre>{@code CASE [expr] [WHEN expr THEN expr]* [ELSE expr] END}</pre>
  */
 public class CaseExpr implements Expr {
+	// The AST node corresponding to the optional first subexpression in a {@code CASE} expression.
 	public final Expr base;
 	public final List<WhenThenPair> whenThenPairs;
+	// The AST node corresponding to the optional {@code ELSE} subclause in a {@code CASE} expression.
 	public final Expr elseExpr;
 
 	public CaseExpr(Expr base,

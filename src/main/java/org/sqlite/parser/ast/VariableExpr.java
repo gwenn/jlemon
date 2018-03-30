@@ -6,6 +6,10 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * bind-parameter
+ * Represents
+ * a positional-variable expression, written in SQL as {@code ?} or
+ * a numbered positional variable expression, written in SQL as {@code ?nnn} or
+ * a named positional variable expression, written in SQL as {@code :aaaa}.
  */
 public class VariableExpr implements Expr {
 	public final String variable;

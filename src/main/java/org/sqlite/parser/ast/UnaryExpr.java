@@ -6,6 +6,11 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * unary_operator expr
+ *
+ * a unary negation expression.
+ * a unary positive-sign expression.
+ * a unary bitwise negation expression.
+ * a unary logical negation expression.
  */
 public class UnaryExpr implements Expr {
 	public final UnaryOperator op;
