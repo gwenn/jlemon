@@ -165,7 +165,7 @@ public class EnhancedPragmaTest {
 		}
 
 		@Override
-		public List<QualifiedName> findTables(String dbName, String tableNamePattern) throws SQLException {
+		public List<QualifiedName> findTables(String dbName, String tableNamePattern) {
 			return Collections.singletonList(new QualifiedName(getDbName(dbName, tableNamePattern), tableNamePattern));
 		}
 		@Override
