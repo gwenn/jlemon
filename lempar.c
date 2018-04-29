@@ -77,6 +77,7 @@ public class yyParser {
 **    ParseARG_SDECL     A static variable declaration for the %extra_argument
 **    ParseARG_PDECL     A parameter declaration for the %extra_argument
 **    ParseARG_STORE     Code to store %extra_argument into yypParser
+**    ParseCTX_*         As ParseARG_ except for %extra_context
 **    YYERRORSYMBOL      is the code number of the error symbol.  If not
 **                       defined, then do no error processing.
 **    YYNSTATE           the combined number of states.
@@ -222,6 +223,7 @@ private static class yyStackEntry {
   private int yyerrcnt;                 /* Shifts left before out of the error */
 #endif
   private final ParseARG_SDECL                /* A place to hold %extra_argument */
+  //private final ParseCTX_SDECL                /* A place to hold %extra_context */
 #if YYSTACKDEPTH<=0
   //int yystksz;                  /* Current side of the stack */
   private final yyStackEntry[] yystack;        /* The parser's stack */
@@ -278,7 +280,9 @@ private boolean yyGrowStack(){
 */
 public yyParser(
   ParseARG_PDECL               /* Optional %extra_argument parameter */
+  ParseCTX_PDECL
   ) {
+  ParseCTX_STORE
   yyidx = 0;
 #ifdef YYTRACKMAXSTACKDEPTH
   yyhwm = 0;
@@ -368,13 +372,12 @@ int ParseCoverage(FILE *out){
 ** look-ahead token iLookAhead.
 */
 private YYACTIONTYPE yy_find_shift_action(
-  YYCODETYPE iLookAhead     /* The look-ahead token */
+  YYCODETYPE iLookAhead,    /* The look-ahead token */
+  YYACTIONTYPE stateno      /* Current state number */
 ){
   assert(iLookAhead >= 0);
   int i;
-  yyStackEntry yytos = yystack(0);
-  YYACTIONTYPE stateno = yytos.stateno;
- 
+
   if( stateno>YY_MAX_SHIFT ) return stateno;
   assert( stateno <= YY_SHIFT_COUNT );
 #if defined(YYCOVERAGE)
@@ -382,7 +385,8 @@ private YYACTIONTYPE yy_find_shift_action(
 #endif
   do{
     i = yy_shift_ofst[stateno];
-    assert( i>=0 && i+YYNTOKEN<=yy_lookahead.length );
+    assert( i>=0 );
+    assert( i+YYNTOKEN<=yy_lookahead.length );
     assert( iLookAhead!=YYNOCODE );
     assert( iLookAhead < YYNTOKEN );
     i += iLookAhead;
@@ -464,6 +468,7 @@ private static YYACTIONTYPE yy_find_reduce_action(
 ** The following routine is called if the stack overflows.
 */
 private void yyStackOverflow(){
+   ParseCTX_FETCH
 #ifndef NDEBUG
      logger.error("Stack Overflow!");
 #endif
@@ -473,6 +478,7 @@ private void yyStackOverflow(){
 /******** Begin %stack_overflow code ******************************************/
 %%
 /******** End %stack_overflow code ********************************************/
+   ParseCTX_STORE
 }
 
 /*
@@ -568,10 +574,11 @@ private static final ruleInfoEntry
 ** means that the extra parameters have no performance impact.
 */
 @SuppressWarnings({"UnnecessarySemicolon", "PointlessArithmeticExpression"})
-private void yy_reduce(
+private YYACTIONTYPE yy_reduce(
   int yyruleno,        /* Number of the rule by which to reduce */
   int yyLookahead,             /* Lookahead token, or YYNOCODE if none */
   ParseTOKENTYPE yyLookaheadToken  /* Value of the lookahead token */
+  ParseCTX_PDECL                   /* %extra_context */
 ){
   assert(yyruleno >= 0);
   YYCODETYPE yygoto;              /* The next state */
@@ -604,13 +611,19 @@ private void yy_reduce(
 #if YYSTACKDEPTH>0 
     if( yyidx >= YYSTACKDEPTH-1 ){
       yyStackOverflow();
-      return;
+      /* The call to yyStackOverflow() above pops the stack until it is
+      ** empty, causing the main parser loop to exit.  So the return value
+      ** is never used and does not matter. */
+      return 0;
     }
 #else
     if( yyidx >= yystack.length-1 ){
       if( yyGrowStack() ){
         yyStackOverflow();
-        return;
+        /* The call to yyStackOverflow() above pops the stack until it is
+        ** empty, causing the main parser loop to exit.  So the return value
+        ** is never used and does not matter. */
+        return 0;
       }
     }
 #endif
@@ -656,6 +669,7 @@ private void yy_reduce(
 	assert(yygoto >= 0);
 	yymsp.major = yygoto;
 	yyTraceShift(yyact, "... then shift");
+	return yyact;
 }
 
 /*
@@ -664,6 +678,7 @@ private void yy_reduce(
 #ifndef YYNOERRORRECOVERY
 private void yy_parse_failed(
 ){
+  ParseCTX_FETCH
 #ifndef NDEBUG
     logger.error("Fail!");
 #endif
@@ -673,6 +688,7 @@ private void yy_parse_failed(
 /************ Begin %parse_failure code ***************************************/
 %%
 /************ End %parse_failure code *****************************************/
+  ParseCTX_STORE
 }
 #endif /* YYNOERRORRECOVERY */
 
@@ -684,10 +700,12 @@ private void yy_syntax_error(
   YYCODETYPE yymajor,            /* The major type of the error token */
   ParseTOKENTYPE yyminor         /* The minor type of the error token */
 ){
+  ParseCTX_FETCH
 #define TOKEN yyminor
 /************ Begin %syntax_error code ****************************************/
 %%
 /************ End %syntax_error code ******************************************/
+  ParseCTX_STORE
 }
 
 /*
@@ -695,6 +713,7 @@ private void yy_syntax_error(
 */
 private void yy_accept(
 ){
+  ParseCTX_FETCH
 #ifndef NDEBUG
     logger.trace("Accept!");
 #endif
@@ -707,6 +726,7 @@ private void yy_accept(
 /*********** Begin %parse_accept code *****************************************/
 %%
 /*********** End %parse_accept code *******************************************/
+  ParseCTX_STORE
 }
 
 /* The main parser program.
@@ -739,35 +759,38 @@ public void Parse(
 #ifdef YYERRORSYMBOL
   boolean yyerrorhit = false;   /* True if yymajor has invoked an error */
 #endif
+  ParseCTX_FETCH
 
   assert( yystack(0) != null );
 #if !defined(YYERRORSYMBOL) && !defined(YYNOERRORRECOVERY)
   yyendofinput = (yymajor==0);
 #endif
 
+  yyact = yystack(0).stateno;
 #ifndef NDEBUG
-    int stateno = yystack(0).stateno;
-    if( stateno < YY_MIN_REDUCE ){
-	    logger.trace("Input '{}' in state {}",yyTokenName[yymajor],stateno);
+    if( yyact < YY_MIN_REDUCE ){
+	    logger.trace("Input '{}' in state {}",yyTokenName[yymajor],yyact);
     }else{
 	    logger.trace("Input '{}' with pending reduce {}",
-	    				yyTokenName[yymajor],stateno-YY_MIN_REDUCE);
+	    				yyTokenName[yymajor],yyact-YY_MIN_REDUCE);
     }
 #endif
 
   do{
-    yyact = yy_find_shift_action(yymajor);
+    assert( yyact==yystack(0).stateno );
+    yyact = yy_find_shift_action(yymajor,yyact);
     if( yyact >= YY_MIN_REDUCE ){
-      yy_reduce(yyact-YY_MIN_REDUCE,yymajor,yyminor);
+      yyact = yy_reduce(yyact-YY_MIN_REDUCE,yymajor,
+                        yyminor ParseCTX_PARAM);
     }else if( yyact <= YY_MAX_SHIFTREDUCE ){
       yy_shift(yyact,yymajor,yyminor);
 #ifndef YYNOERRORRECOVERY
       yyerrcnt--;
 #endif
-      yymajor = YYNOCODE;
+      break;
     }else if( yyact==YY_ACCEPT_ACTION ){
-      yyidx--;
-      yy_accept();
+			yyidx--;
+			yy_accept();
       return;
     }else{
       assert( yyact == YY_ERROR_ACTION );
@@ -828,6 +851,8 @@ public void Parse(
       }
       yyerrcnt = 3;
       yyerrorhit = true;
+      if( yymajor==YYNOCODE ) break;
+      yyact = yystack(0).stateno;
 #elif defined(YYNOERRORRECOVERY)
       /* If the YYNOERRORRECOVERY macro is defined, then do not attempt to
       ** do any kind of error recovery.  Instead, simply invoke the syntax
@@ -837,8 +862,7 @@ public void Parse(
       ** they intend to abandon the parse upon the first syntax error seen.
       */
       yy_syntax_error(yymajor, yyminor);
-      yymajor = YYNOCODE;
-      
+      break;
 #else  /* YYERRORSYMBOL is not defined */
       /* This is what we do if the grammar does not define ERROR:
       **
@@ -859,10 +883,10 @@ public void Parse(
         yyerrcnt = -1;
 #endif
       }
-      yymajor = YYNOCODE;
+      break;
 #endif
     }
-  }while( yymajor!=YYNOCODE && yyidx > 0 );
+  }while( yyidx > 0 );
 #ifndef NDEBUG
     if (logger.isTraceEnabled()) {
     StringJoiner msg = new StringJoiner(" ", "Return. Stack=[", "]");
