@@ -13,15 +13,18 @@ public class InsertTriggerCmd implements TriggerCmd {
 	public final String tblName;
 	public final List<String> columns;
 	public final Select select;
+	public final Upsert upsert;
 
 	public InsertTriggerCmd(ResolveType orConflict,
 			String tblName,
 			List<String> columns,
-			Select select) {
+			Select select,
+			Upsert upsert) {
 		this.orConflict = orConflict;
 		this.tblName = requireNonNull(tblName);
 		this.columns = columns;
 		this.select = requireNonNull(select);
+		this.upsert = upsert;
 	}
 
 	@Override
@@ -44,5 +47,8 @@ public class InsertTriggerCmd implements TriggerCmd {
 		}
 		a.append(' ');
 		select.toSql(a);
+		if (upsert != null) {
+			upsert.toSql(a);
+		}
 	}
 }

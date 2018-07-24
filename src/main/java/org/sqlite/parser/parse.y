@@ -69,9 +69,9 @@ input ::= cmdlist.
 cmdlist ::= cmdlist ecmd.
 cmdlist ::= ecmd.
 ecmd ::= SEMI.
-ecmd ::= explain cmdx SEMI.
-explain ::= .
+ecmd ::= cmdx SEMI.
 %ifndef SQLITE_OMIT_EXPLAIN
+ecmd ::= explain cmdx.
 explain ::= EXPLAIN.              { context.explain = ExplainKind.Explain; }
 explain ::= EXPLAIN QUERY PLAN.   { context.explain = ExplainKind.QueryPlan; }
 %endif  SQLITE_OMIT_EXPLAIN
@@ -168,7 +168,8 @@ columnname(A) ::= nm(X) typetoken(Y). {A = new ColumnNameAndType(X.text(), Y);}
 //
 %fallback ID
   ABORT ACTION AFTER ANALYZE ASC ATTACH BEFORE BEGIN BY CASCADE CAST COLUMNKW
-  CONFLICT DATABASE DEFERRED DESC DETACH EACH END EXCLUSIVE EXPLAIN FAIL FOR
+  CONFLICT DATABASE DEFERRED DESC DETACH DO
+  EACH END EXCLUSIVE EXPLAIN FAIL FOR
   IGNORE IMMEDIATE INITIALLY INSTEAD LIKE_KW MATCH NO PLAN
   QUERY KEY OF OFFSET PRAGMA RAISE RECURSIVE RELEASE REPLACE RESTRICT ROW
   ROLLBACK SAVEPOINT TEMP TRIGGER VACUUM VIEW VIRTUAL WITH WITHOUT
@@ -202,6 +203,7 @@ columnname(A) ::= nm(X) typetoken(Y). {A = new ColumnNameAndType(X.text(), Y);}
 %left CONCAT.
 %left COLLATE.
 %right BITNOT.
+%nonassoc ON.
 
 // An IDENTIFIER can be a generic identifier, or one of several
 // keywords.  Any non-standard keyword can also be an identifier.
@@ -377,8 +379,16 @@ cmd ::= select(S). {context.stmt = S;}
 %type selectnowith {SelectBody}
 %type oneselect {OneSelect}
 
-select(A) ::= with(W) selectnowith(X) orderby_opt(Z) limit_opt(L). {
-  A = new Select(W, X, Z, L); /*A-overwrites-W*/
+%ifndef SQLITE_OMIT_CTE
+select(A) ::= WITH wqlist(W) selectnowith(X) orderby_opt(Z) limit_opt(L). {
+  A = new Select(new With(false, W), X, Z, L);
+}
+select(A) ::= WITH RECURSIVE wqlist(W) selectnowith(X) orderby_opt(Z) limit_opt(L). {
+  A = new Select(new With(true, W), X, Z, L);
+}
+%endif /* SQLITE_OMIT_CTE */
+select(A) ::= selectnowith(X) orderby_opt(Z) limit_opt(L). {
+  A = new Select(null, X, Z, L); /*A-overwrites-X*/
 }
 
 selectnowith(A) ::= oneselect(X). {
@@ -501,8 +511,22 @@ dbnm(A) ::= .          {A = null;}
 dbnm(A) ::= DOT nm(X). {A = X.text();}
 
 %type fullname {QualifiedName}
-fullname(A) ::= nm(X) dbnm(Y).  
-   {A = QualifiedName.from(X, Y); /*A-overwrites-X*/}
+fullname(A) ::= nm(X).
+   {A = QualifiedName.from(null, X, null); /*A-overwrites-X*/}
+fullname(A) ::= nm(X) DOT nm(Y).
+   {A = QualifiedName.from(X, Y, null); /*A-overwrites-X*/}
+
+%type xfullname {QualifiedName}
+xfullname(A) ::= nm(X).
+   {A = QualifiedName.from(null, X, null); /*A-overwrites-X*/}
+xfullname(A) ::= nm(X) DOT nm(Y).
+   {A = QualifiedName.from(X, Y, null); /*A-overwrites-X*/}
+xfullname(A) ::= nm(X) DOT nm(Y) AS nm(Z).  {
+   A = QualifiedName.from(X, Y, Z); /*A-overwrites-X*/
+}
+xfullname(A) ::= nm(X) AS nm(Z). {
+   A = QualifiedName.from(null, X, Z); /*A-overwrites-X*/
+}
 
 %type joinop {JoinOperator}
 joinop(X) ::= COMMA|JOIN(A).              { X = JoinOperator.from(A, null, null); }
@@ -513,9 +537,26 @@ joinop(X) ::= JOIN_KW(A) nm(B) JOIN.
 joinop(X) ::= JOIN_KW(A) nm(B) nm(C) JOIN.
                   {X = JoinOperator.from(A,B,C);/*X-overwrites-A*/}
 
+// There is a parsing abiguity in an upsert statement that uses a
+// SELECT on the RHS of a the INSERT:
+//
+//      INSERT INTO tab SELECT * FROM aaa JOIN bbb ON CONFLICT ...
+//                                        here ----^^
+//
+// When the ON token is encountered, the parser does not know if it is
+// the beginning of an ON CONFLICT clause, or the beginning of an ON
+// clause associated with the JOIN.  The conflict is resolved in favor
+// of the JOIN.  If an ON CONFLICT clause is intended, insert a dummy
+// WHERE clause in between, like this:
+//
+//      INSERT INTO tab SELECT * FROM aaa JOIN bbb WHERE true ON CONFLICT ...
+//
+// The [AND] and [OR] precedence marks in the rules for on_opt cause the
+// ON in this context to always be interpreted as belonging to the JOIN.
+//
 %type on_opt {Expr}
-on_opt(N) ::= ON expr(E).   {N = E;}
-on_opt(N) ::= .             {N = null;}
+on_opt(N) ::= ON expr(E).  {N = E;}
+on_opt(N) ::= .     [OR]   {N = null;}
 
 // Note that this block abuses the Token type just a little. If there is
 // no "INDEXED BY" clause, the returned token is empty (z==0 && n==0). If
@@ -593,13 +634,13 @@ limit_opt(A) ::= LIMIT expr(X) COMMA expr(Y).
 /////////////////////////// The DELETE statement /////////////////////////////
 //
 %ifdef SQLITE_ENABLE_UPDATE_DELETE_LIMIT
-cmd ::= with(C) DELETE FROM fullname(X) indexed_opt(I) where_opt(W) 
+cmd ::= with(C) DELETE FROM xfullname(X) indexed_opt(I) where_opt(W)
         orderby_opt(O) limit_opt(L). {
   context.stmt = new Delete(C, X, I, W, O, L);
 }
 %endif
 %ifndef SQLITE_ENABLE_UPDATE_DELETE_LIMIT
-cmd ::= with(C) DELETE FROM fullname(X) indexed_opt(I) where_opt(W). {
+cmd ::= with(C) DELETE FROM xfullname(X) indexed_opt(I) where_opt(W). {
   context.stmt = new Delete(C, X, I, W, null, null);
 }
 %endif
@@ -612,13 +653,13 @@ where_opt(A) ::= WHERE expr(X).       {A = X;}
 ////////////////////////// The UPDATE command ////////////////////////////////
 //
 %ifdef SQLITE_ENABLE_UPDATE_DELETE_LIMIT
-cmd ::= with(C) UPDATE orconf(R) fullname(X) indexed_opt(I) SET setlist(Y)
+cmd ::= with(C) UPDATE orconf(R) xfullname(X) indexed_opt(I) SET setlist(Y)
         where_opt(W) orderby_opt(O) limit_opt(L).  {
   context.stmt = new Update(C, R, X, I, Y, W, O, L);
 }
 %endif
 %ifndef SQLITE_ENABLE_UPDATE_DELETE_LIMIT
-cmd ::= with(C) UPDATE orconf(R) fullname(X) indexed_opt(I) SET setlist(Y)
+cmd ::= with(C) UPDATE orconf(R) xfullname(X) indexed_opt(I) SET setlist(Y)
         where_opt(W).  {
   context.stmt = new Update(C, R, X, I, Y, W, null, null);
 }
@@ -645,13 +686,24 @@ setlist(A) ::= LP idlist(X) RP EQ expr(Y). {
 
 ////////////////////////// The INSERT command /////////////////////////////////
 //
-cmd ::= with(W) insert_cmd(R) INTO fullname(X) idlist_opt(F) select(S). {
-  context.stmt = new Insert(W, R, X, F, S);
+cmd ::= with(W) insert_cmd(R) INTO xfullname(X) idlist_opt(F) select(S)
+        upsert(U). {
+  context.stmt = new Insert(W, R, X, F, S, U);
 }
-cmd ::= with(W) insert_cmd(R) INTO fullname(X) idlist_opt(F) DEFAULT VALUES.
+cmd ::= with(W) insert_cmd(R) INTO xfullname(X) idlist_opt(F) DEFAULT VALUES.
 {
-  context.stmt = new Insert(W, R, X, F, null);
+  context.stmt = new Insert(W, R, X, F, null, null);
 }
+
+%type upsert {Upsert}
+upsert(A) ::= . { A = null; }
+upsert(A) ::= ON CONFLICT LP sortlist(T) RP where_opt(TW)
+              DO UPDATE SET setlist(Z) where_opt(W).
+              { A = new Upsert(T,TW,Z,W); }
+upsert(A) ::= ON CONFLICT LP sortlist(T) RP where_opt(TW) DO NOTHING.
+              { A = new Upsert(T,TW,null,null); }
+upsert(A) ::= ON CONFLICT DO NOTHING.
+              { A = new Upsert(null,null,null,null); }
 
 %type insert_cmd {ResolveType}
 insert_cmd(A) ::= INSERT orconf(R).   {A = R;}
@@ -999,8 +1051,8 @@ trigger_cmd(A) ::=
    {A = new UpdateTriggerCmd(R, X.text(), Y, Z);}
 
 // INSERT
-trigger_cmd(A) ::= insert_cmd(R) INTO trnm(X) idlist_opt(F) select(S).
-   {A = new InsertTriggerCmd(R, X.text(), F, S);/*A-overwrites-R*/}
+trigger_cmd(A) ::= insert_cmd(R) INTO trnm(X) idlist_opt(F) select(S) upsert(U).
+   {A = new InsertTriggerCmd(R, X.text(), F, S, U);/*A-overwrites-R*/}
 
 // DELETE
 trigger_cmd(A) ::= DELETE FROM trnm(X) tridxby where_opt(Y).

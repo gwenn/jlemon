@@ -10,6 +10,20 @@ import static org.sqlite.parser.ast.ToSql.doubleQuote;
 public class QualifiedName implements ToSql {
 	public final String dbName;
 	public final String name;
+	public String alias;
+
+	public static QualifiedName from(Token xxx, Token yyy, Token alias) {
+		QualifiedName qn;
+		if (xxx == null) {
+			qn = new QualifiedName(null, yyy.text());
+		} else {
+			qn = new QualifiedName(xxx.text(), yyy.text());
+		}
+		if (alias != null) {
+			qn.alias = alias.text();
+		}
+		return qn;
+	}
 
 	public static QualifiedName from(Token xxx, String yyy) {
 		if (yyy == null) {
@@ -31,5 +45,9 @@ public class QualifiedName implements ToSql {
 			a.append('.');
 		}
 		doubleQuote(a, name);
+		if (alias != null) {
+			a.append(" AS ");
+			doubleQuote(a, alias);
+		}
 	}
 }
