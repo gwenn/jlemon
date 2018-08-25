@@ -17,6 +17,7 @@ public abstract class Keyword {
 		KEYWORDS.put("ALTER", TK_ALTER);
 		KEYWORDS.put("ANALYZE", TK_ANALYZE);
 		KEYWORDS.put("AND", TK_AND);
+		KEYWORDS.put("ANY", TK_ANY);
 		KEYWORDS.put("AS", TK_AS);
 		KEYWORDS.put("ASC", TK_ASC);
 		KEYWORDS.put("ATTACH", TK_ATTACH);
@@ -47,6 +48,7 @@ public abstract class Keyword {
 		KEYWORDS.put("DESC", TK_DESC);
 		KEYWORDS.put("DETACH", TK_DETACH);
 		KEYWORDS.put("DISTINCT", TK_DISTINCT);
+		KEYWORDS.put("DO", TK_DO);
 		KEYWORDS.put("DROP", TK_DROP);
 		KEYWORDS.put("EACH", TK_EACH);
 		KEYWORDS.put("ELSE", TK_ELSE);
@@ -87,6 +89,7 @@ public abstract class Keyword {
 		KEYWORDS.put("NATURAL", TK_JOIN_KW);
 		KEYWORDS.put("NO", TK_NO);
 		KEYWORDS.put("NOT", TK_NOT);
+		KEYWORDS.put("NOTHING", TK_NOTHING);
 		KEYWORDS.put("NOTNULL", TK_NOTNULL);
 		KEYWORDS.put("NULL", TK_NULL);
 		KEYWORDS.put("OF", TK_OF);
