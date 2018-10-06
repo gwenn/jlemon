@@ -7,6 +7,7 @@ that generates Java code and the associated [SQL parser](http://www.sqlite.org/s
 Files `lemon.c`, `lempar.c` are extracted from SQLite v3.18.0.
 
 [![Build Status](https://secure.travis-ci.org/gwenn/jlemon.png)](http://www.travis-ci.org/gwenn/jlemon)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.gwenn/sqlite-parser/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.gwenn/sqlite-parser/)
 
 ## Usage
 
