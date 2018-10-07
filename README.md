@@ -91,4 +91,4 @@ The parser is/will be used to fix [DatabaseMetaData](https://github.com/gwenn/sq
 SQL lexer and parser have been tested with the following scripts:
 
  * https://github.com/bkiers/sqlite-parser/tree/master/src/test/resources
- * https://github.com/codeschool/sqlite-parser/tree/master/test/sql/official-suite
+ * https://github.com/codeschool/sqlite-parser/tree/master/test/sql/official-suite which can be updated with script in https://github.com/codeschool/sqlite-parser/tree/master/test/misc
