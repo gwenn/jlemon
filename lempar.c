@@ -903,7 +903,7 @@ public void Parse(
 ** Return the fallback token corresponding to canonical token iToken, or
 ** 0 if iToken has no fallback.
 */
-public static int ParseFallback(int iToken){
+public static YYCODETYPE ParseFallback(YYCODETYPE iToken){
 #ifdef YYFALLBACK
   if( iToken<yyFallback.length ){
     return yyFallback[iToken];
