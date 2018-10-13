@@ -386,11 +386,11 @@ private YYACTIONTYPE yy_find_shift_action(
   do{
     i = yy_shift_ofst[stateno];
     assert( i>=0 );
-    assert( i+YYNTOKEN<=yy_lookahead.length );
+    /* assert( i+YYNTOKEN<=yy_lookahead.length ); */
     assert( iLookAhead!=YYNOCODE );
     assert( iLookAhead < YYNTOKEN );
     i += iLookAhead;
-    if( yy_lookahead[i]!=iLookAhead ){
+    if( i>=yy_lookahead.length || yy_lookahead[i]!=iLookAhead ){
 #ifdef YYFALLBACK
       YYCODETYPE iFallback;            /* Fallback token */
       if( iLookAhead<yyFallback.length
@@ -414,6 +414,7 @@ private YYACTIONTYPE yy_find_shift_action(
 #if YY_SHIFT_MAX+YYWILDCARD>=YY_ACTTAB_COUNT
           j<YY_ACTTAB_COUNT &&
 #endif
+          j<yy_lookahead.length &&
           yy_lookahead[j]==YYWILDCARD && iLookAhead>0
         ){
 #ifndef NDEBUG
@@ -896,6 +897,21 @@ public void Parse(
     logger.trace(msg.toString());
     }
 #endif
+}
+
+/*
+** Return the fallback token corresponding to canonical token iToken, or
+** 0 if iToken has no fallback.
+*/
+public static int ParseFallback(int iToken){
+#ifdef YYFALLBACK
+  if( iToken<yyFallback.length ){
+    return yyFallback[iToken];
+  }
+#else
+  //(void)iToken;
+#endif
+  return 0;
 }
 
   // Access relative to the top: {@code yystack(0)} = top, {@code yystack(-1)} = top-1, ...

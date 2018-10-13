@@ -170,7 +170,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
 		}
 		Expr whereClause = new BinaryExpr(typeEpr, Operator.And, nameExpr);
 		// SELECT <column> FROM sqlite_master WHERE type IN ('table','view') AND name LIKE ?1
-		final OneSelect oneSelect = new OneSelect(null, columns, from, whereClause, null);
+		final OneSelect oneSelect = new OneSelect(null, columns, from, whereClause, null, null);
 		if (!"name".equals(column)) {
 			return Select.from(oneSelect);
 		}
@@ -183,7 +183,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
 		}
 		// UNION SELECT 'sqlite_master' WHERE 'sqlite_master' LIKE ?1
 		CompoundSelect union = new CompoundSelect(CompoundOperator.Union,
-				new OneSelect(null, singletonList(expr(masterExpr, null)), null, masterClause, null));
+				new OneSelect(null, singletonList(expr(masterExpr, null)), null, masterClause, null, null));
 		return Select.from(new SelectBody(oneSelect, singletonList(union)));
 	}
 }

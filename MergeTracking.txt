@@ -1,14 +1,14 @@
 src/tokenize.c => src/main/java/org/sqlite/parser/Tokenizer.java + Parser.java
-a419afd73a544e30df878db55f7faa17790c01bd (22/06/2018) OK
+6da6e4c3ef5fab308ceb014ce960abc3cdfd7403 (28/08/2018) OK
 
 tool/mkkeywordhash.c => src/main/java/org/sqlite/parser/Keyword.java
-2267057e7f4fca9bd304549d33b0229bd96c7ef2 (25/04/2018) OK
+063d20fd1e7a90782454efdb80b17c6fa904e312 (22/06/2018) OK
 
 tool/lemon.c => lemon.c + src/main/java/org/sqlite/parser/TokenType.java
-b1df52860621b03fb95d1bd5fc19ac17457e732d (21/04/2018) OK
+1150d3841d9381555a4b427835fd617d3465040d (08/09/2018) OK
 
 tool/lempar.c => lempar.c
-a7d12e81e1e69d33eb2eb8b2efb2f80b416bb82c (23/04/2018) OK
+cf539a641fcd9afdfae698edeab0f0b318139637 (22/06/2018) OK
 
 src/parse.y => src/main/java/org/sqlite/parser/parse.y + TokenType.java
-1ca1f494d1f62147c661a4c1337d770f74463c4b (21/04/2018) OK
+719d222df863306739ebdb462eacfcb6d0c6b993 (20/09/2018) OK

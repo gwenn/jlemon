@@ -4028,9 +4028,9 @@ static const char *minimum_size_type(int lwr, int upr, int *pnByte){
     if( upr<=255 ){
       zType = "short";
       nByte = 2;
-    }else if( upr<65535 ){
-      zType = "int";
-      nByte = 4;
+    }else if( upr<=32767 ){
+      zType = "short";
+      nByte = 2;
     }else{
       zType = "int";
       nByte = 4;

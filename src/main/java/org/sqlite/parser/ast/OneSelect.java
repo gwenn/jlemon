@@ -13,6 +13,7 @@ public class OneSelect implements ToSql {
 	public final FromClause from;
 	public final Expr whereClause;
 	public final GroupBy groupBy;
+	public final List<Window> windowClause;
 
 	public final List<List<Expr>> values;
 
@@ -20,12 +21,14 @@ public class OneSelect implements ToSql {
 			List<ResultColumn> columns,
 			FromClause from,
 			Expr whereClause,
-			GroupBy groupBy) {
+			GroupBy groupBy,
+			List<Window> windowClause) {
 		this.distinctness = distinctness;
 		this.columns = requireNotEmpty(columns);
 		this.from = from;
 		this.whereClause = whereClause;
 		this.groupBy = groupBy;
+		this.windowClause = windowClause;
 		this.values = null;
 	}
 	public OneSelect(List<List<Expr>> values) {
@@ -34,6 +37,7 @@ public class OneSelect implements ToSql {
 		this.from = null;
 		this.whereClause = null;
 		this.groupBy = null;
+		this.windowClause = null;
 		this.values = requireNotEmpty(values);
 	}
 
@@ -69,6 +73,10 @@ public class OneSelect implements ToSql {
 		if (groupBy != null) {
 			a.append(' ');
 			groupBy.toSql(a);
+		}
+		if (windowClause != null) {
+			a.append(" WINDOW ");
+			comma(a, windowClause);
 		}
 	}
 }

@@ -171,11 +171,14 @@ columnname(A) ::= nm(X) typetoken(Y). {A = new ColumnNameAndType(X.text(), Y);}
   CONFLICT DATABASE DEFERRED DESC DETACH DO
   EACH END EXCLUSIVE EXPLAIN FAIL FOR
   IGNORE IMMEDIATE INITIALLY INSTEAD LIKE_KW MATCH NO PLAN
-  QUERY KEY OF OFFSET PRAGMA RAISE RECURSIVE RELEASE REPLACE RESTRICT ROW
+  QUERY KEY OF OFFSET PRAGMA RAISE RECURSIVE RELEASE REPLACE RESTRICT ROW ROWS
   ROLLBACK SAVEPOINT TEMP TRIGGER VACUUM VIEW VIRTUAL WITH WITHOUT
 %ifdef SQLITE_OMIT_COMPOUND_SELECT
   EXCEPT INTERSECT UNION
 %endif SQLITE_OMIT_COMPOUND_SELECT
+%ifndef SQLITE_OMIT_WINDOWFUNC
+  CURRENT FOLLOWING PARTITION PRECEDING RANGE UNBOUNDED
+%endif SQLITE_OMIT_WINDOWFUNC
   REINDEX RENAME CTIME_KW IF
   .
 %wildcard ANY.
@@ -406,8 +409,16 @@ multiselect_op(A) ::= EXCEPT|INTERSECT(OP).  {A = CompoundOperator.from(@OP); /*
 %endif SQLITE_OMIT_COMPOUND_SELECT
 oneselect(A) ::= SELECT distinct(D) selcollist(W) from(X) where_opt(Y)
                  groupby_opt(P). {
-  A = new OneSelect(D, W, X, Y, P);
+  A = new OneSelect(D, W, X, Y, P, null);
 }
+%ifndef SQLITE_OMIT_WINDOWFUNC
+oneselect(A) ::= SELECT distinct(D) selcollist(W) from(X) where_opt(Y)
+                 groupby_opt(P) window_clause(R). {
+  A = new OneSelect(D, W, X, Y, P, R);
+}
+%endif
+
+
 oneselect(A) ::= values(A).
 
 %type values {OneSelect}
@@ -416,7 +427,7 @@ values(A) ::= VALUES LP nexprlist(X) RP. {
   values.add(X);
   A = new OneSelect(values);
 }
-values(A) ::= values(A) COMMA LP exprlist(Y) RP. {
+values(A) ::= values(A) COMMA LP nexprlist(Y) RP. {
   A.values.add(Y);
 }
 
@@ -752,15 +763,24 @@ expr(A) ::= CAST LP expr(E) AS typetoken(T) RP. {
   A = new CastExpr(E,T);
 }
 %endif  SQLITE_OMIT_CAST
+
+
 expr(A) ::= id(X) LP distinct(D) exprlist(Y) RP. {
-  /*if( Y && Y->nExpr>pParse->db->aLimit[SQLITE_LIMIT_FUNCTION_ARG] ){
-    context.sqlite3ErrorMsg("too many arguments on function %T", X);
-  }*/
-  A = new FunctionCallExpr(X.text(), D, Y);
+  A = new FunctionCallExpr(X.text(), D, Y, null);
 }
 expr(A) ::= id(X) LP STAR RP. {
-  A = new FunctionCallStarExpr(X.text());
+  A = new FunctionCallStarExpr(X.text(), null);
 }
+
+%ifndef SQLITE_OMIT_WINDOWFUNC
+expr(A) ::= id(X) LP distinct(D) exprlist(Y) RP over_clause(Z). {
+  A = new FunctionCallExpr(X.text(), D, Y, Z);
+}
+expr(A) ::= id(X) LP STAR RP over_clause(Z). {
+  A = new FunctionCallStarExpr(X.text(), Z);
+}
+%endif
+
 term(A) ::= CTIME_KW(OP). {
   A = new CurrentTimeExpr(OP.text());
 }
@@ -813,10 +833,10 @@ expr(A) ::= NOT expr(X).
               {A = new UnaryExpr(UnaryOperator.Not,X);}
 expr(A) ::= BITNOT expr(X).
               {A = new UnaryExpr(UnaryOperator.BitwiseNot,X);}
-expr(A) ::= MINUS expr(X). [BITNOT]
-              {A = new UnaryExpr(UnaryOperator.Negative,X);}
-expr(A) ::= PLUS expr(X). [BITNOT]
-              {A = new UnaryExpr(UnaryOperator.Positive,X);}
+expr(A) ::= PLUS|MINUS(B) expr(X). [BITNOT] {
+  A = new UnaryExpr(@B==TokenType.TK_PLUS ? UnaryOperator.Positive : UnaryOperator.Negative,X);
+  /*A-overwrites-B*/
+}
 
 %type between_op {boolean}
 between_op(A) ::= BETWEEN.     {A = false;}
@@ -1123,6 +1143,11 @@ cmd ::= ALTER TABLE fullname(X)
   ColumnDefinition colDefinition = new ColumnDefinition(Y, C);
   context.stmt = new AlterTable(X, colDefinition);
 }
+cmd ::= ALTER TABLE fullname(X) RENAME kwcolumn_opt nm(Y) TO nm(Z). {
+  RenameColumn renameColumn = new RenameColumn(Y.text(), Z.text());
+  context.stmt = new AlterTable(X, renameColumn);
+}
+
 kwcolumn_opt ::= .
 kwcolumn_opt ::= COLUMNKW.
 %endif  SQLITE_OMIT_ALTERTABLE
@@ -1167,3 +1192,87 @@ wqlist(A) ::= wqlist(A) COMMA nm(X) eidlist_opt(Y) AS LP select(Z) RP. {
   A = append(A, cte);
 }
 %endif  SQLITE_OMIT_CTE
+
+//////////////////////// WINDOW FUNCTION EXPRESSIONS /////////////////////////
+// These must be at the end of this file. Specifically, the rules that
+// introduce tokens WINDOW, OVER and FILTER must appear last. This causes
+// the integer values assigned to these tokens to be larger than all other
+// tokens that may be output by the tokenizer except TK_SPACE and TK_ILLEGAL.
+//
+%ifndef SQLITE_OMIT_WINDOWFUNC
+%type windowdefn_list {List<Window>}
+windowdefn_list(A) ::= windowdefn(Z). { A = append(null, Z); }
+windowdefn_list(A) ::= windowdefn_list(A) COMMA windowdefn(Z). {
+  assert( Z!=null );
+  A = append(A, Z);
+}
+
+%type windowdefn {Window}
+windowdefn(A) ::= nm(X) AS window(Y). {
+  Y.name = X.text();
+  A = Y;
+}
+
+%type window {Window}
+
+%type frame_opt {Window}
+
+%type part_opt {List<Expr>}
+
+%type filter_opt {Expr}
+
+%type range_or_rows {short}
+
+%type frame_bound {FrameBound}
+%type frame_bound_s {FrameBound}
+%type frame_bound_e {FrameBound}
+
+window(A) ::= LP part_opt(X) orderby_opt(Y) frame_opt(Z) RP. {
+  A = Z;
+  A.partition = X;
+  A.orderBy = Y;
+}
+
+part_opt(A) ::= PARTITION BY nexprlist(X). { A = X; }
+part_opt(A) ::= .                          { A = null; }
+
+frame_opt(A) ::= .                             {
+  A = new Window();
+}
+frame_opt(A) ::= range_or_rows(X) frame_bound_s(Y). {
+  A = new Window(X, Y);
+}
+frame_opt(A) ::= range_or_rows(X) BETWEEN frame_bound_s(Y) AND frame_bound_e(Z). {
+  A = new Window(X, Y, Z);
+}
+
+range_or_rows(A) ::= RANGE.   { A = TokenType.TK_RANGE; }
+range_or_rows(A) ::= ROWS.    { A = TokenType.TK_ROWS;  }
+
+
+frame_bound_s(A) ::= frame_bound(X). { A = X; }
+frame_bound_s(A) ::= UNBOUNDED PRECEDING. {A = FrameBound.UNBOUNDED_PRECEDING;}
+frame_bound_e(A) ::= frame_bound(X). { A = X; }
+frame_bound_e(A) ::= UNBOUNDED FOLLOWING. {A = FrameBound.UNBOUNDED_FOLLOWING;}
+
+frame_bound(A) ::= expr(X) PRECEDING.   { A = new FrameBound(TokenType.TK_PRECEDING, X); }
+frame_bound(A) ::= CURRENT ROW.         { A = FrameBound.CURRENT_ROW; }
+frame_bound(A) ::= expr(X) FOLLOWING.   { A = new FrameBound(TokenType.TK_FOLLOWING, X); }
+
+%type window_clause {List<Window>}
+window_clause(A) ::= WINDOW windowdefn_list(B). { A = B; }
+
+%type over_clause {Window}
+over_clause(A) ::= filter_opt(W) OVER window(Z). {
+  A = Z;
+  assert( A!=null );
+  A.over = true;
+  A.filter = W;
+}
+over_clause(A) ::= filter_opt(W) OVER nm(Z). {
+  A = new Window(Z.text(), W);
+}
+
+filter_opt(A) ::= .                            { A = null; }
+filter_opt(A) ::= FILTER LP WHERE expr(X) RP.  { A = X; }
+%endif /* SQLITE_OMIT_WINDOWFUNC */

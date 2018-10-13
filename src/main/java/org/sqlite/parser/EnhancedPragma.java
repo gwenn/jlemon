@@ -135,7 +135,7 @@ public class EnhancedPragma {
 		if (columnNamePattern != null) {
 			whereClause = like(columnName, string(columnNamePattern));
 		}
-		OneSelect oneSelect = new OneSelect(null, columns, from, whereClause, null);
+		OneSelect oneSelect = new OneSelect(null, columns, from, whereClause, null, null);
 		SelectBody body = new SelectBody(oneSelect, null);
 		List<SortedColumn> orderBy = Arrays.asList(
 				new SortedColumn(new IdExpr("TABLE_SCHEM"), null),
@@ -172,7 +172,7 @@ public class EnhancedPragma {
 					expr(ordpos, as("ordpos")),
 					expr(autoinc, as("autoinc")),
 					expr(generated, as("generated"))
-			), null, null, null);
+			), null, null, null, null);
 		} else {
 			tail.add(Arrays.asList(
 					cat,
@@ -254,7 +254,7 @@ public class EnhancedPragma {
 		SelectBody subBody = new SelectBody(head, compounds);
 		Select subSelect = new Select(null, subBody, null, limit);
 		FromClause from = FromClause.from(subSelect);
-		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
+		OneSelect oneSelect = new OneSelect(null, columns, from, null, null, null);
 		SelectBody body = new SelectBody(oneSelect, null);
 		List<SortedColumn> orderBy = Collections.singletonList(
 			new SortedColumn(new IdExpr("COLUMN_NAME"), null)
@@ -270,7 +270,7 @@ public class EnhancedPragma {
 				expr(cn, as("cn")),
 				expr(seq, as("seq")),
 				expr(pkName, as("pkName"))
-			), null, null, null);
+			), null, null, null, null);
 		} else {
 			tail.add(Arrays.asList(
 				cn,
@@ -445,7 +445,7 @@ public class EnhancedPragma {
 		SelectBody subBody = new SelectBody(head, compounds);
 		Select subSelect = new Select(null, subBody, null, limit);
 		FromClause from = FromClause.from(subSelect);
-		OneSelect oneSelect = new OneSelect(null, columns, from, null, null);
+		OneSelect oneSelect = new OneSelect(null, columns, from, null, null, null);
 		SelectBody body = new SelectBody(oneSelect, null);
 		List<SortedColumn> orderBy;
 		if (cross) {
@@ -504,7 +504,7 @@ public class EnhancedPragma {
 					expr(fkName, as("fkName")),
 					expr(pkName, as("pkName")),
 					expr(deferrability, as("deferrability"))
-			), null, null, null);
+			), null, null, null, null);
 		} else {
 			tail.add(Arrays.asList(
 					pcat,

@@ -18,22 +18,25 @@ public class FunctionCallExpr implements Expr {
 	public final String name;
 	public final Distinctness distinctness;
 	public final List<Expr> args;
+	public final Window overClause;
 
 	public static FunctionCallExpr lower(Expr expr) {
-		return new FunctionCallExpr("lower", null, singletonList(expr));
+		return new FunctionCallExpr("lower", null, singletonList(expr), null);
 	}
 
 	public static FunctionCallExpr from(String name, Expr... args) {
-		return new FunctionCallExpr(name, null, asList(args));
+		return new FunctionCallExpr(name, null, asList(args), null);
 	}
 
 	public FunctionCallExpr(String name,
 			Distinctness distinctness,
-			List<Expr> args) {
+			List<Expr> args,
+			Window overClause) {
 		this.name = requireNonNull(name);
 		this.distinctness = distinctness;
 		this.args = args;
 		// TODO "too many arguments on function %T"
+		this.overClause = overClause;
 	}
 
 	@Override
@@ -48,5 +51,9 @@ public class FunctionCallExpr implements Expr {
 			comma(a, args);
 		}
 		a.append(')');
+		if (overClause != null) {
+			a.append(' ');
+			overClause.toSql(a);
+		}
 	}
 }
