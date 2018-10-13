@@ -6,6 +6,7 @@ import static java.lang.Character.isWhitespace;
 import static org.sqlite.parser.Identifier.isIdentifierContinue;
 import static org.sqlite.parser.Identifier.isIdentifierStart;
 import static org.sqlite.parser.TokenType.*;
+import static org.sqlite.parser.yyParser.sqlite3ParserFallback;
 
 /**
  * A SQL tokenizer.
@@ -286,8 +287,21 @@ class Tokenizer extends Scanner {
 	 ** Return the id of the next token in string.
 	 */
 	private short getToken() {
+		short t = 0;                          /* Token type to return */
 		// FIXME:
-		return (short)0;
+		/*do {
+			z += sqlite3GetToken(z, &t);
+		}while( t==TK_SPACE );*/
+		if( t==TK_ID
+				|| t==TK_STRING
+				|| t==TK_JOIN_KW
+				|| t==TK_WINDOW
+				|| t==TK_OVER
+				|| sqlite3ParserFallback(t)==TK_ID
+		){
+			t = TK_ID;
+		}
+		return t;
 	}
 
 	/*
