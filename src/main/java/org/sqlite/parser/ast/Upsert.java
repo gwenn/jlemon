@@ -30,7 +30,7 @@ public class Upsert implements ToSql {
 			comma(a, targets);
 			a.append(')');
 			if (targetWhere != null) {
-				a.append(' ');
+				a.append(" WHERE ");
 				targetWhere.toSql(a);
 			}
 		}
@@ -38,7 +38,7 @@ public class Upsert implements ToSql {
 			a.append(" DO UPDATE SET ");
 			comma(a, sets);
 			if (where != null) {
-				a.append(' ');
+				a.append(" WHERE ");
 				where.toSql(a);
 			}
 		} else {
