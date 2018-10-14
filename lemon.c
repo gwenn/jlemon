@@ -4311,7 +4311,7 @@ void ReportTable(
   fprintf(out,"#define YY_NO_ACTION         %d\n", lemp->noAction); lineno++;
   fprintf(out,"private static final YYACTIONTYPE YY_MIN_REDUCE =      %d;\n", lemp->minReduce); lineno++;
   i = lemp->minReduce + lemp->nrule;
-  fprintf(out,"private static final YYACTIONTYPE YY_MAX_REDUCE =      %d;\n", i-1); lineno++;
+  fprintf(out,"//private static final YYACTIONTYPE YY_MAX_REDUCE =      %d;\n", i-1); lineno++;
   tplt_xfer(lemp->name,in,out,&lineno);
 
   /* Now output the action table and its associates:

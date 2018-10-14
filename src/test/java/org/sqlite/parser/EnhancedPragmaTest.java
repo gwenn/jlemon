@@ -169,7 +169,7 @@ public class EnhancedPragmaTest {
 			return Collections.singletonList(new QualifiedName(getDbName(dbName, tableNamePattern), tableNamePattern));
 		}
 		@Override
-		public List<String> getDbNames(String dbName) throws SQLException {
+		public List<String> getDbNames(String dbName) {
 			throw new UnsupportedOperationException();
 		}
 	}

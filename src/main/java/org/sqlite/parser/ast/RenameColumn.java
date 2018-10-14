@@ -2,8 +2,6 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
-import org.sqlite.parser.Token;
-
 import static org.sqlite.parser.ast.ToSql.doubleQuote;
 
 public class RenameColumn implements ToSql {

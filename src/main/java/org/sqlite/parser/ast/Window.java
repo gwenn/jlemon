@@ -3,9 +3,6 @@ package org.sqlite.parser.ast;
 import java.io.IOException;
 import java.util.List;
 
-import org.sqlite.parser.Token;
-
-import static org.sqlite.parser.TokenType.TK_OVER;
 import static org.sqlite.parser.TokenType.TK_RANGE;
 import static org.sqlite.parser.TokenType.TK_ROWS;
 import static org.sqlite.parser.ast.ToSql.comma;

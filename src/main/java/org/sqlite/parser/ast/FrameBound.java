@@ -2,8 +2,6 @@ package org.sqlite.parser.ast;
 
 import java.io.IOException;
 
-import org.sqlite.parser.TokenType;
-
 import static org.sqlite.parser.TokenType.TK_CURRENT;
 import static org.sqlite.parser.TokenType.TK_FOLLOWING;
 import static org.sqlite.parser.TokenType.TK_PRECEDING;

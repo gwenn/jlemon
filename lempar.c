@@ -296,7 +296,7 @@ public yyParser(
   yyerrcnt = -1;
 #endif
   yystack[yyidx] = new yyStackEntry();
-  ParseARG_STORE;
+  ParseARG_STORE
 }
 
 /*

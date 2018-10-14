@@ -30,7 +30,7 @@ public interface ToSql {
 		boolean isIdentifier = true;
 		for (int i = 0; i < name.length(); i++) {
 			if (i == 0) {
-				isIdentifier = isIdentifier && isIdentifierStart(name.charAt(i));
+				isIdentifier = isIdentifierStart(name.charAt(i));
 			} else {
 				isIdentifier = isIdentifier && isIdentifierContinue(name.charAt(i));
 			}
