@@ -37,10 +37,12 @@ TokenType.java: yyParser.java
 yyParser.java: jlemon$(BEXE)  $(TOP)/lempar.c $(TOP)/src/main/java/org/sqlite/parser/parse.y
 	./jlemon$(BEXE) -DSQLITE_ENABLE_UPDATE_DELETE_LIMIT $(TOP)/src/main/java/org/sqlite/parser/parse.y
 	cpp -P $(TOP)/src/main/java/org/sqlite/parser/parse.j > $(GEN)/org/sqlite/parser/yyParser.java
+	rm $(TOP)/src/main/java/org/sqlite/parser/parse.{j,out}
 
 simple: jlemon$(BEXE) $(TOP)/lempar.c $(TOP)/src/test/java/simple/parser.y
 	./jlemon $(TOP)/src/test/java/simple/parser.y
-	cpp -P src/test/java/simple/parser.j > src/test/java/simple/yyParser.java
+	cpp -P $(TOP)/src/test/java/simple/parser.j > $(TOP)/src/test/java/simple/yyParser.java
+	rm $(TOP)/src/test/java/simple/parser.{j,out}
 
 clean:
 	-rm -rf jlemon.dSYM
