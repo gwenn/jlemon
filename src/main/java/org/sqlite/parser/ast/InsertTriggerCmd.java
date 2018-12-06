@@ -43,7 +43,7 @@ public class InsertTriggerCmd implements TriggerCmd {
 		if (isNotEmpty(columns)) {
 			a.append(" (");
 			commaNames(a, columns);
-			a.append(") ");
+			a.append(')');
 		}
 		a.append(' ');
 		select.toSql(a);

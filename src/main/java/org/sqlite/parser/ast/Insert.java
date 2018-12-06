@@ -50,7 +50,7 @@ public class Insert implements Stmt {
 		if (isNotEmpty(columns)) {
 			a.append(" (");
 			commaNames(a, columns);
-			a.append(") ");
+			a.append(')');
 		}
 		a.append(' ');
 		if (select != null) {

@@ -66,7 +66,7 @@ public class CreateTrigger implements Stmt {
 		a.append(" BEGIN\n");
 		for (int i = 0; i < commands.size(); i++) {
 			if (i != 0) {
-				a.append("\n");
+				a.append('\n');
 			}
 			commands.get(i).toSql(a);
 			a.append(';');
