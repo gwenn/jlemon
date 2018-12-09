@@ -1,6 +1,8 @@
 package org.sqlite.parser;
 
 import java.io.Reader;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import static java.lang.Character.isWhitespace;
 import static org.sqlite.parser.Identifier.isIdentifierContinue;
@@ -22,6 +24,8 @@ class Tokenizer extends Scanner {
 	private int tokenStart;
 	private int tokenEnd;
 
+	private Queue<Token> lookahead = new LinkedList<>();
+
 	Tokenizer(Reader r) {
 		super(r);
 	}
@@ -36,6 +40,19 @@ class Tokenizer extends Scanner {
 
 		tokenStart = 0;
 		tokenEnd = 0;
+
+		if (lookahead != null) {
+			lookahead.clear();
+		}
+	}
+
+	@Override
+	boolean scan() throws ScanException {
+		return !lookahead.isEmpty() || super.scan();
+	}
+
+	Token poll() {
+		return lookahead.poll();
 	}
 
 	short split(char[] data, int start, int end, boolean atEOF) throws ScanException {
@@ -287,11 +304,11 @@ class Tokenizer extends Scanner {
 	 ** Return the id of the next token in string.
 	 */
 	private short getToken() {
-		short t = 0;                          /* Token type to return */
-		// FIXME:
-		/*do {
-			z += sqlite3GetToken(z, &t);
-		}while( t==TK_SPACE );*/
+		if (!scan()) {
+			return 0;
+		}
+		short t = tokenType(); /* Token type to return */
+		lookahead.add(new Token(t, text()));
 		if( t==TK_ID
 				|| t==TK_STRING
 				|| t==TK_JOIN_KW

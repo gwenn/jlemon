@@ -67,20 +67,27 @@ public class Parser implements Iterable<Cmd> {
 		yyParser parser = new yyParser(ctx);
 		short lastTokenParsed = -1;
 		while (lexer.scan()) {
-			short tokenType = lexer.tokenType();
-			if (tokenType >= TokenType.TK_WINDOW) {
-				assert tokenType == TokenType.TK_OVER ||tokenType == TokenType.TK_FILTER
-						||tokenType == TokenType.TK_WINDOW;
+			Token yyminor = lexer.poll();
+			short tokenType;
+			if (yyminor == null) {
+				tokenType = lexer.tokenType();
+				String text = lexer.text(); // FIXME most tokens do not carry content (so there is no need to create a string)
+				if (tokenType >= TokenType.TK_WINDOW) {
+					assert tokenType == TokenType.TK_OVER ||tokenType == TokenType.TK_FILTER
+							||tokenType == TokenType.TK_WINDOW;
+					if (tokenType == TokenType.TK_WINDOW) {
+						tokenType = lexer.analyzeWindowKeyword();
+					} else if (tokenType == TokenType.TK_OVER) {
+						tokenType = lexer.analyzeOverKeyword(lastTokenParsed);
+					} else if (tokenType == TokenType.TK_FILTER) {
+						tokenType = lexer.analyzeFilterKeyword(lastTokenParsed);
+					}
+				}
+				yyminor = new Token(tokenType, text);
+			} else {
+				tokenType = yyminor.tokenType();
 			}
-			if (tokenType == TokenType.TK_WINDOW) {
-				tokenType = lexer.analyzeWindowKeyword();
-			} else if (tokenType == TokenType.TK_OVER) {
-				tokenType = lexer.analyzeOverKeyword(lastTokenParsed);
-			} else if (tokenType == TokenType.TK_FILTER) {
-				tokenType = lexer.analyzeFilterKeyword(lastTokenParsed);
-			}
-			String text = lexer.text(); // FIXME most tokens do not carry content (so there is no need to create a string)
-			Token yyminor = new Token(tokenType, text);
+
 			parser.sqlite3Parser(tokenType, yyminor);
 			lastTokenParsed = tokenType;
 			if (ctx.done()) {
