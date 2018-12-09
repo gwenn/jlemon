@@ -26,6 +26,8 @@ public class FrameBound implements ToSql {
 		if (expr != null) {
 			expr.toSql(a);
 			a.append(' ');
+		} else if (eType != TK_CURRENT) {
+			a.append("UNBOUNDED ");
 		}
 		if (eType == TK_CURRENT) {
 			a.append("CURRENT ROW");
