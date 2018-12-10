@@ -304,7 +304,7 @@ class Tokenizer extends Scanner {
 	 ** Return the id of the next token in string.
 	 */
 	private short getToken() {
-		if (!scan()) {
+		if (!super.scan()) {
 			return 0;
 		}
 		short t = tokenType(); /* Token type to return */
