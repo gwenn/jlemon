@@ -547,20 +547,15 @@ private void yy_shift(
   yyTraceShift(yyNewState, "Shift");
 }
 
-/* The following table contains information about every rule that
-** is used during the reduce.
-*/
-private static class ruleInfoEntry {
-  final YYCODETYPE lhs;         /* Symbol on the left-hand side of the rule */
-  final byte nrhs;     /* Negative of the number of RHS symbols in the rule */
+/* For rule J, yyRuleInfoLhs[J] contains the symbol on the left-hand side
+** of that rule */
+private static final YYCODETYPE yyRuleInfoLhs[] = {
+%%
+};
 
-  ruleInfoEntry(int lhs, int nrhs) {
-    this.lhs = (YYCODETYPE)lhs;
-    this.nrhs = (byte)nrhs;
-  }
-}
-private static final ruleInfoEntry
- yyRuleInfo[] = {
+/* For rule J, yyRuleInfoNRhs[J] contains the negative of the number
+** of symbols on the right-hand side of that rule. */
+private static final byte yyRuleInfoNRhs[] = {
 %%
 };
 
@@ -588,7 +583,7 @@ private YYACTIONTYPE yy_reduce(
   byte yysize;                     /* Amount to pop the stack */
 #ifndef NDEBUG
   if( yyruleno<yyRuleName.length ){
-    yysize = yyRuleInfo[yyruleno].nrhs;
+    yysize = yyRuleInfoNRhs[yyruleno];
     if( yysize != 0 ){
     	logger.trace("Reduce {} [{}], go to state {}.",
       	yyruleno, yyRuleName[yyruleno], yystack(yysize).stateno);
@@ -602,7 +597,7 @@ private YYACTIONTYPE yy_reduce(
   /* Check that the stack is large enough to grow by a single entry
   ** if the RHS of the rule is empty.  This ensures that there is room
   ** enough on the stack to push the LHS value */
-  if( yyRuleInfo[yyruleno].nrhs==0 ){
+  if( yyRuleInfoNRhs[yyruleno]==0 ){
 #ifdef YYTRACKMAXSTACKDEPTH
     if( yyidx>yyhwm ){
       yyhwm++;
@@ -650,9 +645,9 @@ private YYACTIONTYPE yy_reduce(
 %%
 /********** End reduce actions ************************************************/
   }
-  assert( yyruleno<yyRuleInfo.length );
-  yygoto = yyRuleInfo[yyruleno].lhs;
-  yysize = yyRuleInfo[yyruleno].nrhs;
+  assert( yyruleno<yyRuleInfoLhs.length );
+  yygoto = yyRuleInfoLhs[yyruleno];
+  yysize = yyRuleInfoNRhs[yyruleno];
   yyact = yy_find_reduce_action(yystack(yysize).stateno, yygoto);
   assert(yyact >= 0);
 
@@ -833,10 +828,9 @@ public void Parse(
         yymajor = YYNOCODE;
       }else{
         while( yyidx >= 0
-            && yymx != YYERRORSYMBOL
             && (yyact = yy_find_reduce_action(
                         yystack(0).stateno,
-                        YYERRORSYMBOL)) >= YY_MIN_REDUCE
+                        YYERRORSYMBOL)) > YY_MAX_SHIFTREDUCE
         ){
           yy_pop_parser_stack();
         }
