@@ -17,7 +17,7 @@ public abstract class Keyword {
 		KEYWORDS.put("ALTER", TK_ALTER);
 		KEYWORDS.put("ANALYZE", TK_ANALYZE);
 		KEYWORDS.put("AND", TK_AND);
-		KEYWORDS.put("ANY", TK_ANY);
+		//KEYWORDS.put("ANY", TK_ANY); not a keyword, just wildcard
 		KEYWORDS.put("AS", TK_AS);
 		KEYWORDS.put("ASC", TK_ASC);
 		KEYWORDS.put("ATTACH", TK_ATTACH);
