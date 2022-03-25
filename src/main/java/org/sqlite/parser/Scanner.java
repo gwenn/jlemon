@@ -44,10 +44,10 @@ abstract class Scanner {
 	 * to signal the Scanner to read more data into the slice and try again with a longer slice starting at the same point in the input.
 	 *
 	 * If the {@code data} content must be skipped, {@code split} can {@link #advance} and return {@code 0}.
-	 *  
+	 *
 	 * The function is never called with an empty data slice unless {@code atEOF} is {@code true}.
 	 * If {@code atEOF} is {@code true}, however, data may be non-empty and, as always, holds unprocessed text.
-	 * 
+	 *
 	 * @param data non null
 	 * @param start non negative
 	 * @param end greater that {@code start} (or maybe equal at EOF)
@@ -109,7 +109,7 @@ abstract class Scanner {
 			end -= start;
 			start = 0;
 		}
-		// Finally we can read some input.
+		// Finally, we can read some input.
 		try {
 			int n = r.read(buf, end, buf.length - end);
 			if (n < 0) {

@@ -24,7 +24,7 @@ class Tokenizer extends Scanner {
 	private int tokenStart;
 	private int tokenEnd;
 
-	private Queue<Token> lookahead = new LinkedList<>();
+	private final Queue<Token> lookahead = new LinkedList<>();
 
 	Tokenizer(Reader r) {
 		super(r);
