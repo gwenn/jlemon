@@ -1,7 +1,7 @@
 package org.sqlite.parser;
 
 import java.io.Reader;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Queue;
 
 import static java.lang.Character.isWhitespace;
@@ -24,7 +24,7 @@ class Tokenizer extends Scanner {
 	private int tokenStart;
 	private int tokenEnd;
 
-	private final Queue<Token> lookahead = new LinkedList<>();
+	private final Queue<Token> lookahead = new ArrayDeque<>();
 
 	Tokenizer(Reader r) {
 		super(r);
@@ -55,6 +55,7 @@ class Tokenizer extends Scanner {
 		return lookahead.poll();
 	}
 
+	@Override
 	short split(char[] data, int start, int end, boolean atEOF) throws ScanException {
 		if (atEOF && end == start) {
 			return 0;

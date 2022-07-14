@@ -16,6 +16,7 @@ public class IndexedColumn implements ToSql {
 		this.order = order;
 	}
 
+	@Override
 	public void toSql(Appendable a) throws IOException {
 		doubleQuote(a, colName);
 		if (collationName != null) {
