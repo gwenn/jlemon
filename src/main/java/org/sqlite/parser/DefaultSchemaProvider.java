@@ -61,14 +61,14 @@ public class DefaultSchemaProvider implements SchemaProvider {
 		} else {
 			tbls = Collections.emptyList();
 		}
-		for (String catalog : dbNames) {
-			Select select = sqlite_master(catalog, "name", all);
+		for (String schema : dbNames) {
+			Select select = sqlite_master(schema, "name", all);
 			try (PreparedStatement ps = conn.prepareStatement(select.toSql())) {
 				// determine exact table name
 				ps.setString(1, tableNamePattern);
 				try (ResultSet rs = ps.executeQuery()) {
 					while (rs.next()) {
-						final QualifiedName qualifiedName = new QualifiedName(catalog, rs.getString(1));
+						final QualifiedName qualifiedName = new QualifiedName(schema, rs.getString(1));
 						if (all) {
 							tbls.add(qualifiedName);
 						} else {
