@@ -1,6 +1,5 @@
 package org.sqlite.parser;
 
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
